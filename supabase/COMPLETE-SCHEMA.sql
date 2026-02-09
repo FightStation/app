@@ -10,6 +10,18 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- DROP EXISTING TABLES (Clean slate)
 -- ============================================================
 
+DROP TABLE IF EXISTS training_exercises CASCADE;
+DROP TABLE IF EXISTS training_sessions CASCADE;
+DROP TABLE IF EXISTS sparring_invites CASCADE;
+DROP TABLE IF EXISTS gym_admins CASCADE;
+DROP TABLE IF EXISTS gym_reels CASCADE;
+DROP TABLE IF EXISTS profiles CASCADE;
+DROP TABLE IF EXISTS saved_posts CASCADE;
+DROP TABLE IF EXISTS comment_likes CASCADE;
+DROP TABLE IF EXISTS post_comments CASCADE;
+DROP TABLE IF EXISTS post_likes CASCADE;
+DROP TABLE IF EXISTS follows CASCADE;
+DROP TABLE IF EXISTS posts CASCADE;
 DROP TABLE IF EXISTS gym_claim_requests CASCADE;
 DROP TABLE IF EXISTS gym_directory CASCADE;
 DROP TABLE IF EXISTS directory_countries CASCADE;
@@ -363,6 +375,191 @@ CREATE TABLE gym_claim_requests (
 );
 
 -- ============================================================
+-- PROFILES TABLE (maps auth.users to roles)
+-- ============================================================
+
+CREATE TABLE profiles (
+    id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('fighter', 'gym', 'coach')),
+    display_name TEXT,
+    avatar_url TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- FEED/SOCIAL TABLES
+-- ============================================================
+
+-- Posts Table
+CREATE TABLE posts (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    author_type TEXT NOT NULL CHECK (author_type IN ('fighter', 'gym', 'coach')),
+    author_id UUID NOT NULL,
+    content TEXT,
+    media_urls TEXT[] DEFAULT '{}',
+    media_type TEXT CHECK (media_type IN ('image', 'video', 'mixed', NULL)),
+    post_type TEXT NOT NULL DEFAULT 'post' CHECK (post_type IN ('post', 'reel', 'event_share', 'training_update')),
+    event_id UUID REFERENCES sparring_events(id) ON DELETE SET NULL,
+    likes_count INTEGER DEFAULT 0,
+    comments_count INTEGER DEFAULT 0,
+    shares_count INTEGER DEFAULT 0,
+    views_count INTEGER DEFAULT 0,
+    visibility TEXT NOT NULL DEFAULT 'public' CHECK (visibility IN ('public', 'followers', 'gym_only')),
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'hidden', 'deleted')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Post Likes
+CREATE TABLE post_likes (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    post_id UUID REFERENCES posts(id) ON DELETE CASCADE NOT NULL,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(post_id, user_id)
+);
+
+-- Post Comments
+CREATE TABLE post_comments (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    post_id UUID REFERENCES posts(id) ON DELETE CASCADE NOT NULL,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    author_type TEXT NOT NULL CHECK (author_type IN ('fighter', 'gym', 'coach')),
+    author_id UUID NOT NULL,
+    content TEXT NOT NULL,
+    parent_id UUID REFERENCES post_comments(id) ON DELETE CASCADE,
+    likes_count INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Comment Likes
+CREATE TABLE comment_likes (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    comment_id UUID REFERENCES post_comments(id) ON DELETE CASCADE NOT NULL,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(comment_id, user_id)
+);
+
+-- Follows
+CREATE TABLE follows (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    follower_user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    following_user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(follower_user_id, following_user_id)
+);
+
+-- Saved Posts
+CREATE TABLE saved_posts (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    post_id UUID REFERENCES posts(id) ON DELETE CASCADE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, post_id)
+);
+
+-- ============================================================
+-- GYM REELS TABLE
+-- ============================================================
+
+CREATE TABLE gym_reels (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    gym_id UUID REFERENCES gyms(id) ON DELETE CASCADE NOT NULL,
+    video_url TEXT NOT NULL,
+    thumbnail_url TEXT,
+    caption TEXT,
+    likes_count INTEGER DEFAULT 0,
+    comments_count INTEGER DEFAULT 0,
+    views_count INTEGER DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'hidden', 'deleted')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- GYM ADMINS TABLE
+-- ============================================================
+
+CREATE TABLE gym_admins (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    gym_id UUID REFERENCES gyms(id) ON DELETE CASCADE NOT NULL,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    permissions TEXT[] DEFAULT '{}',
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'revoked')),
+    invited_at TIMESTAMPTZ DEFAULT NOW(),
+    accepted_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- SPARRING INVITES TABLE
+-- ============================================================
+
+CREATE TABLE sparring_invites (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    from_fighter_id UUID REFERENCES fighters(id) ON DELETE CASCADE,
+    from_gym_id UUID REFERENCES gyms(id) ON DELETE CASCADE,
+    to_fighter_id UUID REFERENCES fighters(id) ON DELETE CASCADE NOT NULL,
+    event_id UUID REFERENCES sparring_events(id) ON DELETE SET NULL,
+    message TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined', 'cancelled', 'expired')),
+    responded_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- TRAINING SESSIONS & EXERCISES TABLES
+-- ============================================================
+
+-- Training Sessions (gym schedule + coach 1:1 sessions)
+CREATE TABLE training_sessions (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    gym_id UUID REFERENCES gyms(id) ON DELETE CASCADE,
+    coach_id UUID REFERENCES coaches(id) ON DELETE SET NULL,
+    fighter_id UUID REFERENCES fighters(id) ON DELETE SET NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    -- Schedule fields (for recurring gym sessions)
+    day_of_week INTEGER CHECK (day_of_week BETWEEN 0 AND 6),
+    start_time TIME,
+    end_time TIME,
+    -- Session fields (for individual sessions)
+    session_date DATE,
+    session_type TEXT DEFAULT 'training' CHECK (session_type IN ('training', 'sparring', 'conditioning', 'technique')),
+    -- Coach/level
+    coach_name TEXT,
+    level TEXT DEFAULT 'all' CHECK (level IN ('all', 'beginner', 'intermediate', 'advanced', 'pro')),
+    max_participants INTEGER,
+    -- Status
+    status TEXT DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'completed', 'cancelled')),
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Training Exercises (linked to sessions)
+CREATE TABLE training_exercises (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    session_id UUID REFERENCES training_sessions(id) ON DELETE CASCADE NOT NULL,
+    name TEXT NOT NULL,
+    sets INTEGER,
+    reps INTEGER,
+    duration_seconds INTEGER,
+    rest_seconds INTEGER,
+    notes TEXT,
+    order_index INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
 -- INDEXES
 -- ============================================================
 
@@ -405,6 +602,46 @@ CREATE INDEX idx_gym_directory_name ON gym_directory(name);
 CREATE INDEX idx_gym_claim_requests_status ON gym_claim_requests(status);
 CREATE INDEX idx_gym_claim_requests_gym ON gym_claim_requests(gym_directory_id);
 
+-- Profiles
+CREATE INDEX idx_profiles_user_id ON profiles(user_id);
+CREATE INDEX idx_profiles_role ON profiles(role);
+
+-- Posts & Feed
+CREATE INDEX idx_posts_user_id ON posts(user_id);
+CREATE INDEX idx_posts_author_type ON posts(author_type);
+CREATE INDEX idx_posts_author_id ON posts(author_id);
+CREATE INDEX idx_posts_post_type ON posts(post_type);
+CREATE INDEX idx_posts_created_at ON posts(created_at DESC);
+CREATE INDEX idx_posts_status ON posts(status);
+CREATE INDEX idx_posts_event_id ON posts(event_id);
+CREATE INDEX idx_post_likes_post_id ON post_likes(post_id);
+CREATE INDEX idx_post_likes_user_id ON post_likes(user_id);
+CREATE INDEX idx_post_comments_post_id ON post_comments(post_id);
+CREATE INDEX idx_post_comments_user_id ON post_comments(user_id);
+CREATE INDEX idx_follows_follower ON follows(follower_user_id);
+CREATE INDEX idx_follows_following ON follows(following_user_id);
+CREATE INDEX idx_saved_posts_user_id ON saved_posts(user_id);
+
+-- Gym Reels
+CREATE INDEX idx_gym_reels_gym_id ON gym_reels(gym_id);
+CREATE INDEX idx_gym_reels_created_at ON gym_reels(created_at DESC);
+
+-- Gym Admins
+CREATE INDEX idx_gym_admins_gym_id ON gym_admins(gym_id);
+CREATE INDEX idx_gym_admins_user_id ON gym_admins(user_id);
+
+-- Sparring Invites
+CREATE INDEX idx_sparring_invites_from_fighter ON sparring_invites(from_fighter_id);
+CREATE INDEX idx_sparring_invites_to_fighter ON sparring_invites(to_fighter_id);
+CREATE INDEX idx_sparring_invites_event ON sparring_invites(event_id);
+CREATE INDEX idx_sparring_invites_status ON sparring_invites(status);
+
+-- Training Sessions
+CREATE INDEX idx_training_sessions_gym_id ON training_sessions(gym_id);
+CREATE INDEX idx_training_sessions_coach_id ON training_sessions(coach_id);
+CREATE INDEX idx_training_sessions_fighter_id ON training_sessions(fighter_id);
+CREATE INDEX idx_training_exercises_session ON training_exercises(session_id);
+
 -- ============================================================
 -- ROW LEVEL SECURITY
 -- ============================================================
@@ -431,6 +668,18 @@ ALTER TABLE referral_tier_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE directory_countries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE gym_directory ENABLE ROW LEVEL SECURITY;
 ALTER TABLE gym_claim_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE post_likes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE post_comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE comment_likes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE follows ENABLE ROW LEVEL SECURITY;
+ALTER TABLE saved_posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE gym_reels ENABLE ROW LEVEL SECURITY;
+ALTER TABLE gym_admins ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sparring_invites ENABLE ROW LEVEL SECURITY;
+ALTER TABLE training_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE training_exercises ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
 -- POLICIES
@@ -527,6 +776,109 @@ CREATE POLICY "Users can view own claims" ON gym_claim_requests FOR SELECT USING
 CREATE POLICY "Users can create claims" ON gym_claim_requests FOR INSERT WITH CHECK (auth.uid() = claimant_id);
 CREATE POLICY "Users can update own pending claims" ON gym_claim_requests
     FOR UPDATE USING (auth.uid() = claimant_id AND status = 'pending');
+
+-- Profiles
+CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Anyone can view profiles by id" ON profiles FOR SELECT USING (true);
+
+-- Posts
+CREATE POLICY "Public posts viewable by everyone" ON posts FOR SELECT USING (status = 'active' AND visibility = 'public');
+CREATE POLICY "Users can view own posts" ON posts FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own posts" ON posts FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own posts" ON posts FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own posts" ON posts FOR DELETE USING (auth.uid() = user_id);
+
+-- Post Likes
+CREATE POLICY "Post likes viewable by everyone" ON post_likes FOR SELECT USING (true);
+CREATE POLICY "Users can like posts" ON post_likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can unlike posts" ON post_likes FOR DELETE USING (auth.uid() = user_id);
+
+-- Post Comments
+CREATE POLICY "Comments viewable by everyone" ON post_comments FOR SELECT USING (true);
+CREATE POLICY "Users can comment on posts" ON post_comments FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own comments" ON post_comments FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own comments" ON post_comments FOR DELETE USING (auth.uid() = user_id);
+
+-- Comment Likes
+CREATE POLICY "Comment likes viewable by everyone" ON comment_likes FOR SELECT USING (true);
+CREATE POLICY "Users can like comments" ON comment_likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can unlike comments" ON comment_likes FOR DELETE USING (auth.uid() = user_id);
+
+-- Follows
+CREATE POLICY "Follows viewable by everyone" ON follows FOR SELECT USING (true);
+CREATE POLICY "Users can follow others" ON follows FOR INSERT WITH CHECK (auth.uid() = follower_user_id);
+CREATE POLICY "Users can unfollow others" ON follows FOR DELETE USING (auth.uid() = follower_user_id);
+
+-- Saved Posts
+CREATE POLICY "Users can view own saved posts" ON saved_posts FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can save posts" ON saved_posts FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can unsave posts" ON saved_posts FOR DELETE USING (auth.uid() = user_id);
+
+-- Gym Reels
+CREATE POLICY "Gym reels viewable by everyone" ON gym_reels FOR SELECT USING (status = 'active');
+CREATE POLICY "Gym owners can insert reels" ON gym_reels
+    FOR INSERT WITH CHECK (gym_id IN (SELECT id FROM gyms WHERE user_id = auth.uid()));
+CREATE POLICY "Gym owners can update their reels" ON gym_reels
+    FOR UPDATE USING (gym_id IN (SELECT id FROM gyms WHERE user_id = auth.uid()));
+CREATE POLICY "Gym owners can delete their reels" ON gym_reels
+    FOR DELETE USING (gym_id IN (SELECT id FROM gyms WHERE user_id = auth.uid()));
+
+-- Gym Admins
+CREATE POLICY "Gym owners can view their admins" ON gym_admins
+    FOR SELECT USING (gym_id IN (SELECT id FROM gyms WHERE user_id = auth.uid()));
+CREATE POLICY "Gym owners can manage admins" ON gym_admins
+    FOR ALL USING (gym_id IN (SELECT id FROM gyms WHERE user_id = auth.uid()));
+
+-- Sparring Invites
+CREATE POLICY "Users can view invites they sent or received" ON sparring_invites FOR SELECT USING (
+    from_fighter_id IN (SELECT id FROM fighters WHERE user_id = auth.uid()) OR
+    to_fighter_id IN (SELECT id FROM fighters WHERE user_id = auth.uid()) OR
+    from_gym_id IN (SELECT id FROM gyms WHERE user_id = auth.uid())
+);
+CREATE POLICY "Users can create invites" ON sparring_invites FOR INSERT WITH CHECK (
+    from_fighter_id IN (SELECT id FROM fighters WHERE user_id = auth.uid()) OR
+    from_gym_id IN (SELECT id FROM gyms WHERE user_id = auth.uid())
+);
+CREATE POLICY "Users can update invites they are involved in" ON sparring_invites FOR UPDATE USING (
+    from_fighter_id IN (SELECT id FROM fighters WHERE user_id = auth.uid()) OR
+    to_fighter_id IN (SELECT id FROM fighters WHERE user_id = auth.uid())
+);
+
+-- Training Sessions
+CREATE POLICY "Training sessions viewable by participants" ON training_sessions FOR SELECT USING (
+    gym_id IN (SELECT id FROM gyms WHERE user_id = auth.uid()) OR
+    coach_id IN (SELECT id FROM coaches WHERE user_id = auth.uid()) OR
+    fighter_id IN (SELECT id FROM fighters WHERE user_id = auth.uid()) OR
+    gym_id IN (SELECT gym_id FROM coaches WHERE user_id = auth.uid())
+);
+CREATE POLICY "Gym owners and coaches can create sessions" ON training_sessions FOR INSERT WITH CHECK (
+    gym_id IN (SELECT id FROM gyms WHERE user_id = auth.uid()) OR
+    coach_id IN (SELECT id FROM coaches WHERE user_id = auth.uid())
+);
+CREATE POLICY "Gym owners and coaches can update sessions" ON training_sessions FOR UPDATE USING (
+    gym_id IN (SELECT id FROM gyms WHERE user_id = auth.uid()) OR
+    coach_id IN (SELECT id FROM coaches WHERE user_id = auth.uid())
+);
+CREATE POLICY "Gym owners can delete sessions" ON training_sessions FOR DELETE USING (
+    gym_id IN (SELECT id FROM gyms WHERE user_id = auth.uid())
+);
+
+-- Training Exercises
+CREATE POLICY "Exercises viewable with session" ON training_exercises FOR SELECT USING (
+    session_id IN (SELECT id FROM training_sessions WHERE
+        gym_id IN (SELECT id FROM gyms WHERE user_id = auth.uid()) OR
+        coach_id IN (SELECT id FROM coaches WHERE user_id = auth.uid()) OR
+        fighter_id IN (SELECT id FROM fighters WHERE user_id = auth.uid())
+    )
+);
+CREATE POLICY "Coaches can manage exercises" ON training_exercises FOR ALL USING (
+    session_id IN (SELECT id FROM training_sessions WHERE
+        coach_id IN (SELECT id FROM coaches WHERE user_id = auth.uid()) OR
+        gym_id IN (SELECT id FROM gyms WHERE user_id = auth.uid())
+    )
+);
 
 -- ============================================================
 -- FUNCTIONS
@@ -775,6 +1127,257 @@ INSERT INTO referral_tier_config (tier_level, tier_name, min_referrals, max_refe
     ('platinum', 'Platinum', 50, 99, 18.00, 7.00, '#E5E4E2', TRUE, TRUE, TRUE, FALSE),
     ('diamond', 'Diamond', 100, NULL, 20.00, 8.00, '#B9F2FF', TRUE, TRUE, TRUE, TRUE)
 ON CONFLICT (tier_level) DO UPDATE SET direct_rate = EXCLUDED.direct_rate, indirect_rate = EXCLUDED.indirect_rate;
+
+-- ============================================================
+-- FEED FUNCTIONS
+-- ============================================================
+
+-- Function to update post likes count
+CREATE OR REPLACE FUNCTION update_post_likes_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE posts SET likes_count = likes_count + 1 WHERE id = NEW.post_id;
+        RETURN NEW;
+    ELSIF TG_OP = 'DELETE' THEN
+        UPDATE posts SET likes_count = GREATEST(0, likes_count - 1) WHERE id = OLD.post_id;
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to update post comments count
+CREATE OR REPLACE FUNCTION update_post_comments_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE posts SET comments_count = comments_count + 1 WHERE id = NEW.post_id;
+        RETURN NEW;
+    ELSIF TG_OP = 'DELETE' THEN
+        UPDATE posts SET comments_count = GREATEST(0, comments_count - 1) WHERE id = OLD.post_id;
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to update comment likes count
+CREATE OR REPLACE FUNCTION update_comment_likes_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE post_comments SET likes_count = likes_count + 1 WHERE id = NEW.comment_id;
+        RETURN NEW;
+    ELSIF TG_OP = 'DELETE' THEN
+        UPDATE post_comments SET likes_count = GREATEST(0, likes_count - 1) WHERE id = OLD.comment_id;
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Get feed for a user (posts from people they follow + public posts)
+CREATE OR REPLACE FUNCTION get_user_feed(
+    p_user_id UUID,
+    p_limit INTEGER DEFAULT 20,
+    p_offset INTEGER DEFAULT 0
+)
+RETURNS TABLE (
+    id UUID,
+    user_id UUID,
+    author_type TEXT,
+    author_id UUID,
+    content TEXT,
+    media_urls TEXT[],
+    media_type TEXT,
+    post_type TEXT,
+    event_id UUID,
+    likes_count INTEGER,
+    comments_count INTEGER,
+    shares_count INTEGER,
+    views_count INTEGER,
+    visibility TEXT,
+    created_at TIMESTAMPTZ,
+    is_liked BOOLEAN,
+    is_saved BOOLEAN
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        p.id,
+        p.user_id,
+        p.author_type,
+        p.author_id,
+        p.content,
+        p.media_urls,
+        p.media_type,
+        p.post_type,
+        p.event_id,
+        p.likes_count,
+        p.comments_count,
+        p.shares_count,
+        p.views_count,
+        p.visibility,
+        p.created_at,
+        EXISTS(SELECT 1 FROM post_likes pl WHERE pl.post_id = p.id AND pl.user_id = p_user_id) as is_liked,
+        EXISTS(SELECT 1 FROM saved_posts sp WHERE sp.post_id = p.id AND sp.user_id = p_user_id) as is_saved
+    FROM posts p
+    WHERE p.status = 'active'
+    AND (
+        p.visibility = 'public'
+        OR p.user_id = p_user_id
+        OR p.user_id IN (SELECT following_user_id FROM follows WHERE follower_user_id = p_user_id)
+    )
+    ORDER BY p.created_at DESC
+    LIMIT p_limit
+    OFFSET p_offset;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Get reels feed
+CREATE OR REPLACE FUNCTION get_reels_feed(
+    p_user_id UUID,
+    p_limit INTEGER DEFAULT 20,
+    p_offset INTEGER DEFAULT 0
+)
+RETURNS TABLE (
+    id UUID,
+    user_id UUID,
+    author_type TEXT,
+    author_id UUID,
+    content TEXT,
+    media_urls TEXT[],
+    likes_count INTEGER,
+    comments_count INTEGER,
+    views_count INTEGER,
+    created_at TIMESTAMPTZ,
+    is_liked BOOLEAN,
+    is_saved BOOLEAN
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        p.id,
+        p.user_id,
+        p.author_type,
+        p.author_id,
+        p.content,
+        p.media_urls,
+        p.likes_count,
+        p.comments_count,
+        p.views_count,
+        p.created_at,
+        EXISTS(SELECT 1 FROM post_likes pl WHERE pl.post_id = p.id AND pl.user_id = p_user_id) as is_liked,
+        EXISTS(SELECT 1 FROM saved_posts sp WHERE sp.post_id = p.id AND sp.user_id = p_user_id) as is_saved
+    FROM posts p
+    WHERE p.status = 'active'
+    AND p.post_type = 'reel'
+    AND p.visibility = 'public'
+    ORDER BY p.created_at DESC
+    LIMIT p_limit
+    OFFSET p_offset;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================================
+-- FEED TRIGGERS
+-- ============================================================
+
+CREATE TRIGGER update_posts_updated_at
+    BEFORE UPDATE ON posts
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER update_post_comments_updated_at
+    BEFORE UPDATE ON post_comments
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER update_post_likes_count_trigger
+    AFTER INSERT OR DELETE ON post_likes
+    FOR EACH ROW EXECUTE FUNCTION update_post_likes_count();
+
+CREATE TRIGGER update_post_comments_count_trigger
+    AFTER INSERT OR DELETE ON post_comments
+    FOR EACH ROW EXECUTE FUNCTION update_post_comments_count();
+
+CREATE TRIGGER update_comment_likes_count_trigger
+    AFTER INSERT OR DELETE ON comment_likes
+    FOR EACH ROW EXECUTE FUNCTION update_comment_likes_count();
+
+-- ============================================================
+-- REALTIME SUBSCRIPTIONS
+-- ============================================================
+
+DO $$
+BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE posts;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE post_comments;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE post_likes;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+-- ============================================================
+-- STORAGE BUCKETS
+-- ============================================================
+
+-- Create storage buckets for file uploads
+INSERT INTO storage.buckets (id, name, public)
+VALUES
+    ('avatars', 'avatars', true),
+    ('event-photos', 'event-photos', true),
+    ('gym-photos', 'gym-photos', true),
+    ('fighter-photos', 'fighter-photos', true),
+    ('media', 'media', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage Policies: avatars
+CREATE POLICY "Avatar images are publicly accessible" ON storage.objects
+    FOR SELECT USING (bucket_id = 'avatars');
+CREATE POLICY "Users can upload their own avatar" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+CREATE POLICY "Users can update their own avatar" ON storage.objects
+    FOR UPDATE USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Storage Policies: event-photos
+CREATE POLICY "Event photos are publicly accessible" ON storage.objects
+    FOR SELECT USING (bucket_id = 'event-photos');
+CREATE POLICY "Authenticated users can upload event photos" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id = 'event-photos' AND auth.role() = 'authenticated');
+
+-- Storage Policies: gym-photos
+CREATE POLICY "Gym photos are publicly accessible" ON storage.objects
+    FOR SELECT USING (bucket_id = 'gym-photos');
+CREATE POLICY "Authenticated users can upload gym photos" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id = 'gym-photos' AND auth.role() = 'authenticated');
+
+-- Storage Policies: fighter-photos
+CREATE POLICY "Fighter photos are publicly accessible" ON storage.objects
+    FOR SELECT USING (bucket_id = 'fighter-photos');
+CREATE POLICY "Authenticated users can upload fighter photos" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id = 'fighter-photos' AND auth.role() = 'authenticated');
+
+-- Storage Policies: media (posts, reels, etc.)
+CREATE POLICY "Media files are publicly accessible" ON storage.objects
+    FOR SELECT USING (bucket_id = 'media');
+CREATE POLICY "Authenticated users can upload media" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id = 'media' AND auth.role() = 'authenticated');
+CREATE POLICY "Users can update their own media" ON storage.objects
+    FOR UPDATE USING (bucket_id = 'media' AND auth.uid()::text = (storage.foldername(name))[1]);
+CREATE POLICY "Users can delete their own media" ON storage.objects
+    FOR DELETE USING (bucket_id = 'media' AND auth.uid()::text = (storage.foldername(name))[1]);
 
 -- ============================================================
 -- DONE! Schema is ready to use

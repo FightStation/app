@@ -70,8 +70,8 @@ export function AdminDashboardScreen({ navigation }: AdminDashboardScreenProps) 
           supabase.from('gyms').select('id', { count: 'exact', head: true }),
           supabase.from('fighters').select('id', { count: 'exact', head: true }),
           supabase.from('coaches').select('id', { count: 'exact', head: true }),
-          supabase.from('events').select('id', { count: 'exact', head: true }),
-          supabase.from('events').select('id', { count: 'exact', head: true }).in('status', ['published', 'full']),
+          supabase.from('sparring_events').select('id', { count: 'exact', head: true }),
+          supabase.from('sparring_events').select('id', { count: 'exact', head: true }).in('status', ['published', 'full']),
         ]);
 
         dashboardStats = {
