@@ -19,3 +19,4 @@ export type { TabConfig, TabIconName } from './TabBar';
 export { Skeleton, SkeletonCard, SkeletonProfile, SkeletonFeed } from './Skeleton';
 export { Toast } from './Toast';
 export type { ToastType } from './Toast';
+export { MatchScoreBadge } from './MatchScoreBadge';

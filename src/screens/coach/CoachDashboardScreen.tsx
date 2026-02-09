@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../lib/supabase';
-import { Coach, SparringEvent } from '../../types';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { Coach } from '../../types';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 
 type StudentWithActivity = {
@@ -25,6 +25,8 @@ type StudentWithActivity = {
   avatar_url?: string;
   experience_level: string;
   sessions_count: number;
+  sessions_this_month: number;
+  last_session_date?: string;
   upcoming_event?: {
     id: string;
     title: string;
@@ -41,6 +43,14 @@ type GymEvent = {
   max_participants: number;
 };
 
+type TrainingOverview = {
+  total_sessions: number;
+  active_students: number;
+  total_students: number;
+  top_session_type: string;
+  inactive_names: string[];
+};
+
 type CoachDashboardScreenProps = {
   navigation: NativeStackNavigationProp<any>;
 };
@@ -52,9 +62,9 @@ const containerMaxWidth = isWeb ? 480 : width;
 // Mock data functions
 function getMockStudents(): StudentWithActivity[] {
   return [
-    { id: '1', first_name: 'Marcus', last_name: 'Petrov', experience_level: 'advanced', sessions_count: 24, upcoming_event: { id: 'e1', title: 'Technical Sparring', event_date: '2026-02-05' } },
-    { id: '2', first_name: 'Sarah', last_name: 'Chen', experience_level: 'intermediate', sessions_count: 18 },
-    { id: '3', first_name: 'Alex', last_name: 'Rodriguez', experience_level: 'beginner', sessions_count: 6 },
+    { id: '1', first_name: 'Marcus', last_name: 'Petrov', experience_level: 'advanced', sessions_count: 24, sessions_this_month: 8, last_session_date: new Date(Date.now() - 2 * 86400000).toISOString(), upcoming_event: { id: 'e1', title: 'Technical Sparring', event_date: '2026-02-05' } },
+    { id: '2', first_name: 'Sarah', last_name: 'Chen', experience_level: 'intermediate', sessions_count: 18, sessions_this_month: 3, last_session_date: new Date(Date.now() - 10 * 86400000).toISOString() },
+    { id: '3', first_name: 'Alex', last_name: 'Rodriguez', experience_level: 'beginner', sessions_count: 6, sessions_this_month: 0 },
   ];
 }
 
@@ -64,6 +74,14 @@ function getMockGymEvents(): GymEvent[] {
     { id: '2', title: 'Hard Rounds Friday', event_date: '2026-02-08', start_time: '19:00', current_participants: 6, max_participants: 12 },
   ];
 }
+
+const getActivityColor = (lastDate?: string) => {
+  if (!lastDate) return colors.error;
+  const daysSince = Math.floor((Date.now() - new Date(lastDate).getTime()) / (1000 * 60 * 60 * 24));
+  if (daysSince <= 7) return colors.success;
+  if (daysSince <= 14) return colors.warning;
+  return colors.error;
+};
 
 export function CoachDashboardScreen({ navigation }: CoachDashboardScreenProps) {
   const { profile, signOut } = useAuth();
@@ -79,6 +97,23 @@ export function CoachDashboardScreen({ navigation }: CoachDashboardScreenProps) 
   const coachName = coach?.first_name
     ? `${coach.first_name} ${coach.last_name}`
     : 'Coach';
+
+  // Compute training overview from students
+  const trainingOverview = useMemo((): TrainingOverview => {
+    const totalSessions = students.reduce((sum, s) => sum + s.sessions_this_month, 0);
+    const activeStudents = students.filter(s => s.sessions_this_month > 0).length;
+    const inactiveNames = students
+      .filter(s => s.sessions_this_month === 0)
+      .map(s => s.first_name);
+
+    return {
+      total_sessions: totalSessions,
+      active_students: activeStudents,
+      total_students: students.length,
+      top_session_type: 'Sparring',
+      inactive_names: inactiveNames,
+    };
+  }, [students]);
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -112,14 +147,43 @@ export function CoachDashboardScreen({ navigation }: CoachDashboardScreenProps) 
         .gte('event.event_date', new Date().toISOString().split('T')[0])
         .limit(20);
 
-      // Map students with their upcoming events
+      // Fetch training sessions for the last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+
+      let sessionsByFighter: Record<string, { count: number; lastDate?: string }> = {};
+
+      if (isSupabaseConfigured) {
+        const { data: recentSessions } = await supabase
+          .from('training_sessions')
+          .select('id, fighter_id, session_date, session_type, status')
+          .eq('coach_id', coach.id)
+          .gte('session_date', thirtyDaysAgoStr)
+          .eq('status', 'completed')
+          .order('session_date', { ascending: false })
+          .limit(100);
+
+        // Aggregate per student
+        for (const session of recentSessions || []) {
+          if (!sessionsByFighter[session.fighter_id]) {
+            sessionsByFighter[session.fighter_id] = { count: 0, lastDate: session.session_date };
+          }
+          sessionsByFighter[session.fighter_id].count++;
+        }
+      }
+
+      // Map students with their upcoming events and activity
       const studentsWithActivity: StudentWithActivity[] = (fightersData || []).map(fighter => {
         const upcomingEvent = (studentEvents || []).find(
           e => e.fighter_id === fighter.id && e.event
         );
+        const activity = sessionsByFighter[fighter.id];
         return {
           ...fighter,
-          sessions_count: 0, // Would come from a sessions table
+          sessions_count: activity?.count || 0,
+          sessions_this_month: activity?.count || 0,
+          last_session_date: activity?.lastDate,
           upcoming_event: upcomingEvent?.event as any,
         };
       });
@@ -222,6 +286,46 @@ export function CoachDashboardScreen({ navigation }: CoachDashboardScreenProps) 
                 </View>
               </View>
 
+              {/* Training Overview */}
+              {students.length > 0 && (
+                <View style={styles.section}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>TRAINING OVERVIEW</Text>
+                    <Text style={styles.sectionSubtitle}>Last 30 days</Text>
+                  </View>
+
+                  <View style={styles.overviewCard}>
+                    <View style={styles.overviewRow}>
+                      <View style={styles.overviewStat}>
+                        <Text style={styles.overviewValue}>{trainingOverview.total_sessions}</Text>
+                        <Text style={styles.overviewLabel}>Sessions</Text>
+                      </View>
+                      <View style={styles.overviewDivider} />
+                      <View style={styles.overviewStat}>
+                        <Text style={styles.overviewValue}>
+                          {trainingOverview.active_students}/{trainingOverview.total_students}
+                        </Text>
+                        <Text style={styles.overviewLabel}>Active</Text>
+                      </View>
+                      <View style={styles.overviewDivider} />
+                      <View style={styles.overviewStat}>
+                        <Text style={styles.overviewValue}>{trainingOverview.top_session_type}</Text>
+                        <Text style={styles.overviewLabel}>Top Type</Text>
+                      </View>
+                    </View>
+
+                    {trainingOverview.inactive_names.length > 0 && (
+                      <View style={styles.inactiveAlert}>
+                        <Ionicons name="alert-circle" size={16} color={colors.warning} />
+                        <Text style={styles.inactiveText}>
+                          {trainingOverview.inactive_names.join(', ')} had no sessions this month
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              )}
+
               {/* Quick Actions */}
               <View style={styles.quickActions}>
                 <TouchableOpacity
@@ -270,6 +374,50 @@ export function CoachDashboardScreen({ navigation }: CoachDashboardScreenProps) 
                 </View>
               )}
 
+              {/* My Students */}
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>MY STUDENTS</Text>
+                  <TouchableOpacity onPress={() => navigation.navigate('AllStudents')}>
+                    <Text style={styles.seeAll}>See All</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {students.map((student) => (
+                  <TouchableOpacity
+                    key={student.id}
+                    style={styles.studentCard}
+                    onPress={() => navigation.navigate('FighterProfileView', { fighterId: student.id })}
+                  >
+                    <View style={styles.studentAvatarContainer}>
+                      <View style={styles.studentAvatar}>
+                        <Ionicons name="person" size={24} color={colors.textPrimary} />
+                      </View>
+                      <View
+                        style={[
+                          styles.activityDot,
+                          { backgroundColor: getActivityColor(student.last_session_date) },
+                        ]}
+                      />
+                    </View>
+                    <View style={styles.studentInfo}>
+                      <Text style={styles.studentName}>{student.first_name} {student.last_name}</Text>
+                      <View style={styles.studentMeta}>
+                        <View style={[styles.levelBadge, { backgroundColor: `${colors.primary[500]}20` }]}>
+                          <Text style={[styles.levelText, { color: colors.primary[500] }]}>
+                            {student.experience_level}
+                          </Text>
+                        </View>
+                        <Text style={styles.studentSessions}>
+                          {student.sessions_this_month} this mo.
+                        </Text>
+                      </View>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+
               {/* Gym Events */}
               {gymEvents.length > 0 && (
                 <View style={styles.section}>
@@ -305,40 +453,6 @@ export function CoachDashboardScreen({ navigation }: CoachDashboardScreenProps) 
                   ))}
                 </View>
               )}
-
-              {/* My Students */}
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>MY STUDENTS</Text>
-                  <TouchableOpacity onPress={() => navigation.navigate('AllStudents')}>
-                    <Text style={styles.seeAll}>See All</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {students.map((student) => (
-                  <TouchableOpacity
-                    key={student.id}
-                    style={styles.studentCard}
-                    onPress={() => navigation.navigate('FighterProfileView', { fighterId: student.id })}
-                  >
-                    <View style={styles.studentAvatar}>
-                      <Ionicons name="person" size={24} color={colors.textPrimary} />
-                    </View>
-                    <View style={styles.studentInfo}>
-                      <Text style={styles.studentName}>{student.first_name} {student.last_name}</Text>
-                      <View style={styles.studentMeta}>
-                        <View style={[styles.levelBadge, { backgroundColor: `${colors.primary[500]}20` }]}>
-                          <Text style={[styles.levelText, { color: colors.primary[500] }]}>
-                            {student.experience_level}
-                          </Text>
-                        </View>
-                        <Text style={styles.studentSessions}>{student.sessions_count} sessions</Text>
-                      </View>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-                  </TouchableOpacity>
-                ))}
-              </View>
 
               {/* Referral Program */}
               <TouchableOpacity
@@ -427,6 +541,53 @@ const styles = StyleSheet.create({
     marginBottom: spacing[1],
   },
   statLabel: { color: colors.textMuted, fontSize: typography.fontSize.xs },
+  // Training Overview
+  overviewCard: {
+    backgroundColor: colors.cardBg,
+    borderRadius: borderRadius.xl,
+    padding: spacing[4],
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  overviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  overviewStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  overviewValue: {
+    color: colors.textPrimary,
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.bold,
+    marginBottom: spacing[1],
+  },
+  overviewLabel: {
+    color: colors.textMuted,
+    fontSize: typography.fontSize.xs,
+  },
+  overviewDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: colors.border,
+  },
+  inactiveAlert: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginTop: spacing[3],
+    paddingTop: spacing[3],
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  inactiveText: {
+    color: colors.warning,
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.medium,
+    flex: 1,
+  },
+  // Quick Actions
   quickActions: {
     flexDirection: 'row',
     gap: spacing[3],
@@ -469,6 +630,10 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     fontWeight: typography.fontWeight.bold,
     letterSpacing: 0.5,
+  },
+  sectionSubtitle: {
+    color: colors.textMuted,
+    fontSize: typography.fontSize.xs,
   },
   seeAll: {
     color: colors.textSecondary,
@@ -519,6 +684,7 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     fontWeight: typography.fontWeight.bold,
   },
+  // Student card with activity dot
   studentCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -529,6 +695,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  studentAvatarContainer: {
+    position: 'relative',
+    marginRight: spacing[3],
+  },
   studentAvatar: {
     width: 48,
     height: 48,
@@ -536,7 +706,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing[3],
+  },
+  activityDot: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: colors.cardBg,
   },
   studentInfo: { flex: 1 },
   studentName: {
@@ -561,10 +740,6 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.bold,
   },
   studentSessions: {
-    color: colors.textMuted,
-    fontSize: typography.fontSize.xs,
-  },
-  lastSession: {
     color: colors.textMuted,
     fontSize: typography.fontSize.xs,
   },

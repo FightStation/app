@@ -19,6 +19,7 @@ import { Gym } from '../../types';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { ProfileCompletenessCard } from '../../components';
 import { calculateGymCompleteness } from '../../utils/profileCompleteness';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import {
   getGymPendingRequests,
   getGymUpcomingEvents,
@@ -27,6 +28,15 @@ import {
   EventRequestWithDetails,
   GymEventSummary,
 } from '../../services/events';
+
+type NearbyFighter = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  weight_class: string;
+  experience_level: string;
+  city: string;
+};
 
 type GymDashboardScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -43,6 +53,7 @@ export function GymDashboardScreen({ navigation }: GymDashboardScreenProps) {
   // State for real data
   const [pendingRequests, setPendingRequests] = useState<EventRequestWithDetails[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<GymEventSummary[]>([]);
+  const [nearbyFighters, setNearbyFighters] = useState<NearbyFighter[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
@@ -99,9 +110,15 @@ export function GymDashboardScreen({ navigation }: GymDashboardScreenProps) {
       end_time: '12:00',
       intensity: 'hard',
       max_participants: 8,
-      current_participants: 5,
+      current_participants: 8,
       status: 'published',
     },
+  ];
+
+  const getMockNearbyFighters = (): NearbyFighter[] => [
+    { id: 'nf-1', first_name: 'James', last_name: 'Wilson', weight_class: 'Middleweight', experience_level: 'intermediate', city: 'Copenhagen' },
+    { id: 'nf-2', first_name: 'Liam', last_name: 'Berg', weight_class: 'Welterweight', experience_level: 'advanced', city: 'Copenhagen' },
+    { id: 'nf-3', first_name: 'Emma', last_name: 'Skov', weight_class: 'Lightweight', experience_level: 'beginner', city: 'Copenhagen' },
   ];
 
   // Fetch data
@@ -110,6 +127,7 @@ export function GymDashboardScreen({ navigation }: GymDashboardScreenProps) {
       // Use mock data if no gym ID (demo mode)
       setPendingRequests(getMockPendingRequests());
       setUpcomingEvents(getMockUpcomingEvents());
+      setNearbyFighters(getMockNearbyFighters());
       setLoading(false);
       setRefreshing(false);
       return;
@@ -122,13 +140,26 @@ export function GymDashboardScreen({ navigation }: GymDashboardScreenProps) {
       ]);
       setPendingRequests(requests);
       setUpcomingEvents(events);
+
+      // Fetch nearby fighters in same city
+      if (isSupabaseConfigured && gym.city) {
+        const { data: fighters } = await supabase
+          .from('fighters')
+          .select('id, first_name, last_name, weight_class, experience_level, city')
+          .eq('city', gym.city)
+          .limit(5);
+        setNearbyFighters((fighters || []) as NearbyFighter[]);
+      } else {
+        setNearbyFighters(getMockNearbyFighters());
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      setNearbyFighters(getMockNearbyFighters());
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [gym?.id]);
+  }, [gym?.id, gym?.city]);
 
   useEffect(() => {
     fetchData();
@@ -190,6 +221,16 @@ export function GymDashboardScreen({ navigation }: GymDashboardScreenProps) {
     return colors.textMuted;
   };
 
+  const getCapacityColor = (current: number, max: number) => {
+    const ratio = current / max;
+    if (ratio >= 1) return colors.error;
+    if (ratio >= 0.75) return colors.warning;
+    return colors.success;
+  };
+
+  const getInitials = (first: string, last: string) =>
+    `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.webContainer}>
@@ -245,6 +286,24 @@ export function GymDashboardScreen({ navigation }: GymDashboardScreenProps) {
                   <Text style={styles.statLabel}>Requests</Text>
                 </View>
               </View>
+
+              {/* Pending Alert Banner */}
+              {pendingRequests.length > 0 && (
+                <TouchableOpacity
+                  style={styles.alertBanner}
+                  onPress={() => navigation.navigate('ManageRequests')}
+                >
+                  <View style={styles.alertLeft}>
+                    <View style={styles.alertIconContainer}>
+                      <Ionicons name="alert-circle" size={20} color={colors.warning} />
+                    </View>
+                    <Text style={styles.alertText}>
+                      {pendingRequests.length} fighter{pendingRequests.length !== 1 ? 's' : ''} waiting for approval
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.warning} />
+                </TouchableOpacity>
+              )}
 
               <TouchableOpacity
                 style={styles.createButton}
@@ -312,59 +371,114 @@ export function GymDashboardScreen({ navigation }: GymDashboardScreenProps) {
                   )}
                 </View>
 
-                {upcomingEvents.map((event) => (
-                  <TouchableOpacity
-                    key={event.id}
-                    style={styles.eventCard}
-                    onPress={() => navigation.navigate('EventDetail', { eventId: event.id })}
+                {upcomingEvents.map((event) => {
+                  const capacityRatio = event.max_participants > 0
+                    ? event.current_participants / event.max_participants
+                    : 0;
+                  const capacityColor = getCapacityColor(event.current_participants, event.max_participants);
+
+                  return (
+                    <TouchableOpacity
+                      key={event.id}
+                      style={styles.eventCard}
+                      onPress={() => navigation.navigate('EventDetail', { eventId: event.id })}
+                    >
+                      <View style={styles.eventHeader}>
+                        <Text style={styles.eventTitle}>{event.title}</Text>
+                        {event.intensity && (
+                          <View
+                            style={[
+                              styles.intensityBadge,
+                              { backgroundColor: `${getIntensityColor(event.intensity)}20` },
+                            ]}
+                          >
+                            <Text style={[styles.intensityText, { color: getIntensityColor(event.intensity) }]}>
+                              {event.intensity}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={styles.eventMeta}>
+                        <Ionicons name="calendar-outline" size={14} color={colors.textMuted} />
+                        <Text style={styles.metaText}>{formatDate(event.event_date)} • {event.start_time}</Text>
+                      </View>
+                      <View style={styles.eventFooter}>
+                        <View style={styles.capacitySection}>
+                          <Text style={styles.participantsText}>
+                            {event.current_participants}/{event.max_participants} fighters
+                          </Text>
+                          <View style={styles.capacityBarBg}>
+                            <View
+                              style={[
+                                styles.capacityBarFill,
+                                {
+                                  width: `${Math.min(capacityRatio * 100, 100)}%`,
+                                  backgroundColor: capacityColor,
+                                },
+                              ]}
+                            />
+                          </View>
+                        </View>
+                        <View style={styles.eventActions}>
+                          <TouchableOpacity
+                            style={styles.eventActionButton}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              navigation.navigate('ShareEvent', { eventId: event.id });
+                            }}
+                          >
+                            <Ionicons name="share-outline" size={16} color={colors.primary[500]} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.eventActionButton}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              navigation.navigate('EditEvent', { eventId: event.id });
+                            }}
+                          >
+                            <Ionicons name="pencil" size={16} color={colors.primary[500]} />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Fighters In Your Area */}
+              {nearbyFighters.length > 0 && (
+                <View style={styles.section}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>FIGHTERS IN YOUR AREA</Text>
+                  </View>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.nearbyScroll}
                   >
-                    <View style={styles.eventHeader}>
-                      <Text style={styles.eventTitle}>{event.title}</Text>
-                      {event.intensity && (
-                        <View
-                          style={[
-                            styles.intensityBadge,
-                            { backgroundColor: `${getIntensityColor(event.intensity)}20` },
-                          ]}
-                        >
-                          <Text style={[styles.intensityText, { color: getIntensityColor(event.intensity) }]}>
-                            {event.intensity}
+                    {nearbyFighters.map((fighter) => (
+                      <TouchableOpacity
+                        key={fighter.id}
+                        style={styles.nearbyCard}
+                        onPress={() => navigation.navigate('FighterProfileView', { fighterId: fighter.id })}
+                      >
+                        <View style={styles.nearbyAvatar}>
+                          <Text style={styles.nearbyInitials}>
+                            {getInitials(fighter.first_name, fighter.last_name)}
                           </Text>
                         </View>
-                      )}
-                    </View>
-                    <View style={styles.eventMeta}>
-                      <Ionicons name="calendar-outline" size={14} color={colors.textMuted} />
-                      <Text style={styles.metaText}>{formatDate(event.event_date)} • {event.start_time}</Text>
-                    </View>
-                    <View style={styles.eventFooter}>
-                      <Text style={styles.participantsText}>
-                        {event.current_participants}/{event.max_participants} fighters
-                      </Text>
-                      <View style={styles.eventActions}>
-                        <TouchableOpacity
-                          style={styles.eventActionButton}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            navigation.navigate('ShareEvent', { eventId: event.id });
-                          }}
-                        >
-                          <Ionicons name="share-outline" size={16} color={colors.primary[500]} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.eventActionButton}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            navigation.navigate('EditEvent', { eventId: event.id });
-                          }}
-                        >
-                          <Ionicons name="pencil" size={16} color={colors.primary[500]} />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
+                        <Text style={styles.nearbyName} numberOfLines={1}>
+                          {fighter.first_name} {fighter.last_name}
+                        </Text>
+                        <View style={styles.nearbyBadge}>
+                          <Text style={styles.nearbyWeight}>{fighter.weight_class}</Text>
+                        </View>
+                        <Text style={styles.nearbyLevel}>{fighter.experience_level}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
             </>
           )}
 
@@ -499,6 +613,39 @@ const styles = StyleSheet.create({
     marginBottom: spacing[1],
   },
   statLabel: { color: colors.textMuted, fontSize: typography.fontSize.xs },
+  // Alert banner
+  alertBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: `${colors.warning}15`,
+    borderWidth: 1,
+    borderColor: `${colors.warning}40`,
+    borderRadius: borderRadius.lg,
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+    marginBottom: spacing[4],
+  },
+  alertLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    flex: 1,
+  },
+  alertIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: borderRadius.full,
+    backgroundColor: `${colors.warning}20`,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  alertText: {
+    color: colors.warning,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    flex: 1,
+  },
   createButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -633,9 +780,21 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
+  capacitySection: { flex: 1, marginRight: spacing[3] },
   participantsText: {
     color: colors.textSecondary,
     fontSize: typography.fontSize.sm,
+    marginBottom: spacing[1],
+  },
+  capacityBarBg: {
+    height: 4,
+    backgroundColor: colors.surfaceLight,
+    borderRadius: borderRadius.full,
+    overflow: 'hidden',
+  },
+  capacityBarFill: {
+    height: '100%',
+    borderRadius: borderRadius.full,
   },
   eventActions: {
     flexDirection: 'row',
@@ -648,6 +807,57 @@ const styles = StyleSheet.create({
     backgroundColor: `${colors.primary[500]}20`,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Nearby fighters
+  nearbyScroll: {
+    gap: spacing[3],
+    paddingRight: spacing[4],
+  },
+  nearbyCard: {
+    width: 120,
+    backgroundColor: colors.cardBg,
+    borderRadius: borderRadius.xl,
+    padding: spacing[3],
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  nearbyAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.primary[500],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing[2],
+  },
+  nearbyInitials: {
+    color: colors.textPrimary,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.bold,
+  },
+  nearbyName: {
+    color: colors.textPrimary,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    textAlign: 'center',
+    marginBottom: spacing[1],
+  },
+  nearbyBadge: {
+    backgroundColor: `${colors.primary[500]}20`,
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[0.5],
+    borderRadius: borderRadius.sm,
+    marginBottom: spacing[1],
+  },
+  nearbyWeight: {
+    color: colors.primary[500],
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.bold,
+  },
+  nearbyLevel: {
+    color: colors.textMuted,
+    fontSize: typography.fontSize.xs,
   },
   // Actions Section
   actionsSection: {
