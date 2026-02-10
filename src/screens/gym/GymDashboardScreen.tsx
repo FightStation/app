@@ -231,6 +231,12 @@ export function GymDashboardScreen({ navigation }: GymDashboardScreenProps) {
   const getInitials = (first: string, last: string) =>
     `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
 
+  const isEventToday = (dateStr: string) => {
+    const eventDate = new Date(dateStr).toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
+    return eventDate === today;
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.webContainer}>
@@ -420,6 +426,17 @@ export function GymDashboardScreen({ navigation }: GymDashboardScreenProps) {
                           </View>
                         </View>
                         <View style={styles.eventActions}>
+                          {isEventToday(event.event_date) && (
+                            <TouchableOpacity
+                              style={[styles.eventActionButton, { backgroundColor: `${colors.success}20` }]}
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                navigation.navigate('EventCheckIn', { eventId: event.id, eventTitle: event.title });
+                              }}
+                            >
+                              <Ionicons name="checkbox-outline" size={16} color={colors.success} />
+                            </TouchableOpacity>
+                          )}
                           <TouchableOpacity
                             style={styles.eventActionButton}
                             onPress={(e) => {

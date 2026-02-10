@@ -13,8 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../lib/supabase';
 import { Gym } from '../../types';
+import { createEvent } from '../../services/events';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 
 type CreateEventScreenProps = {
@@ -101,11 +101,35 @@ export function CreateEventScreen({ navigation }: CreateEventScreenProps) {
 
     setLoading(true);
 
-    // Simulate API call (demo mode)
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const mappedWeightClasses = selectedWeightClasses.map((wc) =>
+        wc.replaceAll(' ', '_').toLowerCase()
+      );
+      const mappedExperience = selectedExperience.map((exp) =>
+        exp === 'Professional' ? 'pro' : exp.toLowerCase()
+      );
+
+      await createEvent({
+        gym_id: gym.id,
+        title,
+        description: description || undefined,
+        event_date: eventDate,
+        start_time: startTime,
+        end_time: endTime || undefined,
+        max_participants: parseInt(maxParticipants, 10) || 16,
+        intensity: intensity || undefined,
+        weight_classes: mappedWeightClasses,
+        experience_levels: mappedExperience,
+        status: 'upcoming',
+      });
+
+      alert('Event created successfully!');
       navigation.goBack();
-    }, 500);
+    } catch (error: any) {
+      alert(error.message || 'Failed to create event');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

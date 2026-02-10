@@ -183,7 +183,7 @@ export function SparringInvitesScreen({ navigation }: SparringInvitesScreenProps
     try {
       const { error } = await supabase
         .from('event_requests')
-        .update({ status: 'accepted', updated_at: new Date().toISOString() })
+        .update({ status: 'approved', updated_at: new Date().toISOString() })
         .eq('id', requestId);
 
       if (error) throw error;

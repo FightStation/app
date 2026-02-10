@@ -12,3 +12,4 @@ export { ManageFightersScreen } from './ManageFightersScreen';
 export { GymSettingsScreen } from './GymSettingsScreen';
 export { ClaimGymScreen } from './ClaimGymScreen';
 export { ClaimManagementScreen } from './ClaimManagementScreen';
+export { EventCheckInScreen } from './EventCheckInScreen';

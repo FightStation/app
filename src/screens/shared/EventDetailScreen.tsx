@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { Card, Button } from '../../components';
 import { useToast } from '../../context/ToastContext';
 import { supabase } from '../../lib/supabase';
@@ -22,6 +23,7 @@ import {
 } from '../../types';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { scheduleEventReminders, cancelEventReminders } from '../../services/notificationScheduler';
+import { getEventAverageRating } from '../../services/events';
 
 const { width } = Dimensions.get('window');
 
@@ -41,10 +43,21 @@ export function EventDetailScreen({ navigation, route, eventId: propEventId }: E
   const [existingRequest, setExistingRequest] = useState<EventRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState(false);
+  const [reviewStats, setReviewStats] = useState<{ average: number; count: number }>({ average: 0, count: 0 });
 
   useEffect(() => {
     loadEvent();
+    loadReviewStats();
   }, [eventId]);
+
+  const loadReviewStats = async () => {
+    try {
+      const stats = await getEventAverageRating(eventId);
+      setReviewStats(stats);
+    } catch (error) {
+      console.error('Error loading review stats:', error);
+    }
+  };
 
   const loadEvent = async () => {
     setLoading(true);
@@ -294,6 +307,29 @@ export function EventDetailScreen({ navigation, route, eventId: propEventId }: E
         )}
       </Card>
 
+      {/* Reviews Summary */}
+      {reviewStats.count > 0 && (
+        <Card style={styles.reviewCard}>
+          <Text style={styles.sectionTitle}>Reviews</Text>
+          <View style={styles.reviewSummary}>
+            <View style={styles.reviewStars}>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <Ionicons
+                  key={n}
+                  name={n <= Math.round(reviewStats.average) ? 'star' : 'star-outline'}
+                  size={18}
+                  color={colors.warning}
+                />
+              ))}
+            </View>
+            <Text style={styles.reviewAverage}>{reviewStats.average.toFixed(1)}</Text>
+            <Text style={styles.reviewCount}>
+              ({reviewStats.count} {reviewStats.count === 1 ? 'review' : 'reviews'})
+            </Text>
+          </View>
+        </Card>
+      )}
+
       {/* Share Button - visible to all users */}
       {navigation && (
         <Button
@@ -332,6 +368,17 @@ export function EventDetailScreen({ navigation, route, eventId: propEventId }: E
               variant="secondary"
             />
           ) : null}
+
+          {/* Write Review - only for approved fighters on completed events */}
+          {existingRequest?.status === 'approved' && event.status === 'completed' && navigation && (
+            <Button
+              title="Write Review"
+              onPress={() => navigation.navigate('EventReview', { eventId: event.id, eventTitle: event.title })}
+              variant="outline"
+              size="lg"
+              style={{ marginTop: spacing[2] }}
+            />
+          )}
         </View>
       )}
 
@@ -345,6 +392,13 @@ export function EventDetailScreen({ navigation, route, eventId: propEventId }: E
           <Button
             title="Manage Requests"
             onPress={() => navigation.navigate('ManageRequests', { eventId: event.id })}
+            variant="outline"
+            size="lg"
+            style={{ marginTop: spacing[2] }}
+          />
+          <Button
+            title="Check-In Fighters"
+            onPress={() => navigation.navigate('EventCheckIn', { eventId: event.id, eventTitle: event.title })}
             variant="outline"
             size="lg"
             style={{ marginTop: spacing[2] }}
@@ -506,6 +560,27 @@ const styles = StyleSheet.create({
   gymCardContact: {
     fontSize: typography.fontSize.sm,
     color: colors.primary[400],
+  },
+  reviewCard: {
+    marginBottom: spacing[4],
+  },
+  reviewSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+  reviewStars: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  reviewAverage: {
+    color: colors.neutral[50],
+    fontSize: typography.fontSize.lg,
+    fontWeight: '600',
+  },
+  reviewCount: {
+    color: colors.neutral[400],
+    fontSize: typography.fontSize.sm,
   },
   actions: {
     marginTop: spacing[4],

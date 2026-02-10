@@ -1,6 +1,6 @@
 import * as Location from 'expo-location';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { SparringEvent } from '../types';
+import { SparringEvent, EventReview } from '../types';
 
 export type EventFilters = {
   eventType?: string[];
@@ -208,6 +208,52 @@ export async function searchEvents(
     console.error('Error searching events:', error);
     throw error;
   }
+}
+
+/**
+ * Create a new sparring event
+ */
+export type CreateEventData = {
+  gym_id: string;
+  title: string;
+  description?: string;
+  event_date: string;
+  start_time: string;
+  end_time?: string;
+  max_participants: number;
+  intensity?: string;
+  weight_classes: string[];
+  experience_levels: string[];
+  status: string;
+};
+
+export async function createEvent(data: CreateEventData): Promise<string> {
+  if (!isSupabaseConfigured) {
+    console.log('Demo mode: Would create event', data);
+    return 'demo-event-id';
+  }
+
+  const { data: result, error } = await supabase
+    .from('sparring_events')
+    .insert({
+      gym_id: data.gym_id,
+      title: data.title,
+      description: data.description || null,
+      event_date: data.event_date,
+      start_time: data.start_time,
+      end_time: data.end_time || null,
+      max_participants: data.max_participants,
+      intensity: data.intensity || null,
+      weight_classes: data.weight_classes,
+      experience_levels: data.experience_levels,
+      status: data.status,
+      current_participants: 0,
+    })
+    .select('id')
+    .single();
+
+  if (error) throw error;
+  return result.id;
 }
 
 /**
@@ -464,17 +510,6 @@ export async function approveEventRequest(requestId: string): Promise<void> {
     .eq('id', requestId);
 
   if (error) throw error;
-
-  // Increment participant count
-  const { data: request } = await supabase
-    .from('event_requests')
-    .select('event_id')
-    .eq('id', requestId)
-    .single();
-
-  if (request) {
-    await supabase.rpc('increment_participants', { event_id: request.event_id });
-  }
 }
 
 /**
@@ -621,6 +656,299 @@ function getMockGymEvents(): GymEventSummary[] {
 /**
  * Mock events for demo mode
  */
+// ============================================
+// Check-in Functions
+// ============================================
+
+export type AttendeeWithDetails = {
+  fighter_id: string;
+  fighter_name: string;
+  fighter_avatar?: string;
+  weight_class?: string;
+  checked_in_at: string | null;
+  checked_out_at: string | null;
+  no_show: boolean;
+};
+
+/**
+ * Get approved fighters with attendance status for an event
+ */
+export async function getEventAttendees(eventId: string): Promise<AttendeeWithDetails[]> {
+  if (!isSupabaseConfigured) {
+    return getMockAttendees();
+  }
+
+  try {
+    // Get approved requests
+    const { data: requests, error: reqError } = await supabase
+      .from('event_requests')
+      .select(`
+        fighter_id,
+        fighter:fighters (
+          id,
+          first_name,
+          last_name,
+          avatar_url,
+          weight_class
+        )
+      `)
+      .eq('event_id', eventId)
+      .eq('status', 'approved');
+
+    if (reqError) throw reqError;
+
+    // Get attendance records
+    const { data: attendance, error: attError } = await supabase
+      .from('event_attendance')
+      .select('*')
+      .eq('event_id', eventId);
+
+    if (attError) throw attError;
+
+    const attendanceMap: Record<string, any> = {};
+    (attendance || []).forEach((a: any) => {
+      attendanceMap[a.fighter_id] = a;
+    });
+
+    return (requests || []).map((req: any) => {
+      const att = attendanceMap[req.fighter_id];
+      return {
+        fighter_id: req.fighter_id,
+        fighter_name: `${req.fighter?.first_name || ''} ${req.fighter?.last_name || ''}`.trim(),
+        fighter_avatar: req.fighter?.avatar_url,
+        weight_class: req.fighter?.weight_class,
+        checked_in_at: att?.checked_in_at || null,
+        checked_out_at: att?.checked_out_at || null,
+        no_show: att?.no_show || false,
+      };
+    });
+  } catch (error) {
+    console.error('Error getting event attendees:', error);
+    return getMockAttendees();
+  }
+}
+
+/**
+ * Check in a fighter to an event
+ */
+export async function checkInFighter(eventId: string, fighterId: string): Promise<void> {
+  if (!isSupabaseConfigured) {
+    console.log('Demo mode: Would check in fighter', fighterId);
+    return;
+  }
+
+  const { error } = await supabase
+    .from('event_attendance')
+    .upsert({
+      event_id: eventId,
+      fighter_id: fighterId,
+      checked_in_at: new Date().toISOString(),
+      no_show: false,
+    }, { onConflict: 'event_id,fighter_id' });
+
+  if (error) throw error;
+}
+
+/**
+ * Check out a fighter from an event
+ */
+export async function checkOutFighter(eventId: string, fighterId: string): Promise<void> {
+  if (!isSupabaseConfigured) {
+    console.log('Demo mode: Would check out fighter', fighterId);
+    return;
+  }
+
+  const { error } = await supabase
+    .from('event_attendance')
+    .update({ checked_out_at: new Date().toISOString() })
+    .eq('event_id', eventId)
+    .eq('fighter_id', fighterId);
+
+  if (error) throw error;
+}
+
+/**
+ * Mark a fighter as no-show
+ */
+export async function markNoShow(eventId: string, fighterId: string, reason?: string): Promise<void> {
+  if (!isSupabaseConfigured) {
+    console.log('Demo mode: Would mark no-show', fighterId);
+    return;
+  }
+
+  const { error } = await supabase
+    .from('event_attendance')
+    .upsert({
+      event_id: eventId,
+      fighter_id: fighterId,
+      no_show: true,
+      no_show_reason: reason || null,
+    }, { onConflict: 'event_id,fighter_id' });
+
+  if (error) throw error;
+}
+
+// ============================================
+// Review Functions
+// ============================================
+
+export type CreateReviewData = {
+  event_id: string;
+  fighter_id: string;
+  rating: number;
+  review_text?: string;
+  organization_rating: number;
+  facility_rating: number;
+  coaching_rating: number;
+  would_recommend: boolean;
+};
+
+/**
+ * Submit or update an event review
+ */
+export async function submitEventReview(data: CreateReviewData): Promise<void> {
+  if (!isSupabaseConfigured) {
+    console.log('Demo mode: Would submit review', data);
+    return;
+  }
+
+  const { error } = await supabase
+    .from('event_reviews')
+    .upsert({
+      event_id: data.event_id,
+      fighter_id: data.fighter_id,
+      rating: data.rating,
+      review_text: data.review_text || null,
+      organization_rating: data.organization_rating,
+      facility_rating: data.facility_rating,
+      coaching_rating: data.coaching_rating,
+      would_recommend: data.would_recommend,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'event_id,fighter_id' });
+
+  if (error) throw error;
+}
+
+/**
+ * Get all reviews for an event
+ */
+export async function getEventReviews(eventId: string): Promise<EventReview[]> {
+  if (!isSupabaseConfigured) {
+    return [];
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('event_reviews')
+      .select(`
+        *,
+        fighter:fighters (
+          id,
+          first_name,
+          last_name,
+          avatar_url
+        )
+      `)
+      .eq('event_id', eventId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error getting event reviews:', error);
+    return [];
+  }
+}
+
+/**
+ * Get average rating and count for an event
+ */
+export async function getEventAverageRating(eventId: string): Promise<{ average: number; count: number }> {
+  if (!isSupabaseConfigured) {
+    return { average: 0, count: 0 };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .rpc('get_event_average_rating', { event_uuid: eventId });
+
+    if (error) throw error;
+
+    // Get count separately
+    const { count, error: countError } = await supabase
+      .from('event_reviews')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_id', eventId);
+
+    if (countError) throw countError;
+
+    return {
+      average: data || 0,
+      count: count || 0,
+    };
+  } catch (error) {
+    console.error('Error getting event rating:', error);
+    return { average: 0, count: 0 };
+  }
+}
+
+/**
+ * Get a fighter's existing review for an event (for pre-populating edit form)
+ */
+export async function getFighterReview(eventId: string, fighterId: string): Promise<EventReview | null> {
+  if (!isSupabaseConfigured) {
+    return null;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('event_reviews')
+      .select('*')
+      .eq('event_id', eventId)
+      .eq('fighter_id', fighterId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error getting fighter review:', error);
+    return null;
+  }
+}
+
+// ============================================
+// Mock Data Helpers
+// ============================================
+
+function getMockAttendees(): AttendeeWithDetails[] {
+  return [
+    {
+      fighter_id: 'fighter-1',
+      fighter_name: 'Marcus Petrov',
+      weight_class: 'middleweight',
+      checked_in_at: null,
+      checked_out_at: null,
+      no_show: false,
+    },
+    {
+      fighter_id: 'fighter-2',
+      fighter_name: 'Sarah Chen',
+      weight_class: 'lightweight',
+      checked_in_at: new Date().toISOString(),
+      checked_out_at: null,
+      no_show: false,
+    },
+    {
+      fighter_id: 'fighter-3',
+      fighter_name: 'Jake Thompson',
+      weight_class: 'welterweight',
+      checked_in_at: null,
+      checked_out_at: null,
+      no_show: false,
+    },
+  ];
+}
+
 function getMockEvents(): EventWithDistance[] {
   return [
     {

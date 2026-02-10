@@ -133,6 +133,35 @@ export interface EventRequest {
   event?: SparringEvent;
 }
 
+// Event attendance (check-in/check-out)
+export interface EventAttendance {
+  id: string;
+  event_id: string;
+  fighter_id: string;
+  checked_in_at: string | null;
+  checked_out_at: string | null;
+  no_show: boolean;
+  no_show_reason?: string;
+  created_at: string;
+  fighter?: Fighter;
+}
+
+// Event review
+export interface EventReview {
+  id: string;
+  event_id: string;
+  fighter_id: string;
+  rating: number;
+  review_text?: string;
+  organization_rating: number;
+  facility_rating: number;
+  coaching_rating: number;
+  would_recommend: boolean;
+  created_at: string;
+  updated_at: string;
+  fighter?: Fighter;
+}
+
 // Chat/Message
 export interface Message {
   id: string;

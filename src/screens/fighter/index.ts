@@ -12,3 +12,4 @@ export { EnhancedEventBrowseScreen } from './EnhancedEventBrowseScreen';
 export { GymSearchScreen } from './GymSearchScreen';
 export { FighterSearchScreen } from './FighterSearchScreen';
 export { SparringInvitesScreen } from './SparringInvitesScreen';
+export { EventReviewScreen } from './EventReviewScreen';

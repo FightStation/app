@@ -3,7 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { View, Text, StyleSheet } from 'react-native';
-import { GymDashboardScreen, CreateEventScreen, EditEventScreen, SparringInvitesScreen, GymReferralDashboardScreen, GymPhotoUploadScreen, AdminManagementScreen, TrainingScheduleScreen, GymReelsScreen, ManageFightersScreen, GymSettingsScreen, ClaimGymScreen, ClaimManagementScreen } from '../screens/gym';
+import { GymDashboardScreen, CreateEventScreen, EditEventScreen, SparringInvitesScreen, GymReferralDashboardScreen, GymPhotoUploadScreen, AdminManagementScreen, TrainingScheduleScreen, GymReelsScreen, ManageFightersScreen, GymSettingsScreen, ClaimGymScreen, ClaimManagementScreen, EventCheckInScreen } from '../screens/gym';
 import { EventDetailScreen, FighterProfileViewScreen, GymProfileViewScreen, CoachProfileViewScreen, FeedScreen, CreatePostScreen, ReelsScreen, MapViewScreen, ShareEventScreen, VideoShareScreen, GymDirectoryScreen, DirectoryGymDetailScreen } from '../screens/shared';
 import { AdminDashboardScreen, CommissionRatesScreen, GymDirectoryAdminScreen } from '../screens/admin';
 import { ModernTabBar, type TabConfig } from '../components/TabBar';
@@ -33,6 +33,7 @@ export type GymStackParamList = {
   DirectoryGymDetail: { gymId: string };
   ClaimGym: { gymId: string; gymName: string };
   ClaimManagement: undefined;
+  EventCheckIn: { eventId: string; eventTitle?: string };
   // Admin screens
   AdminDashboard: undefined;
   CommissionRates: undefined;
@@ -343,6 +344,13 @@ export function GymNavigator() {
       <Stack.Screen
         name="ClaimManagement"
         component={ClaimManagementScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="EventCheckIn"
+        component={EventCheckInScreen}
         options={{
           headerShown: false,
         }}

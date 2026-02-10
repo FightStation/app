@@ -17,6 +17,7 @@ import {
   GymSearchScreen,
   FighterSearchScreen,
   SparringInvitesScreen,
+  EventReviewScreen,
 } from '../screens/fighter';
 import { EventDetailScreen, FighterProfileViewScreen, GymProfileViewScreen, CoachProfileViewScreen, FeedScreen, CreatePostScreen, ReelsScreen, MapViewScreen, ShareEventScreen, VideoShareScreen, GymDirectoryScreen, DirectoryGymDetailScreen } from '../screens/shared';
 import { colors, spacing, typography } from '../lib/theme';
@@ -45,6 +46,7 @@ export type FighterStackParamList = {
   VideoShare: undefined;
   GymDirectory: undefined;
   DirectoryGymDetail: { gymId: string };
+  EventReview: { eventId: string; eventTitle?: string };
 };
 
 export type FighterTabParamList = {
@@ -376,6 +378,13 @@ export function FighterNavigator() {
       <Stack.Screen
         name="DirectoryGymDetail"
         component={DirectoryGymDetailScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="EventReview"
+        component={EventReviewScreen}
         options={{
           headerShown: false,
         }}
