@@ -2,34 +2,24 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
 // =====================================================
-// TYPES
+// TYPES (aligned with COMPLETE-SCHEMA.sql)
 // =====================================================
 
 export type Message = {
   id: string;
   conversation_id: string;
   sender_id: string;
-  message_text: string;
-  message_type: 'text' | 'image' | 'system';
-  image_url?: string;
-  is_read: boolean;
-  read_at?: string;
+  content: string;
+  read: boolean;
   created_at: string;
-  updated_at: string;
-  deleted_at?: string;
 };
 
 export type Conversation = {
   id: string;
-  participant_1_id: string;
-  participant_2_id: string;
-  last_message_text?: string;
+  participant_ids: string[];
+  last_message?: string;
   last_message_at?: string;
-  last_message_sender_id?: string;
-  participant_1_unread_count: number;
-  participant_2_unread_count: number;
   created_at: string;
-  updated_at: string;
 };
 
 export type ConversationWithDetails = Conversation & {
@@ -88,22 +78,23 @@ export const getUserConversations = async (
     const { data: conversations, error } = await supabase
       .from('conversations')
       .select('*')
-      .or(`participant_1_id.eq.${userId},participant_2_id.eq.${userId}`)
-      .order('updated_at', { ascending: false });
+      .contains('participant_ids', [userId])
+      .order('last_message_at', { ascending: false, nullsFirst: false });
 
     if (error) throw error;
 
-    // Fetch details for other participants
     const conversationsWithDetails: ConversationWithDetails[] = [];
 
     for (const conv of conversations || []) {
-      const otherUserId =
-        conv.participant_1_id === userId ? conv.participant_2_id : conv.participant_1_id;
+      const otherUserId = conv.participant_ids.find((id: string) => id !== userId) || '';
 
-      const unreadCount =
-        conv.participant_1_id === userId
-          ? conv.participant_1_unread_count
-          : conv.participant_2_unread_count;
+      // Get unread count for this conversation
+      const { count: unreadCount } = await supabase
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('conversation_id', conv.id)
+        .neq('sender_id', userId)
+        .eq('read', false);
 
       // Get other user's profile
       const { data: profile } = await supabase
@@ -140,12 +131,24 @@ export const getUserConversations = async (
           otherParticipant.id = gym.id;
           otherParticipant.name = gym.name;
         }
+      } else if (profile.role === 'coach') {
+        const { data: coach } = await supabase
+          .from('coaches')
+          .select('id, first_name, last_name, avatar_url')
+          .eq('user_id', otherUserId)
+          .single();
+
+        if (coach) {
+          otherParticipant.id = coach.id;
+          otherParticipant.name = `${coach.first_name} ${coach.last_name}`;
+          otherParticipant.avatar_url = coach.avatar_url;
+        }
       }
 
       conversationsWithDetails.push({
         ...conv,
         other_participant: otherParticipant,
-        unread_count: unreadCount,
+        unread_count: unreadCount || 0,
       });
     }
 
@@ -157,7 +160,7 @@ export const getUserConversations = async (
 };
 
 /**
- * Deletes a conversation (soft delete)
+ * Deletes a conversation
  */
 export const deleteConversation = async (conversationId: string): Promise<void> => {
   if (!isSupabaseConfigured) {
@@ -188,9 +191,7 @@ export const deleteConversation = async (conversationId: string): Promise<void> 
 export const sendMessage = async (
   conversationId: string,
   senderId: string,
-  messageText: string,
-  messageType: 'text' | 'image' = 'text',
-  imageUrl?: string
+  messageText: string
 ): Promise<Message> => {
   if (!isSupabaseConfigured) {
     console.log('[Demo Mode] Would send message:', messageText);
@@ -198,12 +199,9 @@ export const sendMessage = async (
       id: 'demo-message-' + Date.now(),
       conversation_id: conversationId,
       sender_id: senderId,
-      message_text: messageText,
-      message_type: messageType,
-      image_url: imageUrl,
-      is_read: false,
+      content: messageText,
+      read: false,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     };
   }
 
@@ -213,9 +211,7 @@ export const sendMessage = async (
       .insert({
         conversation_id: conversationId,
         sender_id: senderId,
-        message_text: messageText,
-        message_type: messageType,
-        image_url: imageUrl,
+        content: messageText,
       })
       .select()
       .single();
@@ -246,7 +242,6 @@ export const getConversationMessages = async (
       .from('messages')
       .select('*')
       .eq('conversation_id', conversationId)
-      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(limit);
 
@@ -285,7 +280,7 @@ export const markConversationAsRead = async (
 };
 
 /**
- * Deletes a message (soft delete)
+ * Deletes a message
  */
 export const deleteMessage = async (messageId: string): Promise<void> => {
   if (!isSupabaseConfigured) {
@@ -296,7 +291,7 @@ export const deleteMessage = async (messageId: string): Promise<void> => {
   try {
     const { error } = await supabase
       .from('messages')
-      .update({ deleted_at: new Date().toISOString() })
+      .delete()
       .eq('id', messageId);
 
     if (error) throw error;
@@ -342,7 +337,8 @@ export const subscribeToConversation = (
 };
 
 /**
- * Subscribes to all conversations for a user
+ * Subscribes to new messages for a user across all conversations.
+ * Filters client-side since Supabase Realtime doesn't support array contains filters.
  */
 export const subscribeToUserConversations = (
   userId: string,
@@ -361,22 +357,13 @@ export const subscribeToUserConversations = (
         event: '*',
         schema: 'public',
         table: 'conversations',
-        filter: `participant_1_id=eq.${userId}`,
       },
       (payload) => {
-        onConversationUpdate(payload.new as Conversation);
-      }
-    )
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'conversations',
-        filter: `participant_2_id=eq.${userId}`,
-      },
-      (payload) => {
-        onConversationUpdate(payload.new as Conversation);
+        const conv = payload.new as Conversation;
+        // Client-side filter: only emit if user is a participant
+        if (conv.participant_ids && conv.participant_ids.includes(userId)) {
+          onConversationUpdate(conv);
+        }
       }
     )
     .subscribe();
@@ -402,15 +389,10 @@ export const unsubscribeFromChannel = async (
 const MOCK_CONVERSATIONS: ConversationWithDetails[] = [
   {
     id: '1',
-    participant_1_id: 'user1',
-    participant_2_id: 'user2',
-    last_message_text: 'Hey, are you available for sparring this weekend?',
+    participant_ids: ['user1', 'user2'],
+    last_message: 'Hey, are you available for sparring this weekend?',
     last_message_at: new Date(Date.now() - 3600000).toISOString(),
-    last_message_sender_id: 'user2',
-    participant_1_unread_count: 1,
-    participant_2_unread_count: 0,
     created_at: new Date(Date.now() - 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 3600000).toISOString(),
     other_participant: {
       id: 'fighter2',
       name: 'Sarah Martinez',
@@ -420,15 +402,10 @@ const MOCK_CONVERSATIONS: ConversationWithDetails[] = [
   },
   {
     id: '2',
-    participant_1_id: 'user1',
-    participant_2_id: 'user3',
-    last_message_text: 'Thanks for the great session today!',
+    participant_ids: ['user1', 'user3'],
+    last_message: 'Thanks for the great session today!',
     last_message_at: new Date(Date.now() - 86400000).toISOString(),
-    last_message_sender_id: 'user1',
-    participant_1_unread_count: 0,
-    participant_2_unread_count: 0,
     created_at: new Date(Date.now() - 172800000).toISOString(),
-    updated_at: new Date(Date.now() - 86400000).toISOString(),
     other_participant: {
       id: 'gym1',
       name: 'Elite Boxing Academy',
@@ -443,30 +420,24 @@ const MOCK_MESSAGES: Message[] = [
     id: '1',
     conversation_id: '1',
     sender_id: 'user2',
-    message_text: 'Hey! How are you?',
-    message_type: 'text',
-    is_read: true,
+    content: 'Hey! How are you?',
+    read: true,
     created_at: new Date(Date.now() - 7200000).toISOString(),
-    updated_at: new Date(Date.now() - 7200000).toISOString(),
   },
   {
     id: '2',
     conversation_id: '1',
     sender_id: 'user1',
-    message_text: 'Good! Just finished training. You?',
-    message_type: 'text',
-    is_read: true,
+    content: 'Good! Just finished training. You?',
+    read: true,
     created_at: new Date(Date.now() - 7000000).toISOString(),
-    updated_at: new Date(Date.now() - 7000000).toISOString(),
   },
   {
     id: '3',
     conversation_id: '1',
     sender_id: 'user2',
-    message_text: 'Hey, are you available for sparring this weekend?',
-    message_type: 'text',
-    is_read: false,
+    content: 'Hey, are you available for sparring this weekend?',
+    read: false,
     created_at: new Date(Date.now() - 3600000).toISOString(),
-    updated_at: new Date(Date.now() - 3600000).toISOString(),
   },
 ];

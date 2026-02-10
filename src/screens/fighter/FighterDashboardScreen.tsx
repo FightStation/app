@@ -270,7 +270,7 @@ export function FighterDashboardScreen({ navigation }: FighterDashboardScreenPro
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recommended Events</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('EventsTab')}>
+          <TouchableOpacity onPress={() => navigation.navigate('MatchesTab')}>
             <Text style={styles.seeAll}>See All</Text>
           </TouchableOpacity>
         </View>
@@ -323,7 +323,7 @@ export function FighterDashboardScreen({ navigation }: FighterDashboardScreenPro
       <View style={styles.actions}>
         <Button
           title="Find Events"
-          onPress={() => navigation.navigate('EventsTab')}
+          onPress={() => navigation.navigate('MatchesTab')}
           size="lg"
         />
         <Button

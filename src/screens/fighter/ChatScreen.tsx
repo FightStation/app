@@ -165,7 +165,7 @@ export function ChatScreen({ navigation, route }: any) {
     setTranslatingMessageId(selectedMessageId);
 
     try {
-      const result = await translateText(message.message_text, language);
+      const result = await translateText(message.content, language);
       setTranslations((prev) => ({
         ...prev,
         [selectedMessageId]: {
@@ -200,11 +200,11 @@ export function ChatScreen({ navigation, route }: any) {
     setTranslatingMessageId(messageId);
 
     try {
-      const detectedLang = detectLanguage(message.message_text);
+      const detectedLang = detectLanguage(message.content);
       // If message is in user's preferred language, translate to English instead
       const targetLang = detectedLang === userPreferredLanguage ? 'en' : userPreferredLanguage;
 
-      const result = await translateText(message.message_text, targetLang);
+      const result = await translateText(message.content, targetLang);
       setTranslations((prev) => ({
         ...prev,
         [messageId]: {
@@ -239,7 +239,7 @@ export function ChatScreen({ navigation, route }: any) {
               isOwn ? styles.ownMessageText : styles.otherMessageText,
             ]}
           >
-            {message.message_text}
+            {message.content}
           </Text>
 
           {/* Translation */}
@@ -284,10 +284,10 @@ export function ChatScreen({ navigation, route }: any) {
             </Text>
             {isOwn && (
               <Ionicons
-                name={message.is_read ? 'checkmark-done' : 'checkmark'}
+                name={message.read ? 'checkmark-done' : 'checkmark'}
                 size={14}
                 color={
-                  message.is_read ? colors.primary[400] : 'rgba(255,255,255,0.5)'
+                  message.read ? colors.primary[400] : 'rgba(255,255,255,0.5)'
                 }
                 style={styles.statusIcon}
               />

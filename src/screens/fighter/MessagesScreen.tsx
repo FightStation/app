@@ -215,7 +215,7 @@ export function MessagesScreen({ navigation }: MessagesScreenProps) {
                       ]}
                       numberOfLines={1}
                     >
-                      {conversation.last_message_text || 'No messages yet'}
+                      {conversation.last_message || 'No messages yet'}
                     </Text>
                     {conversation.unread_count > 0 && (
                       <View style={styles.unreadCount}>
