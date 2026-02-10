@@ -582,7 +582,7 @@ export function GymDashboardScreen({ navigation }: GymDashboardScreenProps) {
             <SectionHeader title="Quick Actions" />
             <View style={styles.quickActionsGrid}>
               {quickActions.map((action, i) => (
-                <AnimatedListItem key={action.key} index={i}>
+                <AnimatedListItem key={action.key} index={i} style={styles.quickActionTileWrapper}>
                   <GlassCard
                     style={styles.quickActionTile}
                     onPress={action.onPress}
@@ -943,8 +943,10 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing[3],
   },
-  quickActionTile: {
+  quickActionTileWrapper: {
     width: '47.5%',
+  },
+  quickActionTile: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: spacing[5],
