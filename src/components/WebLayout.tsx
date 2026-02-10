@@ -1,8 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Platform,
+  TextInput,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
-import { colors, spacing, typography, borderRadius } from '../lib/theme';
+import { colors, spacing, typography, borderRadius, gradients, glass, textStyles } from '../lib/theme';
 import { shouldShowSidebar, webLayout, getContainerWidth, isWeb } from '../lib/responsive';
 
 type WebLayoutProps = {
@@ -48,6 +57,7 @@ export function WebLayout({
 }: WebLayoutProps) {
   const { profile, role, signOut } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const showSidebar = showSidebarProp ?? (shouldShowSidebar() && isWeb);
   const navItems = role === 'gym' ? GYM_NAV : FIGHTER_NAV;
@@ -85,8 +95,16 @@ export function WebLayout({
       >
         {/* Logo/Header */}
         <View style={styles.sidebarHeader}>
-          {!sidebarCollapsed && (
-            <Text style={styles.logo}>Fight Station</Text>
+          {!sidebarCollapsed ? (
+            <View style={styles.logoContainer}>
+              <Text style={styles.logoFight}>FIGHT</Text>
+              <View style={styles.logoAccentLine} />
+              <Text style={styles.logoStation}>STATION</Text>
+            </View>
+          ) : (
+            <View style={styles.logoCollapsed}>
+              <Text style={styles.logoCollapsedText}>F</Text>
+            </View>
           )}
           <TouchableOpacity
             style={styles.collapseButton}
@@ -110,10 +128,13 @@ export function WebLayout({
                 style={[styles.navItem, isActive && styles.navItemActive]}
                 onPress={() => handleNavigate(item.route)}
               >
+                {/* Active left border accent */}
+                {isActive && <View style={styles.navActiveAccent} />}
                 <Ionicons
                   name={item.icon as any}
                   size={22}
                   color={isActive ? colors.primary[500] : colors.textMuted}
+                  style={isActive ? styles.navIconActive : undefined}
                 />
                 {!sidebarCollapsed && (
                   <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
@@ -144,19 +165,31 @@ export function WebLayout({
 
       {/* Main Content */}
       <View style={styles.mainContent}>
-        {/* Top Bar (optional) */}
+        {/* Top Bar */}
         <View style={styles.topBar}>
           <Text style={styles.pageTitle}>
             {navItems.find(item => item.route === currentRoute)?.label || 'Fight Station'}
           </Text>
 
-          {/* Quick Actions */}
+          {/* Quick Actions with Glass Search */}
           <View style={styles.quickActions}>
+            <View style={styles.glassSearchContainer}>
+              <Ionicons
+                name="search-outline"
+                size={18}
+                color={colors.textMuted}
+                style={styles.searchIcon}
+              />
+              <TextInput
+                style={styles.glassSearchInput}
+                placeholder="Search..."
+                placeholderTextColor={colors.textMuted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </View>
             <TouchableOpacity style={styles.iconButton}>
               <Ionicons name="notifications-outline" size={22} color={colors.textPrimary} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton}>
-              <Ionicons name="search-outline" size={22} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -208,10 +241,44 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     height: webLayout.headerHeight,
   },
-  logo: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
+  logoContainer: {
+    alignItems: 'flex-start',
+  },
+  logoFight: {
+    fontFamily: 'BarlowCondensed-Bold',
+    fontSize: 20,
+    color: colors.textPrimary,
+    letterSpacing: 1,
+    lineHeight: 22,
+  },
+  logoAccentLine: {
+    width: 24,
+    height: 2,
+    backgroundColor: colors.primary[500],
+    marginVertical: 3,
+    borderRadius: 1,
+  },
+  logoStation: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 10,
+    color: colors.textMuted,
+    letterSpacing: 4,
+    textTransform: 'uppercase',
+    lineHeight: 12,
+  },
+  logoCollapsed: {
+    width: 32,
+    height: 32,
+    borderRadius: borderRadius.md,
+    backgroundColor: 'rgba(196, 30, 58, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoCollapsedText: {
+    fontFamily: 'BarlowCondensed-Bold',
+    fontSize: 18,
     color: colors.primary[500],
+    letterSpacing: 0,
   },
   collapseButton: {
     padding: spacing[2],
@@ -229,18 +296,34 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing[2],
     borderRadius: borderRadius.lg,
     marginBottom: spacing[1],
+    position: 'relative',
+    overflow: 'hidden',
   },
   navItemActive: {
-    backgroundColor: `${colors.primary[500]}20`,
+    backgroundColor: 'rgba(196, 30, 58, 0.15)',
+  },
+  navActiveAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 4,
+    bottom: 4,
+    width: 2,
+    backgroundColor: colors.primary[500],
+    borderRadius: 1,
+  },
+  navIconActive: {
+    // Slight shift to keep alignment with accent bar
   },
   navLabel: {
     fontSize: typography.fontSize.base,
     fontWeight: typography.fontWeight.medium,
     color: colors.textSecondary,
+    fontFamily: typography.fontFamily.medium,
   },
   navLabelActive: {
     color: colors.primary[500],
     fontWeight: typography.fontWeight.semibold,
+    fontFamily: typography.fontFamily.semibold,
   },
   sidebarFooter: {
     paddingHorizontal: spacing[4],
@@ -253,12 +336,14 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.semibold,
     color: colors.textPrimary,
     marginBottom: spacing[1],
+    fontFamily: typography.fontFamily.semibold,
   },
   userRole: {
     fontSize: typography.fontSize.sm,
     color: colors.textMuted,
     textTransform: 'capitalize',
     marginBottom: spacing[3],
+    fontFamily: typography.fontFamily.regular,
   },
   logoutButton: {
     flexDirection: 'row',
@@ -270,6 +355,7 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.error,
     fontWeight: typography.fontWeight.medium,
+    fontFamily: typography.fontFamily.medium,
   },
   mainContent: {
     flex: 1,
@@ -294,15 +380,47 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize['2xl'],
     fontWeight: typography.fontWeight.bold,
     color: colors.textPrimary,
+    fontFamily: typography.fontFamily.display,
   },
   quickActions: {
     flexDirection: 'row',
-    gap: spacing[2],
+    alignItems: 'center',
+    gap: spacing[3],
+  },
+  glassSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: glass.light.backgroundColor,
+    borderWidth: glass.light.borderWidth,
+    borderColor: glass.light.borderColor,
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing[3],
+    height: 40,
+    minWidth: 220,
+  },
+  searchIcon: {
+    marginRight: spacing[2],
+  },
+  glassSearchInput: {
+    flex: 1,
+    color: colors.textPrimary,
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.regular,
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none' as any,
+      },
+    }),
   },
   iconButton: {
-    padding: spacing[2],
+    width: 40,
+    height: 40,
     borderRadius: borderRadius.full,
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: glass.light.backgroundColor,
+    borderWidth: glass.light.borderWidth,
+    borderColor: glass.light.borderColor,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   contentScroll: {
     flex: 1,

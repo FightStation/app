@@ -16,8 +16,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
 import { Gym } from '../../types';
-import { colors, spacing, typography, borderRadius } from '../../lib/theme';
-import { ProfileCompletenessCard } from '../../components';
+import { colors, spacing, typography, borderRadius, gradients, textStyles, glass, animations } from '../../lib/theme';
+import {
+  ProfileCompletenessCard,
+  GlassCard,
+  GradientButton,
+  SectionHeader,
+  StatCard,
+  EmptyState,
+  PulseIndicator,
+  AnimatedListItem,
+} from '../../components';
 import { calculateGymCompleteness } from '../../utils/profileCompleteness';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import {
@@ -218,7 +227,7 @@ export function GymDashboardScreen({ navigation }: GymDashboardScreenProps) {
   const getIntensityColor = (intensity: string) => {
     if (intensity.toLowerCase() === 'hard') return colors.primary[500];
     if (intensity.toLowerCase() === 'technical') return colors.info;
-    return colors.textMuted;
+    return colors.success;
   };
 
   const getCapacityColor = (current: number, max: number) => {
@@ -237,19 +246,61 @@ export function GymDashboardScreen({ navigation }: GymDashboardScreenProps) {
     return eventDate === today;
   };
 
+  // Quick actions data
+  const quickActions = [
+    {
+      key: 'photos',
+      icon: 'images' as keyof typeof Ionicons.glyphMap,
+      title: 'Gym Photos',
+      onPress: () => navigation.navigate('GymPhotoUpload' as never),
+      badge: null,
+    },
+    {
+      key: 'invite',
+      icon: 'people' as keyof typeof Ionicons.glyphMap,
+      title: 'Invite Fighters',
+      onPress: () => navigation.navigate('GymReferralDashboard'),
+      badge: 'EARN',
+    },
+    {
+      key: 'admins',
+      icon: 'shield' as keyof typeof Ionicons.glyphMap,
+      title: 'Manage Admins',
+      onPress: () => navigation.navigate('AdminManagement' as never),
+      badge: null,
+    },
+    {
+      key: 'schedule',
+      icon: 'calendar' as keyof typeof Ionicons.glyphMap,
+      title: 'Schedule',
+      onPress: () => navigation.navigate('TrainingSchedule' as never),
+      badge: null,
+    },
+    {
+      key: 'reels',
+      icon: 'film' as keyof typeof Ionicons.glyphMap,
+      title: 'Videos',
+      onPress: () => navigation.navigate('GymReels' as never),
+      badge: 'NEW',
+    },
+  ];
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.webContainer}>
+        {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Ionicons name="business" size={24} color={colors.primary[500]} />
+            <View style={styles.headerIconBg}>
+              <Ionicons name="business" size={22} color={colors.primary[500]} />
+            </View>
             <View>
               <Text style={styles.greeting}>Welcome back,</Text>
               <Text style={styles.gymName}>{gym?.name || 'Gym'}</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.headerIcon}>
-            <Ionicons name="settings" size={22} color={colors.textPrimary} />
+          <TouchableOpacity style={styles.settingsIcon}>
+            <Ionicons name="settings" size={20} color={colors.textPrimary} />
           </TouchableOpacity>
         </View>
 
@@ -276,24 +327,29 @@ export function GymDashboardScreen({ navigation }: GymDashboardScreenProps) {
                 onPress={() => navigation.navigate('GymProfile')}
               />
 
+              {/* STATS ROW - 3 StatCards */}
               <View style={styles.statsRow}>
-                <View style={styles.statCard}>
-                  <View style={styles.statIcon}>
-                    <Ionicons name="calendar" size={24} color={colors.primary[500]} />
-                  </View>
-                  <Text style={styles.statValue}>{upcomingEvents.length}</Text>
-                  <Text style={styles.statLabel}>Events</Text>
-                </View>
-                <View style={styles.statCard}>
-                  <View style={styles.statIcon}>
-                    <Ionicons name="people" size={24} color={colors.warning} />
-                  </View>
-                  <Text style={styles.statValue}>{pendingRequests.length}</Text>
-                  <Text style={styles.statLabel}>Requests</Text>
-                </View>
+                <StatCard
+                  icon="calendar"
+                  value={upcomingEvents.length}
+                  label="Events"
+                  accentColor={colors.primary[500]}
+                />
+                <StatCard
+                  icon="people"
+                  value={pendingRequests.length}
+                  label="Requests"
+                  accentColor={colors.warning}
+                />
+                <StatCard
+                  icon="star"
+                  value="4.8"
+                  label="Rating"
+                  accentColor={colors.info}
+                />
               </View>
 
-              {/* Pending Alert Banner */}
+              {/* ALERT BANNER with PulseIndicator */}
               {pendingRequests.length > 0 && (
                 <TouchableOpacity
                   style={styles.alertBanner}
@@ -301,7 +357,7 @@ export function GymDashboardScreen({ navigation }: GymDashboardScreenProps) {
                 >
                   <View style={styles.alertLeft}>
                     <View style={styles.alertIconContainer}>
-                      <Ionicons name="alert-circle" size={20} color={colors.warning} />
+                      <PulseIndicator color={colors.warning} size="sm" />
                     </View>
                     <Text style={styles.alertText}>
                       {pendingRequests.length} fighter{pendingRequests.length !== 1 ? 's' : ''} waiting for approval
@@ -311,187 +367,209 @@ export function GymDashboardScreen({ navigation }: GymDashboardScreenProps) {
                 </TouchableOpacity>
               )}
 
-              <TouchableOpacity
-                style={styles.createButton}
-                onPress={() => navigation.navigate('CreateEvent')}
-              >
-                <Ionicons name="add-circle" size={24} color={colors.textPrimary} />
-                <Text style={styles.createButtonText}>Create Sparring Event</Text>
-              </TouchableOpacity>
+              {/* CREATE EVENT - GradientButton */}
+              <View style={styles.createButtonContainer}>
+                <GradientButton
+                  title="Create Sparring Event"
+                  onPress={() => navigation.navigate('CreateEvent')}
+                  icon="add-circle"
+                  size="lg"
+                  fullWidth
+                />
+              </View>
 
+              {/* PENDING REQUESTS */}
               {pendingRequests.length > 0 && (
                 <View style={styles.section}>
-                  <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>PENDING REQUESTS ({pendingRequests.length})</Text>
-                    <TouchableOpacity onPress={() => navigation.navigate('ManageRequests')}>
-                      <Text style={styles.seeAll}>See All</Text>
-                    </TouchableOpacity>
-                  </View>
+                  <SectionHeader
+                    title="Pending Requests"
+                    subtitle={pendingRequests.length + ' waiting'}
+                    onSeeAll={() => navigation.navigate('ManageRequests')}
+                  />
 
-                  {pendingRequests.slice(0, 3).map((request) => (
-                    <View key={request.id} style={styles.requestCard}>
-                      <TouchableOpacity
-                        style={styles.requestInfo}
-                        onPress={() => navigation.navigate('FighterProfileView', { fighterId: request.fighter_id })}
-                      >
-                        <Text style={styles.requestFighter}>{request.fighter_name}</Text>
-                        <Text style={styles.requestEvent}>{request.event_title}</Text>
-                        {request.fighter_weight_class && (
-                          <Text style={styles.requestWeight}>{request.fighter_weight_class}</Text>
-                        )}
-                      </TouchableOpacity>
-                      <View style={styles.requestActions}>
+                  {pendingRequests.slice(0, 3).map((request, i) => (
+                    <AnimatedListItem key={request.id} index={i}>
+                      <GlassCard style={styles.requestCard}>
                         <TouchableOpacity
-                          style={styles.declineButton}
-                          onPress={() => handleDecline(request.id)}
-                          disabled={processingRequestId === request.id}
+                          style={styles.requestInfo}
+                          onPress={() => navigation.navigate('FighterProfileView', { fighterId: request.fighter_id })}
                         >
-                          {processingRequestId === request.id ? (
-                            <ActivityIndicator size="small" color={colors.error} />
-                          ) : (
-                            <Ionicons name="close" size={20} color={colors.error} />
+                          <Text style={styles.requestFighter}>{request.fighter_name}</Text>
+                          <Text style={styles.requestEvent}>{request.event_title}</Text>
+                          {request.fighter_weight_class && (
+                            <Text style={styles.requestWeight}>{request.fighter_weight_class}</Text>
                           )}
                         </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.approveButton}
-                          onPress={() => handleApprove(request.id)}
-                          disabled={processingRequestId === request.id}
-                        >
-                          {processingRequestId === request.id ? (
-                            <ActivityIndicator size="small" color={colors.success} />
-                          ) : (
-                            <Ionicons name="checkmark" size={20} color={colors.success} />
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    </View>
+                        <View style={styles.requestActions}>
+                          <TouchableOpacity
+                            style={styles.declineButton}
+                            onPress={() => handleDecline(request.id)}
+                            disabled={processingRequestId === request.id}
+                          >
+                            {processingRequestId === request.id ? (
+                              <ActivityIndicator size="small" color={colors.error} />
+                            ) : (
+                              <Ionicons name="close" size={20} color={colors.error} />
+                            )}
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.approveButton}
+                            onPress={() => handleApprove(request.id)}
+                            disabled={processingRequestId === request.id}
+                          >
+                            {processingRequestId === request.id ? (
+                              <ActivityIndicator size="small" color={colors.success} />
+                            ) : (
+                              <Ionicons name="checkmark" size={20} color={colors.success} />
+                            )}
+                          </TouchableOpacity>
+                        </View>
+                      </GlassCard>
+                    </AnimatedListItem>
                   ))}
                 </View>
               )}
 
+              {/* UPCOMING EVENTS */}
               <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>UPCOMING EVENTS</Text>
-                  {upcomingEvents.length === 0 && (
-                    <Text style={styles.emptyText}>No upcoming events</Text>
-                  )}
-                </View>
+                <SectionHeader title="Upcoming Events" />
 
-                {upcomingEvents.map((event) => {
+                {upcomingEvents.length === 0 && (
+                  <EmptyState
+                    icon="calendar-outline"
+                    title="No Upcoming Events"
+                    description="Create a sparring event to get started and attract fighters to your gym."
+                    actionLabel="Create Event"
+                    onAction={() => navigation.navigate('CreateEvent')}
+                  />
+                )}
+
+                {upcomingEvents.map((event, i) => {
                   const capacityRatio = event.max_participants > 0
                     ? event.current_participants / event.max_participants
                     : 0;
                   const capacityColor = getCapacityColor(event.current_participants, event.max_participants);
+                  const intensityColor = getIntensityColor(event.intensity || 'moderate');
+                  const today = isEventToday(event.event_date);
 
                   return (
-                    <TouchableOpacity
-                      key={event.id}
-                      style={styles.eventCard}
-                      onPress={() => navigation.navigate('EventDetail', { eventId: event.id })}
-                    >
-                      <View style={styles.eventHeader}>
-                        <Text style={styles.eventTitle}>{event.title}</Text>
-                        {event.intensity && (
-                          <View
-                            style={[
-                              styles.intensityBadge,
-                              { backgroundColor: `${getIntensityColor(event.intensity)}20` },
-                            ]}
-                          >
-                            <Text style={[styles.intensityText, { color: getIntensityColor(event.intensity) }]}>
-                              {event.intensity}
-                            </Text>
+                    <AnimatedListItem key={event.id} index={i}>
+                      <GlassCard
+                        style={styles.eventCard}
+                        onPress={() => navigation.navigate('EventDetail', { eventId: event.id })}
+                        accentColor={intensityColor}
+                      >
+                        <View style={styles.eventHeader}>
+                          <View style={styles.eventTitleRow}>
+                            <Text style={styles.eventTitle}>{event.title}</Text>
+                            {today && (
+                              <View style={styles.todayBadge}>
+                                <PulseIndicator color={colors.primary[500]} size="sm" />
+                                <Text style={styles.todayBadgeText}>TODAY</Text>
+                              </View>
+                            )}
                           </View>
-                        )}
-                      </View>
-                      <View style={styles.eventMeta}>
-                        <Ionicons name="calendar-outline" size={14} color={colors.textMuted} />
-                        <Text style={styles.metaText}>{formatDate(event.event_date)} • {event.start_time}</Text>
-                      </View>
-                      <View style={styles.eventFooter}>
-                        <View style={styles.capacitySection}>
-                          <Text style={styles.participantsText}>
-                            {event.current_participants}/{event.max_participants} fighters
-                          </Text>
-                          <View style={styles.capacityBarBg}>
+                          {event.intensity && (
                             <View
                               style={[
-                                styles.capacityBarFill,
-                                {
-                                  width: `${Math.min(capacityRatio * 100, 100)}%`,
-                                  backgroundColor: capacityColor,
-                                },
+                                styles.intensityBadge,
+                                { backgroundColor: `${intensityColor}20` },
                               ]}
-                            />
-                          </View>
+                            >
+                              <Text style={[styles.intensityText, { color: intensityColor }]}>
+                                {event.intensity}
+                              </Text>
+                            </View>
+                          )}
                         </View>
-                        <View style={styles.eventActions}>
-                          {isEventToday(event.event_date) && (
+                        <View style={styles.eventMeta}>
+                          <Ionicons name="calendar-outline" size={14} color={colors.textMuted} />
+                          <Text style={styles.metaText}>{formatDate(event.event_date)} • {event.start_time}</Text>
+                        </View>
+                        <View style={styles.eventFooter}>
+                          <View style={styles.capacitySection}>
+                            <Text style={styles.participantsText}>
+                              {event.current_participants}/{event.max_participants} fighters
+                            </Text>
+                            <View style={styles.capacityBarBg}>
+                              <View
+                                style={[
+                                  styles.capacityBarFill,
+                                  {
+                                    width: `${Math.min(capacityRatio * 100, 100)}%`,
+                                    backgroundColor: capacityColor,
+                                  },
+                                ]}
+                              />
+                            </View>
+                          </View>
+                          <View style={styles.eventActions}>
+                            {today && (
+                              <TouchableOpacity
+                                style={[styles.eventActionButton, { backgroundColor: `${colors.success}20` }]}
+                                onPress={(e) => {
+                                  e.stopPropagation();
+                                  navigation.navigate('EventCheckIn', { eventId: event.id, eventTitle: event.title });
+                                }}
+                              >
+                                <Ionicons name="checkbox-outline" size={16} color={colors.success} />
+                              </TouchableOpacity>
+                            )}
                             <TouchableOpacity
-                              style={[styles.eventActionButton, { backgroundColor: `${colors.success}20` }]}
+                              style={styles.eventActionButton}
                               onPress={(e) => {
                                 e.stopPropagation();
-                                navigation.navigate('EventCheckIn', { eventId: event.id, eventTitle: event.title });
+                                navigation.navigate('ShareEvent', { eventId: event.id });
                               }}
                             >
-                              <Ionicons name="checkbox-outline" size={16} color={colors.success} />
+                              <Ionicons name="share-outline" size={16} color={colors.primary[500]} />
                             </TouchableOpacity>
-                          )}
-                          <TouchableOpacity
-                            style={styles.eventActionButton}
-                            onPress={(e) => {
-                              e.stopPropagation();
-                              navigation.navigate('ShareEvent', { eventId: event.id });
-                            }}
-                          >
-                            <Ionicons name="share-outline" size={16} color={colors.primary[500]} />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.eventActionButton}
-                            onPress={(e) => {
-                              e.stopPropagation();
-                              navigation.navigate('EditEvent', { eventId: event.id });
-                            }}
-                          >
-                            <Ionicons name="pencil" size={16} color={colors.primary[500]} />
-                          </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.eventActionButton}
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                navigation.navigate('EditEvent', { eventId: event.id });
+                              }}
+                            >
+                              <Ionicons name="pencil" size={16} color={colors.primary[500]} />
+                            </TouchableOpacity>
+                          </View>
                         </View>
-                      </View>
-                    </TouchableOpacity>
+                      </GlassCard>
+                    </AnimatedListItem>
                   );
                 })}
               </View>
 
-              {/* Fighters In Your Area */}
+              {/* FIGHTERS IN YOUR AREA */}
               {nearbyFighters.length > 0 && (
                 <View style={styles.section}>
-                  <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>FIGHTERS IN YOUR AREA</Text>
-                  </View>
+                  <SectionHeader title="Fighters in Your Area" />
                   <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.nearbyScroll}
                   >
-                    {nearbyFighters.map((fighter) => (
-                      <TouchableOpacity
-                        key={fighter.id}
-                        style={styles.nearbyCard}
-                        onPress={() => navigation.navigate('FighterProfileView', { fighterId: fighter.id })}
-                      >
-                        <View style={styles.nearbyAvatar}>
-                          <Text style={styles.nearbyInitials}>
-                            {getInitials(fighter.first_name, fighter.last_name)}
+                    {nearbyFighters.map((fighter, i) => (
+                      <AnimatedListItem key={fighter.id} index={i}>
+                        <GlassCard
+                          style={styles.nearbyCard}
+                          onPress={() => navigation.navigate('FighterProfileView', { fighterId: fighter.id })}
+                        >
+                          <View style={styles.nearbyAvatar}>
+                            <Text style={styles.nearbyInitials}>
+                              {getInitials(fighter.first_name, fighter.last_name)}
+                            </Text>
+                          </View>
+                          <Text style={styles.nearbyName} numberOfLines={1}>
+                            {fighter.first_name} {fighter.last_name}
                           </Text>
-                        </View>
-                        <Text style={styles.nearbyName} numberOfLines={1}>
-                          {fighter.first_name} {fighter.last_name}
-                        </Text>
-                        <View style={styles.nearbyBadge}>
-                          <Text style={styles.nearbyWeight}>{fighter.weight_class}</Text>
-                        </View>
-                        <Text style={styles.nearbyLevel}>{fighter.experience_level}</Text>
-                      </TouchableOpacity>
+                          <View style={styles.nearbyBadge}>
+                            <Text style={styles.nearbyWeight}>{fighter.weight_class}</Text>
+                          </View>
+                          <Text style={styles.nearbyLevel}>{fighter.experience_level}</Text>
+                        </GlassCard>
+                      </AnimatedListItem>
                     ))}
                   </ScrollView>
                 </View>
@@ -499,68 +577,37 @@ export function GymDashboardScreen({ navigation }: GymDashboardScreenProps) {
             </>
           )}
 
-          {/* Quick Actions */}
-          <View style={styles.actionsSection}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => navigation.navigate('GymPhotoUpload' as never)}
-            >
-              <View style={styles.actionIconContainer}>
-                <Ionicons name="images" size={20} color={colors.primary[500]} />
-              </View>
-              <Text style={styles.actionButtonText}>Add Gym Photos</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => navigation.navigate('GymReferralDashboard')}
-            >
-              <View style={styles.actionIconContainer}>
-                <Ionicons name="people" size={20} color={colors.primary[500]} />
-              </View>
-              <Text style={styles.actionButtonText}>Invite Fighters</Text>
-              <View style={styles.earnBadge}>
-                <Text style={styles.earnBadgeText}>EARN</Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => navigation.navigate('AdminManagement' as never)}
-            >
-              <View style={styles.actionIconContainer}>
-                <Ionicons name="shield" size={20} color={colors.primary[500]} />
-              </View>
-              <Text style={styles.actionButtonText}>Manage Admins</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => navigation.navigate('TrainingSchedule' as never)}
-            >
-              <View style={styles.actionIconContainer}>
-                <Ionicons name="calendar" size={20} color={colors.primary[500]} />
-              </View>
-              <Text style={styles.actionButtonText}>Training Schedule</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => navigation.navigate('GymReels' as never)}
-            >
-              <View style={styles.actionIconContainer}>
-                <Ionicons name="film" size={20} color={colors.primary[500]} />
-              </View>
-              <Text style={styles.actionButtonText}>Training Videos</Text>
-              <View style={[styles.earnBadge, { backgroundColor: colors.warning }]}>
-                <Text style={styles.earnBadgeText}>NEW</Text>
-              </View>
-            </TouchableOpacity>
+          {/* QUICK ACTIONS - 2 column grid */}
+          <View style={styles.quickActionsSection}>
+            <SectionHeader title="Quick Actions" />
+            <View style={styles.quickActionsGrid}>
+              {quickActions.map((action, i) => (
+                <AnimatedListItem key={action.key} index={i}>
+                  <GlassCard
+                    style={styles.quickActionTile}
+                    onPress={action.onPress}
+                  >
+                    {action.badge && (
+                      <View
+                        style={[
+                          styles.actionBadge,
+                          action.badge === 'NEW'
+                            ? { backgroundColor: colors.warning }
+                            : { backgroundColor: colors.success },
+                        ]}
+                      >
+                        <Text style={styles.actionBadgeText}>{action.badge}</Text>
+                      </View>
+                    )}
+                    <View style={styles.quickActionIconContainer}>
+                      <Ionicons name={action.icon} size={28} color={colors.primary[500]} />
+                    </View>
+                    <Text style={styles.quickActionTitle}>{action.title}</Text>
+                  </GlassCard>
+                </AnimatedListItem>
+              ))}
+            </View>
           </View>
-
-          <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
-            <Text style={styles.signOutText}>Sign Out</Text>
-          </TouchableOpacity>
 
           <View style={styles.bottomPadding} />
         </ScrollView>
@@ -570,7 +617,10 @@ export function GymDashboardScreen({ navigation }: GymDashboardScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.background },
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   webContainer: {
     flex: 1,
     maxWidth: containerMaxWidth,
@@ -578,6 +628,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     backgroundColor: colors.background,
   },
+  // HEADER
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -587,50 +638,59 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing[3] },
-  greeting: { color: colors.textMuted, fontSize: typography.fontSize.sm },
-  gymName: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
   },
-  headerIcon: {
+  headerIconBg: {
     width: 40,
     height: 40,
     borderRadius: borderRadius.full,
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: `${colors.primary[500]}15`,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  container: { flex: 1 },
-  content: { padding: spacing[4] },
-  statsRow: { flexDirection: 'row', gap: spacing[3], marginBottom: spacing[4] },
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
+  greeting: {
+    color: colors.textMuted,
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.regular,
   },
-  statIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.surfaceLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing[2],
-  },
-  statValue: {
+  gymName: {
     color: colors.textPrimary,
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: typography.fontWeight.bold,
-    marginBottom: spacing[1],
+    fontSize: 22,
+    fontFamily: 'BarlowCondensed-Bold',
   },
-  statLabel: { color: colors.textMuted, fontSize: typography.fontSize.xs },
-  // Alert banner
+  settingsIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // CONTENT
+  container: {
+    flex: 1,
+  },
+  content: {
+    padding: spacing[4],
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing[10],
+  },
+  // STATS ROW
+  statsRow: {
+    flexDirection: 'row',
+    gap: spacing[3],
+    marginBottom: spacing[4],
+  },
+  // ALERT BANNER
   alertBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -661,65 +721,42 @@ const styles = StyleSheet.create({
     color: colors.warning,
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.semibold,
+    fontFamily: typography.fontFamily.semibold,
     flex: 1,
   },
-  createButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary[500],
-    paddingVertical: spacing[4],
-    borderRadius: borderRadius.lg,
-    gap: spacing[2],
+  // CREATE EVENT
+  createButtonContainer: {
     marginBottom: spacing[6],
   },
-  createButtonText: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.bold,
+  // SECTIONS
+  section: {
+    marginBottom: spacing[6],
   },
-  section: { marginBottom: spacing[6] },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing[3],
-  },
-  sectionTitle: {
-    color: colors.primary[500],
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-    letterSpacing: 0.5,
-  },
-  seeAll: {
-    color: colors.textSecondary,
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-  },
+  // REQUEST CARDS
   requestCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
     marginBottom: spacing[3],
   },
-  requestInfo: { flex: 1 },
+  requestInfo: {
+    flex: 1,
+  },
   requestFighter: {
     color: colors.textPrimary,
     fontSize: typography.fontSize.base,
     fontWeight: typography.fontWeight.semibold,
+    fontFamily: typography.fontFamily.semibold,
     marginBottom: spacing[1],
   },
   requestEvent: {
     color: colors.textSecondary,
     fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.regular,
   },
   requestWeight: {
     color: colors.textMuted,
     fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.regular,
     marginTop: spacing[1],
   },
   requestActions: {
@@ -742,22 +779,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[10],
-  },
-  emptyText: {
-    color: colors.textMuted,
-    fontSize: typography.fontSize.sm,
-  },
+  // EVENT CARDS
   eventCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
     marginBottom: spacing[3],
   },
   eventHeader: {
@@ -766,11 +789,34 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing[3],
   },
+  eventTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: spacing[2],
+  },
   eventTitle: {
     color: colors.textPrimary,
     fontSize: typography.fontSize.base,
     fontWeight: typography.fontWeight.bold,
-    flex: 1,
+    fontFamily: typography.fontFamily.semibold,
+    flexShrink: 1,
+  },
+  todayBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${colors.primary[500]}20`,
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[0.5],
+    borderRadius: borderRadius.sm,
+    gap: 4,
+  },
+  todayBadgeText: {
+    color: colors.primary[500],
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.bold,
+    letterSpacing: 0.5,
   },
   intensityBadge: {
     paddingHorizontal: spacing[2],
@@ -781,6 +827,8 @@ const styles = StyleSheet.create({
   intensityText: {
     fontSize: typography.fontSize.xs,
     fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.bold,
+    textTransform: 'capitalize',
   },
   eventMeta: {
     flexDirection: 'row',
@@ -788,24 +836,32 @@ const styles = StyleSheet.create({
     gap: spacing[1],
     marginBottom: spacing[3],
   },
-  metaText: { color: colors.textMuted, fontSize: typography.fontSize.sm },
+  metaText: {
+    color: colors.textMuted,
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.regular,
+  },
   eventFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: spacing[3],
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: 'rgba(255,255,255,0.06)',
   },
-  capacitySection: { flex: 1, marginRight: spacing[3] },
+  capacitySection: {
+    flex: 1,
+    marginRight: spacing[3],
+  },
   participantsText: {
     color: colors.textSecondary,
     fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.regular,
     marginBottom: spacing[1],
   },
   capacityBarBg: {
-    height: 4,
-    backgroundColor: colors.surfaceLight,
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: borderRadius.full,
     overflow: 'hidden',
   },
@@ -821,23 +877,20 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: borderRadius.full,
-    backgroundColor: `${colors.primary[500]}20`,
+    backgroundColor: `${colors.primary[500]}15`,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Nearby fighters
+  // NEARBY FIGHTERS
   nearbyScroll: {
     gap: spacing[3],
     paddingRight: spacing[4],
   },
   nearbyCard: {
-    width: 120,
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.border,
+    width: 130,
     alignItems: 'center',
+    paddingVertical: spacing[4],
+    paddingHorizontal: spacing[3],
   },
   nearbyAvatar: {
     width: 48,
@@ -852,11 +905,13 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontSize: typography.fontSize.base,
     fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.bold,
   },
   nearbyName: {
     color: colors.textPrimary,
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.semibold,
+    fontFamily: typography.fontFamily.semibold,
     textAlign: 'center',
     marginBottom: spacing[1],
   },
@@ -871,65 +926,65 @@ const styles = StyleSheet.create({
     color: colors.primary[500],
     fontSize: typography.fontSize.xs,
     fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.bold,
   },
   nearbyLevel: {
     color: colors.textMuted,
     fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.regular,
   },
-  // Actions Section
-  actionsSection: {
-    gap: spacing[3],
-    marginTop: spacing[6],
+  // QUICK ACTIONS - 2 column grid
+  quickActionsSection: {
+    marginTop: spacing[2],
+    marginBottom: spacing[4],
   },
-  actionButton: {
+  quickActionsGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.cardBg,
-    paddingVertical: spacing[4],
-    paddingHorizontal: spacing[4],
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
+    flexWrap: 'wrap',
     gap: spacing[3],
   },
-  actionIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: borderRadius.full,
-    backgroundColor: `${colors.primary[500]}20`,
+  quickActionTile: {
+    width: '47.5%',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: spacing[5],
+    paddingHorizontal: spacing[3],
+    position: 'relative',
   },
-  actionButtonText: {
-    flex: 1,
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-  },
-  earnBadge: {
-    backgroundColor: colors.success,
-    paddingHorizontal: spacing[2],
-    paddingVertical: spacing[0.5],
-    borderRadius: borderRadius.sm,
-  },
-  earnBadgeText: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-  },
-  signOutButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: spacing[3],
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+  quickActionIconContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: borderRadius.full,
+    backgroundColor: `${colors.primary[500]}15`,
     alignItems: 'center',
-    marginTop: spacing[4],
+    justifyContent: 'center',
+    marginBottom: spacing[2],
   },
-  signOutText: {
-    color: colors.error,
-    fontSize: typography.fontSize.base,
+  quickActionTitle: {
+    color: colors.textPrimary,
+    fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.semibold,
+    fontFamily: typography.fontFamily.semibold,
+    textAlign: 'center',
   },
-  bottomPadding: { height: spacing[10] },
+  actionBadge: {
+    position: 'absolute',
+    top: spacing[2],
+    right: spacing[2],
+    paddingHorizontal: spacing[1.5],
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+    zIndex: 2,
+  },
+  actionBadgeText: {
+    color: colors.textPrimary,
+    fontSize: 9,
+    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.bold,
+    letterSpacing: 0.5,
+  },
+  // BOTTOM
+  bottomPadding: {
+    height: spacing[10],
+  },
 });

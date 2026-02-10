@@ -13,9 +13,17 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Button, Input } from '../../components';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  withSequence,
+  FadeIn,
+} from 'react-native-reanimated';
+import { Button, Input, GradientButton, GlassCard } from '../../components';
 import { useAuth } from '../../context/AuthContext';
-import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import { colors, spacing, typography, borderRadius, shadows, gradients, glass } from '../../lib/theme';
 import { isDesktop, isWeb } from '../../lib/responsive';
 
 type LoginScreenProps = {
@@ -31,6 +39,22 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Animated background orb
+  const orbTranslateX = useSharedValue(0);
+  React.useEffect(() => {
+    orbTranslateX.value = withRepeat(
+      withSequence(
+        withTiming(30, { duration: 4000 }),
+        withTiming(-30, { duration: 4000 })
+      ),
+      -1
+    );
+  }, []);
+
+  const orbStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: orbTranslateX.value }],
+  }));
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -67,6 +91,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
                   <Ionicons name="flash" size={48} color={colors.primary[500]} />
                 </View>
                 <Text style={styles.desktopLogo}>FIGHT</Text>
+                <View style={styles.logoRedLine} />
                 <Text style={styles.desktopLogoAccent}>STATION</Text>
               </View>
 
@@ -160,6 +185,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
+                  leftIcon={<Ionicons name="mail-outline" size={20} color={colors.neutral[400]} />}
                 />
 
                 <Input
@@ -168,6 +194,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
+                  leftIcon={<Ionicons name="lock-closed-outline" size={20} color={colors.neutral[400]} />}
                   rightIcon={
                     <Text style={styles.showHide}>
                       {showPassword ? 'Hide' : 'Show'}
@@ -180,12 +207,12 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
                   <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
                 </TouchableOpacity>
 
-                <Button
+                <GradientButton
                   title="Sign In"
                   onPress={handleLogin}
                   loading={loading}
+                  fullWidth
                   size="lg"
-                  style={styles.button}
                 />
 
                 <View style={styles.divider}>
@@ -220,7 +247,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
     );
   }
 
-  // Mobile layout (original)
+  // Mobile layout (redesigned)
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -230,20 +257,26 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Animated background orb */}
+        <Animated.View style={[styles.backgroundOrb, orbStyle]} />
+
         {/* Logo/Header */}
-        <View style={styles.header}>
-          <View style={styles.mobileLogoIcon}>
-            <Ionicons name="flash" size={32} color={colors.primary[500]} />
-          </View>
+        <Animated.View
+          entering={FadeIn.delay(0).duration(500)}
+          style={styles.header}
+        >
           <Text style={styles.logo}>FIGHT</Text>
+          <View style={styles.logoRedLine} />
           <Text style={styles.logoAccent}>STATION</Text>
           <Text style={styles.tagline}>Connect. Train. Compete.</Text>
-        </View>
+        </Animated.View>
 
         {/* Login Form */}
         <View style={styles.form}>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to continue</Text>
+          <Animated.View entering={FadeIn.delay(100).duration(500)}>
+            <Text style={styles.title}>Welcome Back</Text>
+            <Text style={styles.subtitle}>Sign in to continue</Text>
+          </Animated.View>
 
           {error ? (
             <View style={styles.errorContainer}>
@@ -252,64 +285,79 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
             </View>
           ) : null}
 
-          <Input
-            label="Email"
-            placeholder="Enter your email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
+          <Animated.View entering={FadeIn.delay(200).duration(500)}>
+            <Input
+              label="Email"
+              placeholder="Enter your email"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              leftIcon={<Ionicons name="mail-outline" size={20} color={colors.neutral[400]} />}
+            />
+          </Animated.View>
 
-          <Input
-            label="Password"
-            placeholder="Enter your password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
-            rightIcon={
-              <Text style={styles.showHide}>
-                {showPassword ? 'Hide' : 'Show'}
-              </Text>
-            }
-            onRightIconPress={() => setShowPassword(!showPassword)}
-          />
+          <Animated.View entering={FadeIn.delay(300).duration(500)}>
+            <Input
+              label="Password"
+              placeholder="Enter your password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              leftIcon={<Ionicons name="lock-closed-outline" size={20} color={colors.neutral[400]} />}
+              rightIcon={
+                <Text style={styles.showHide}>
+                  {showPassword ? 'Hide' : 'Show'}
+                </Text>
+              }
+              onRightIconPress={() => setShowPassword(!showPassword)}
+            />
+          </Animated.View>
 
-          <TouchableOpacity style={styles.forgotPassword}>
-            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-          </TouchableOpacity>
+          <Animated.View entering={FadeIn.delay(400).duration(500)}>
+            <TouchableOpacity style={styles.forgotPassword}>
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
+          </Animated.View>
 
-          <Button
-            title="Sign In"
-            onPress={handleLogin}
-            loading={loading}
-            size="lg"
-            style={styles.button}
-          />
+          <Animated.View entering={FadeIn.delay(500).duration(500)}>
+            <GradientButton
+              title="Sign In"
+              onPress={handleLogin}
+              loading={loading}
+              fullWidth
+              size="lg"
+            />
+          </Animated.View>
 
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
-          </View>
+          <Animated.View entering={FadeIn.delay(600).duration(500)}>
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.dividerLine} />
+            </View>
 
-          <Button
-            title="Continue with Google"
-            onPress={() => {}}
-            variant="outline"
-            size="lg"
-            style={styles.googleButton}
-          />
+            <View style={styles.socialButtons}>
+              <TouchableOpacity style={styles.socialButton}>
+                <Ionicons name="logo-google" size={20} color={colors.textPrimary} />
+                <Text style={styles.socialButtonText}>Google</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.socialButton}>
+                <Ionicons name="logo-apple" size={20} color={colors.textPrimary} />
+                <Text style={styles.socialButtonText}>Apple</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
         </View>
 
         {/* Sign Up Link */}
-        <View style={styles.footer}>
+        <Animated.View entering={FadeIn.delay(700).duration(500)} style={styles.footer}>
           <Text style={styles.footerText}>Don't have an account? </Text>
           <TouchableOpacity onPress={() => navigation.navigate('Register')}>
             <Text style={styles.footerLink}>Sign Up</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -325,32 +373,38 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: spacing[6],
   },
+  backgroundOrb: {
+    position: 'absolute',
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: 'rgba(196,30,58,0.05)',
+    top: 40,
+    alignSelf: 'center',
+    left: (width - 300) / 2 - spacing[6],
+  },
   header: {
     alignItems: 'center',
     marginTop: spacing[10],
     marginBottom: spacing[8],
   },
-  mobileLogoIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: borderRadius.xl,
-    backgroundColor: colors.surfaceLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing[4],
-  },
   logo: {
-    fontSize: typography.fontSize['5xl'],
-    fontWeight: '900',
-    color: colors.neutral[50],
+    fontFamily: 'BarlowCondensed-Black',
+    fontSize: 56,
     letterSpacing: 4,
+    color: '#FFFFFF',
+  },
+  logoRedLine: {
+    width: 40,
+    height: 2,
+    backgroundColor: colors.primary[500],
+    marginVertical: spacing[1],
   },
   logoAccent: {
-    fontSize: typography.fontSize['3xl'],
-    fontWeight: '300',
-    color: colors.primary[500],
-    letterSpacing: 8,
-    marginTop: -spacing[2],
+    fontFamily: 'Inter-Medium',
+    fontSize: 20,
+    letterSpacing: 10,
+    color: colors.textSecondary,
   },
   tagline: {
     color: colors.neutral[400],
@@ -417,6 +471,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     fontSize: typography.fontSize.sm,
   },
+  socialButtons: {
+    flexDirection: 'row',
+    gap: spacing[3],
+  },
+  socialButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[2],
+    backgroundColor: glass.light.backgroundColor,
+    borderRadius: borderRadius.lg,
+    paddingVertical: spacing[3],
+    borderWidth: 1,
+    borderColor: glass.light.borderColor,
+  },
+  socialButtonText: {
+    color: colors.textPrimary,
+    fontSize: typography.fontSize.sm,
+    fontWeight: '500',
+  },
   googleButton: {
     borderColor: colors.neutral[600],
   },
@@ -469,17 +544,16 @@ const styles = StyleSheet.create({
     marginBottom: spacing[4],
   },
   desktopLogo: {
+    fontFamily: 'BarlowCondensed-Black',
     fontSize: 56,
-    fontWeight: '900',
-    color: colors.neutral[50],
-    letterSpacing: 6,
+    letterSpacing: 4,
+    color: '#FFFFFF',
   },
   desktopLogoAccent: {
-    fontSize: 32,
-    fontWeight: '300',
-    color: colors.primary[500],
-    letterSpacing: 12,
-    marginTop: -spacing[2],
+    fontFamily: 'Inter-Medium',
+    fontSize: 20,
+    letterSpacing: 10,
+    color: colors.textSecondary,
   },
   brandingTagline: {
     fontSize: typography.fontSize.xl,
@@ -576,27 +650,6 @@ const styles = StyleSheet.create({
   },
   desktopForm: {
     gap: spacing[1],
-  },
-  socialButtons: {
-    flexDirection: 'row',
-    gap: spacing[3],
-  },
-  socialButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[2],
-    backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  socialButtonText: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.sm,
-    fontWeight: '500',
   },
   desktopFooter: {
     flexDirection: 'row',

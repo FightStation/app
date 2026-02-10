@@ -13,9 +13,17 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Button, Input } from '../../components';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  withSequence,
+  FadeIn,
+} from 'react-native-reanimated';
+import { Button, Input, GradientButton, GlassCard } from '../../components';
 import { useAuth } from '../../context/AuthContext';
-import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import { colors, spacing, typography, borderRadius, shadows, gradients, glass } from '../../lib/theme';
 import { isDesktop } from '../../lib/responsive';
 
 const { width, height } = Dimensions.get('window');
@@ -36,6 +44,22 @@ export function RegisterScreen({ navigation, route }: any) {
       setReferralCode(route.params.referralCode);
     }
   }, [route?.params?.referralCode]);
+
+  // Animated background orb
+  const orbTranslateX = useSharedValue(0);
+  useEffect(() => {
+    orbTranslateX.value = withRepeat(
+      withSequence(
+        withTiming(30, { duration: 4000 }),
+        withTiming(-30, { duration: 4000 })
+      ),
+      -1
+    );
+  }, []);
+
+  const orbStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: orbTranslateX.value }],
+  }));
 
   const handleRegister = async () => {
     if (!email || !password || !confirmPassword) {
@@ -71,62 +95,78 @@ export function RegisterScreen({ navigation, route }: any) {
   // Shared form content
   const renderForm = (isDesktopLayout: boolean) => (
     <>
-      <Input
-        label="Email"
-        placeholder="Enter your email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
+      <Animated.View entering={FadeIn.delay(200).duration(500)}>
+        <Input
+          label="Email"
+          placeholder="Enter your email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          leftIcon={<Ionicons name="mail-outline" size={20} color={colors.neutral[400]} />}
+        />
+      </Animated.View>
 
-      <Input
-        label="Password"
-        placeholder="Create a password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry={!showPassword}
-        rightIcon={
-          <Text style={styles.showHide}>
-            {showPassword ? 'Hide' : 'Show'}
-          </Text>
-        }
-        onRightIconPress={() => setShowPassword(!showPassword)}
-        helperText="At least 6 characters"
-      />
+      <Animated.View entering={FadeIn.delay(300).duration(500)}>
+        <Input
+          label="Password"
+          placeholder="Create a password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!showPassword}
+          leftIcon={<Ionicons name="lock-closed-outline" size={20} color={colors.neutral[400]} />}
+          rightIcon={
+            <Text style={styles.showHide}>
+              {showPassword ? 'Hide' : 'Show'}
+            </Text>
+          }
+          onRightIconPress={() => setShowPassword(!showPassword)}
+          helperText="At least 6 characters"
+        />
+      </Animated.View>
 
-      <Input
-        label="Confirm Password"
-        placeholder="Confirm your password"
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-        secureTextEntry={!showPassword}
-      />
+      <Animated.View entering={FadeIn.delay(400).duration(500)}>
+        <Input
+          label="Confirm Password"
+          placeholder="Confirm your password"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry={!showPassword}
+          leftIcon={<Ionicons name="lock-closed-outline" size={20} color={colors.neutral[400]} />}
+        />
+      </Animated.View>
 
-      <Input
-        label="Referral Code (Optional)"
-        placeholder="Enter referral code"
-        value={referralCode}
-        onChangeText={(text) => setReferralCode(text.toUpperCase())}
-        autoCapitalize="characters"
-        autoCorrect={false}
-        helperText="Have a code from a gym or friend?"
-      />
+      <Animated.View entering={FadeIn.delay(500).duration(500)}>
+        <Input
+          label="Referral Code (Optional)"
+          placeholder="Enter referral code"
+          value={referralCode}
+          onChangeText={(text) => setReferralCode(text.toUpperCase())}
+          autoCapitalize="characters"
+          autoCorrect={false}
+          leftIcon={<Ionicons name="gift-outline" size={20} color={colors.neutral[400]} />}
+          helperText="Have a code from a gym or friend?"
+        />
+      </Animated.View>
 
-      <Button
-        title="Create Account"
-        onPress={handleRegister}
-        loading={loading}
-        size="lg"
-        style={styles.button}
-      />
+      <Animated.View entering={FadeIn.delay(600).duration(500)}>
+        <GradientButton
+          title="Create Account"
+          onPress={handleRegister}
+          loading={loading}
+          fullWidth
+          size="lg"
+        />
+      </Animated.View>
 
-      <Text style={styles.terms}>
-        By signing up, you agree to our{' '}
-        <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
-        <Text style={styles.termsLink}>Privacy Policy</Text>
-      </Text>
+      <Animated.View entering={FadeIn.delay(700).duration(500)}>
+        <Text style={styles.terms}>
+          By signing up, you agree to our{' '}
+          <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
+          <Text style={styles.termsLink}>Privacy Policy</Text>
+        </Text>
+      </Animated.View>
     </>
   );
 
@@ -195,6 +235,7 @@ export function RegisterScreen({ navigation, route }: any) {
                   <Ionicons name="flash" size={48} color={colors.primary[500]} />
                 </View>
                 <Text style={styles.desktopLogo}>FIGHT</Text>
+                <View style={styles.logoRedLine} />
                 <Text style={styles.desktopLogoAccent}>STATION</Text>
               </View>
 
@@ -258,7 +299,7 @@ export function RegisterScreen({ navigation, route }: any) {
     );
   }
 
-  // Mobile layout
+  // Mobile layout (redesigned)
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -268,19 +309,25 @@ export function RegisterScreen({ navigation, route }: any) {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Animated background orb */}
+        <Animated.View style={[styles.backgroundOrb, orbStyle]} />
+
         {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.mobileLogoIcon}>
-            <Ionicons name="flash" size={32} color={colors.primary[500]} />
-          </View>
+        <Animated.View
+          entering={FadeIn.delay(0).duration(500)}
+          style={styles.header}
+        >
           <Text style={styles.logo}>FIGHT</Text>
+          <View style={styles.logoRedLine} />
           <Text style={styles.logoAccent}>STATION</Text>
-        </View>
+        </Animated.View>
 
         {/* Register Form */}
         <View style={styles.form}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join the boxing network</Text>
+          <Animated.View entering={FadeIn.delay(100).duration(500)}>
+            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>Join the boxing network</Text>
+          </Animated.View>
 
           {error ? (
             <View style={styles.errorContainer}>
@@ -293,12 +340,12 @@ export function RegisterScreen({ navigation, route }: any) {
         </View>
 
         {/* Sign In Link */}
-        <View style={styles.footer}>
+        <Animated.View entering={FadeIn.delay(800).duration(500)} style={styles.footer}>
           <Text style={styles.footerText}>Already have an account? </Text>
           <TouchableOpacity onPress={() => navigation.navigate('Login')}>
             <Text style={styles.footerLink}>Sign In</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -314,32 +361,38 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: spacing[6],
   },
+  backgroundOrb: {
+    position: 'absolute',
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: 'rgba(196,30,58,0.05)',
+    top: 40,
+    alignSelf: 'center',
+    left: (width - 300) / 2 - spacing[6],
+  },
   header: {
     alignItems: 'center',
     marginTop: spacing[8],
     marginBottom: spacing[6],
   },
-  mobileLogoIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: borderRadius.xl,
-    backgroundColor: colors.surfaceLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing[4],
-  },
   logo: {
-    fontSize: typography.fontSize['4xl'],
-    fontWeight: '900',
-    color: colors.neutral[50],
+    fontFamily: 'BarlowCondensed-Black',
+    fontSize: 56,
     letterSpacing: 4,
+    color: '#FFFFFF',
+  },
+  logoRedLine: {
+    width: 40,
+    height: 2,
+    backgroundColor: colors.primary[500],
+    marginVertical: spacing[1],
   },
   logoAccent: {
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: '300',
-    color: colors.primary[500],
-    letterSpacing: 8,
-    marginTop: -spacing[1],
+    fontFamily: 'Inter-Medium',
+    fontSize: 20,
+    letterSpacing: 10,
+    color: colors.textSecondary,
   },
   form: {
     flex: 1,
@@ -485,17 +538,16 @@ const styles = StyleSheet.create({
     marginBottom: spacing[4],
   },
   desktopLogo: {
-    fontSize: 48,
-    fontWeight: '900',
-    color: colors.neutral[50],
-    letterSpacing: 6,
+    fontFamily: 'BarlowCondensed-Black',
+    fontSize: 56,
+    letterSpacing: 4,
+    color: '#FFFFFF',
   },
   desktopLogoAccent: {
-    fontSize: 28,
-    fontWeight: '300',
-    color: colors.primary[500],
+    fontFamily: 'Inter-Medium',
+    fontSize: 20,
     letterSpacing: 10,
-    marginTop: -spacing[2],
+    color: colors.textSecondary,
   },
   brandingTagline: {
     fontSize: typography.fontSize.lg,

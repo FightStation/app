@@ -8,13 +8,15 @@ import {
   ScrollView,
   ActivityIndicator,
   Modal,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import { colors, spacing, typography, borderRadius, glass } from '../../lib/theme';
+import { BadgeRow, GlassCard, AnimatedListItem, SectionHeader, EmptyState } from '../../components';
 import {
   searchEvents,
   getNearbyEvents,
@@ -36,6 +38,23 @@ type EnhancedEventBrowseScreenProps = {
   navigation: NativeStackNavigationProp<any>;
 };
 
+// Sport type to color mapping for accent bars
+const getEventTypeColor = (eventType?: string): string | undefined => {
+  switch (eventType) {
+    case 'sparring': return colors.sport.boxing;
+    case 'pad_work': return colors.sport.muay_thai;
+    case 'technique': return colors.sport.kickboxing;
+    case 'conditioning': return colors.sport.mma;
+    default: return undefined;
+  }
+};
+
+const VIEW_TABS = [
+  { key: 'recommended', label: 'For You', icon: 'star' as keyof typeof Ionicons.glyphMap },
+  { key: 'nearby', label: 'Nearby', icon: 'navigate' as keyof typeof Ionicons.glyphMap },
+  { key: 'all', label: 'All', icon: 'grid' as keyof typeof Ionicons.glyphMap },
+];
+
 export function EnhancedEventBrowseScreen({ navigation }: EnhancedEventBrowseScreenProps) {
   const { profile } = useAuth();
   const { showToast } = useToast();
@@ -45,6 +64,7 @@ export function EnhancedEventBrowseScreen({ navigation }: EnhancedEventBrowseScr
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<'all' | 'nearby' | 'recommended'>('recommended');
   const [showFilters, setShowFilters] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Filters
   const [filters, setFilters] = useState<EventFilters>({});
@@ -139,102 +159,115 @@ export function EnhancedEventBrowseScreen({ navigation }: EnhancedEventBrowseScr
     }
   };
 
-  const renderEvent = ({ item }: { item: EventWithDistance }) => {
+  // Filter events by search query
+  const filteredEvents = searchQuery.trim()
+    ? events.filter(e =>
+        e.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (e.gym_name && e.gym_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (e.gym_city && e.gym_city.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : events;
+
+  const renderEvent = ({ item, index }: { item: EventWithDistance; index: number }) => {
     const isFull = (item.current_participants || 0) >= item.max_participants;
     const hasRequested = item.request_status === 'pending';
     const isApproved = item.request_status === 'approved';
+    const accentColor = getEventTypeColor(item.event_type);
 
     return (
-      <TouchableOpacity
-        style={styles.eventCard}
-        onPress={() => navigation.navigate('EventDetail', { eventId: item.id })}
-      >
-        <View style={styles.eventHeader}>
-          <View style={styles.eventType}>
-            <Ionicons
-              name={(EVENT_TYPE_ICONS[item.event_type || 'sparring']) as any}
-              size={16}
-              color={colors.primary[500]}
-            />
-            <Text style={styles.eventTypeText}>
-              {EVENT_TYPE_LABELS[item.event_type || 'sparring']}
+      <AnimatedListItem index={index}>
+        <GlassCard
+          style={styles.eventCard}
+          onPress={() => navigation.navigate('EventDetail', { eventId: item.id })}
+          accentColor={accentColor}
+        >
+          <View style={styles.eventHeader}>
+            <View style={styles.eventType}>
+              <Ionicons
+                name={(EVENT_TYPE_ICONS[item.event_type || 'sparring']) as any}
+                size={16}
+                color={colors.primary[500]}
+              />
+              <Text style={styles.eventTypeText}>
+                {EVENT_TYPE_LABELS[item.event_type || 'sparring']}
+              </Text>
+            </View>
+
+            {item.distance !== undefined && (
+              <View style={styles.distanceBadge}>
+                <Ionicons name="location" size={12} color={colors.textMuted} />
+                <Text style={styles.distanceText}>{item.distance.toFixed(1)} km</Text>
+              </View>
+            )}
+
+            {isFull && (
+              <View style={styles.fullBadge}>
+                <Text style={styles.fullBadgeText}>FULL</Text>
+              </View>
+            )}
+            {hasRequested && (
+              <View style={styles.pendingBadge}>
+                <Text style={styles.pendingBadgeText}>REQUESTED</Text>
+              </View>
+            )}
+            {isApproved && (
+              <View style={styles.approvedBadge}>
+                <Text style={styles.approvedBadgeText}>APPROVED</Text>
+              </View>
+            )}
+          </View>
+
+          <Text style={styles.eventTitle}>{item.title}</Text>
+
+          <View style={styles.eventMeta}>
+            <View style={styles.metaItem}>
+              <Ionicons name="business" size={14} color={colors.textMuted} />
+              <Text style={styles.metaText}>{item.gym_name}</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Ionicons name="location" size={14} color={colors.textMuted} />
+              <Text style={styles.metaText}>{item.gym_city}</Text>
+            </View>
+          </View>
+
+          <View style={styles.eventMeta}>
+            <View style={styles.metaItem}>
+              <Ionicons name="calendar" size={14} color={colors.textMuted} />
+              <Text style={styles.metaText}>
+                {new Date(item.event_date).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Ionicons name="time" size={14} color={colors.textMuted} />
+              <Text style={styles.metaText}>{item.start_time}</Text>
+            </View>
+          </View>
+
+          {item.intensity && (
+            <View style={styles.intensityBadge}>
+              <Text style={styles.intensityText}>{item.intensity.toUpperCase()}</Text>
+            </View>
+          )}
+
+          <View style={styles.eventFooter}>
+            <Text style={styles.participantsText}>
+              {item.current_participants || 0}/{item.max_participants} participants
             </Text>
+
+            {!hasRequested && !isApproved && !isFull && (
+              <TouchableOpacity
+                style={styles.requestButton}
+                onPress={() => handleRequestToJoin(item)}
+              >
+                <Text style={styles.requestButtonText}>Request to Join</Text>
+              </TouchableOpacity>
+            )}
           </View>
-
-          {item.distance !== undefined && (
-            <View style={styles.distanceBadge}>
-              <Ionicons name="location" size={12} color={colors.textMuted} />
-              <Text style={styles.distanceText}>{item.distance.toFixed(1)} km</Text>
-            </View>
-          )}
-
-          {isFull && (
-            <View style={styles.fullBadge}>
-              <Text style={styles.fullBadgeText}>FULL</Text>
-            </View>
-          )}
-          {hasRequested && (
-            <View style={styles.pendingBadge}>
-              <Text style={styles.pendingBadgeText}>REQUESTED</Text>
-            </View>
-          )}
-          {isApproved && (
-            <View style={styles.approvedBadge}>
-              <Text style={styles.approvedBadgeText}>APPROVED</Text>
-            </View>
-          )}
-        </View>
-
-        <Text style={styles.eventTitle}>{item.title}</Text>
-
-        <View style={styles.eventMeta}>
-          <View style={styles.metaItem}>
-            <Ionicons name="business" size={14} color={colors.textMuted} />
-            <Text style={styles.metaText}>{item.gym_name}</Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Ionicons name="location" size={14} color={colors.textMuted} />
-            <Text style={styles.metaText}>{item.gym_city}</Text>
-          </View>
-        </View>
-
-        <View style={styles.eventMeta}>
-          <View style={styles.metaItem}>
-            <Ionicons name="calendar" size={14} color={colors.textMuted} />
-            <Text style={styles.metaText}>
-              {new Date(item.event_date).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-              })}
-            </Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Ionicons name="time" size={14} color={colors.textMuted} />
-            <Text style={styles.metaText}>{item.start_time}</Text>
-          </View>
-        </View>
-
-        {item.intensity && (
-          <View style={styles.intensityBadge}>
-            <Text style={styles.intensityText}>{item.intensity.toUpperCase()}</Text>
-          </View>
-        )}
-
-        <View style={styles.eventFooter}>
-          <Text style={styles.participantsText}>
-            {item.current_participants || 0}/{item.max_participants} participants
-          </Text>
-
-          {!hasRequested && !isApproved && !isFull && (
-            <TouchableOpacity
-              style={styles.requestButton}
-              onPress={() => handleRequestToJoin(item)}
-            >
-              <Text style={styles.requestButtonText}>Request to Join</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </TouchableOpacity>
+        </GlassCard>
+      </AnimatedListItem>
     );
   };
 
@@ -250,51 +283,32 @@ export function EnhancedEventBrowseScreen({ navigation }: EnhancedEventBrowseScr
         </TouchableOpacity>
       </View>
 
-      {/* View Tabs */}
-      <View style={styles.viewTabs}>
-        <TouchableOpacity
-          style={[styles.viewTab, view === 'recommended' && styles.viewTabActive]}
-          onPress={() => setView('recommended')}
-        >
-          <Ionicons
-            name="star"
-            size={18}
-            color={view === 'recommended' ? colors.primary[500] : colors.textMuted}
+      {/* Glass Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={18} color={colors.textMuted} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search events, gyms, cities..."
+            placeholderTextColor={colors.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
           />
-          <Text
-            style={[styles.viewTabText, view === 'recommended' && styles.viewTabTextActive]}
-          >
-            For You
-          </Text>
-        </TouchableOpacity>
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
 
-        <TouchableOpacity
-          style={[styles.viewTab, view === 'nearby' && styles.viewTabActive]}
-          onPress={() => setView('nearby')}
-        >
-          <Ionicons
-            name="navigate"
-            size={18}
-            color={view === 'nearby' ? colors.primary[500] : colors.textMuted}
-          />
-          <Text style={[styles.viewTabText, view === 'nearby' && styles.viewTabTextActive]}>
-            Nearby
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.viewTab, view === 'all' && styles.viewTabActive]}
-          onPress={() => setView('all')}
-        >
-          <Ionicons
-            name="grid"
-            size={18}
-            color={view === 'all' ? colors.primary[500] : colors.textMuted}
-          />
-          <Text style={[styles.viewTabText, view === 'all' && styles.viewTabTextActive]}>
-            All
-          </Text>
-        </TouchableOpacity>
+      {/* View Tabs - BadgeRow */}
+      <View style={styles.tabContainer}>
+        <BadgeRow
+          items={VIEW_TABS}
+          selected={view}
+          onSelect={(key) => setView(key as 'all' | 'nearby' | 'recommended')}
+        />
       </View>
 
       {loading ? (
@@ -303,22 +317,24 @@ export function EnhancedEventBrowseScreen({ navigation }: EnhancedEventBrowseScr
         </View>
       ) : (
         <FlatList
-          data={events}
+          data={filteredEvents}
           renderItem={renderEvent}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           onRefresh={loadEvents}
           refreshing={loading}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Ionicons name="calendar-outline" size={64} color={colors.textMuted} />
-              <Text style={styles.emptyStateText}>No events found</Text>
-              <Text style={styles.emptyStateSubtext}>
-                {view === 'recommended' && 'Complete your profile to get better recommendations'}
-                {view === 'nearby' && 'No events found in your area'}
-                {view === 'all' && 'Try adjusting your filters'}
-              </Text>
-            </View>
+            <EmptyState
+              icon="calendar-outline"
+              title="No events found"
+              description={
+                view === 'recommended'
+                  ? 'Complete your profile to get better recommendations'
+                  : view === 'nearby'
+                  ? 'No events found in your area'
+                  : 'Try adjusting your filters'
+              }
+            />
           }
         />
       )}
@@ -452,32 +468,35 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.lg,
     fontWeight: typography.fontWeight.bold,
     color: colors.textPrimary,
+    fontFamily: typography.fontFamily.display,
   },
-  viewTabs: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+  // Glass Search Bar
+  searchContainer: {
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
   },
-  viewTab: {
-    flex: 1,
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: glass.light.backgroundColor,
+    borderColor: glass.light.borderColor,
+    borderWidth: glass.light.borderWidth,
+    borderRadius: borderRadius.lg,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2.5],
     gap: spacing[2],
-    paddingVertical: spacing[3],
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
   },
-  viewTabActive: {
-    borderBottomColor: colors.primary[500],
+  searchInput: {
+    flex: 1,
+    fontSize: typography.fontSize.base,
+    color: colors.textPrimary,
+    fontFamily: typography.fontFamily.regular,
   },
-  viewTabText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textMuted,
-  },
-  viewTabTextActive: {
-    color: colors.primary[500],
+  // Tab container for BadgeRow
+  tabContainer: {
+    paddingVertical: spacing[2],
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   loadingContainer: {
     flex: 1,
@@ -489,11 +508,7 @@ const styles = StyleSheet.create({
     gap: spacing[4],
   },
   eventCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
+    marginBottom: 0,
   },
   eventHeader: {
     flexDirection: 'row',
@@ -516,6 +531,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.semibold,
     color: colors.primary[500],
     textTransform: 'uppercase',
+    fontFamily: typography.fontFamily.semibold,
   },
   distanceBadge: {
     flexDirection: 'row',
@@ -523,7 +539,7 @@ const styles = StyleSheet.create({
     gap: spacing[1],
     paddingHorizontal: spacing[2],
     paddingVertical: spacing[1],
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: borderRadius.md,
   },
   distanceText: {
@@ -569,6 +585,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.bold,
     color: colors.textPrimary,
     marginBottom: spacing[2],
+    fontFamily: typography.fontFamily.semibold,
   },
   eventMeta: {
     flexDirection: 'row',
@@ -583,12 +600,13 @@ const styles = StyleSheet.create({
   metaText: {
     fontSize: typography.fontSize.sm,
     color: colors.textMuted,
+    fontFamily: typography.fontFamily.regular,
   },
   intensityBadge: {
     alignSelf: 'flex-start',
     paddingHorizontal: spacing[2],
     paddingVertical: spacing[1],
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: borderRadius.md,
     marginBottom: spacing[3],
   },
@@ -596,6 +614,7 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     fontWeight: typography.fontWeight.semibold,
     color: colors.textSecondary,
+    fontFamily: typography.fontFamily.semibold,
   },
   eventFooter: {
     flexDirection: 'row',
@@ -603,11 +622,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: spacing[3],
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: 'rgba(255,255,255,0.06)',
   },
   participantsText: {
     fontSize: typography.fontSize.sm,
     color: colors.textMuted,
+    fontFamily: typography.fontFamily.regular,
   },
   requestButton: {
     paddingHorizontal: spacing[4],
@@ -619,25 +639,7 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.semibold,
     color: colors.textPrimary,
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[10],
-  },
-  emptyStateText: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginTop: spacing[4],
-  },
-  emptyStateSubtext: {
-    fontSize: typography.fontSize.base,
-    color: colors.textMuted,
-    marginTop: spacing[2],
-    textAlign: 'center',
-    paddingHorizontal: spacing[4],
+    fontFamily: typography.fontFamily.semibold,
   },
   modalOverlay: {
     flex: 1,
@@ -662,6 +664,7 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xl,
     fontWeight: typography.fontWeight.bold,
     color: colors.textPrimary,
+    fontFamily: typography.fontFamily.display,
   },
   modalScroll: {
     padding: spacing[4],
@@ -672,6 +675,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginTop: spacing[4],
     marginBottom: spacing[2],
+    fontFamily: typography.fontFamily.semibold,
   },
   filterOptions: {
     flexDirection: 'row',
@@ -681,10 +685,10 @@ const styles = StyleSheet.create({
   filterOption: {
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: borderRadius.full,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   filterOptionActive: {
     backgroundColor: colors.primary[500],
@@ -705,10 +709,10 @@ const styles = StyleSheet.create({
   distanceOption: {
     flex: 1,
     paddingVertical: spacing[3],
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
   },
   distanceOptionActive: {
@@ -733,7 +737,7 @@ const styles = StyleSheet.create({
   clearButton: {
     flex: 1,
     paddingVertical: spacing[3],
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: borderRadius.lg,
     alignItems: 'center',
   },

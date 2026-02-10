@@ -20,3 +20,15 @@ export { Skeleton, SkeletonCard, SkeletonProfile, SkeletonFeed } from './Skeleto
 export { Toast } from './Toast';
 export type { ToastType } from './Toast';
 export { MatchScoreBadge } from './MatchScoreBadge';
+
+// Premium redesign primitives
+export { GlassCard } from './GlassCard';
+export { GradientButton } from './GradientButton';
+export { AnimatedHeader } from './AnimatedHeader';
+export { SectionHeader } from './SectionHeader';
+export { StatCard } from './StatCard';
+export { EmptyState } from './EmptyState';
+export { PulseIndicator } from './PulseIndicator';
+export { BadgeRow } from './BadgeRow';
+export { ProgressRing } from './ProgressRing';
+export { AnimatedListItem } from './AnimatedListItem';

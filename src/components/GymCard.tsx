@@ -6,9 +6,11 @@ import {
   TouchableOpacity,
   Image,
   ImageBackground,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, typography, borderRadius } from '../lib/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { colors, spacing, typography, borderRadius, gradients, glass } from '../lib/theme';
 import { MockGym } from '../lib/mockData';
 
 interface GymCardProps {
@@ -43,7 +45,10 @@ export function GymCard({ gym, onPress, onRequestSparring }: GymCardProps) {
           resizeMode="cover"
         />
         {/* Gradient overlay for better text readability */}
-        <View style={styles.imageOverlay} />
+        <LinearGradient
+          colors={gradients.heroOverlay}
+          style={StyleSheet.absoluteFillObject}
+        />
 
         {/* Intensity Badge */}
         {badge && (
@@ -127,10 +132,17 @@ export function GymCard({ gym, onPress, onRequestSparring }: GymCardProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
+    backgroundColor: glass.light.backgroundColor,
+    borderRadius: borderRadius['2xl'],
     overflow: 'hidden',
     marginBottom: spacing[4],
+    borderWidth: 1,
+    borderColor: glass.light.borderColor,
+    ...(Platform.OS === 'web' ? {
+      // @ts-ignore
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+    } : {}),
   },
   imageContainer: {
     height: 140,
@@ -169,6 +181,7 @@ const styles = StyleSheet.create({
   gymName: {
     color: colors.textPrimary,
     fontSize: typography.fontSize.lg,
+    fontFamily: typography.fontFamily.semibold,
     fontWeight: typography.fontWeight.bold,
   },
   verifiedIcon: {

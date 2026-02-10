@@ -10,10 +10,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { Button } from '../../components';
+import Animated, { FadeIn } from 'react-native-reanimated';
+import { GlassCard, GradientButton, AnimatedListItem } from '../../components';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
-import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import { colors, spacing, typography, borderRadius, shadows, gradients } from '../../lib/theme';
 import { isDesktop } from '../../lib/responsive';
 
 type RoleSelectionScreenProps = {
@@ -86,7 +87,10 @@ export function RoleSelectionScreen({ navigation }: RoleSelectionScreenProps) {
       >
         <View style={[styles.card, isDesktop && styles.desktopCard]}>
           {/* Header */}
-          <View style={styles.header}>
+          <Animated.View
+            entering={FadeIn.delay(0).duration(500)}
+            style={styles.header}
+          >
             <View style={styles.iconContainer}>
               <Ionicons name="flash" size={32} color={colors.primary[500]} />
             </View>
@@ -94,87 +98,102 @@ export function RoleSelectionScreen({ navigation }: RoleSelectionScreenProps) {
             <Text style={styles.subtitle}>
               Select your role to personalize your experience
             </Text>
-          </View>
+          </Animated.View>
 
           {/* Role Cards */}
           <View style={[styles.roles, isDesktop && styles.desktopRoles]}>
-            {roles.map((role) => (
-              <TouchableOpacity
-                key={role.id}
-                style={[
-                  styles.roleCard,
-                  selectedRole === role.id && styles.roleCardSelected,
-                  isDesktop && styles.desktopRoleCard,
-                ]}
-                onPress={() => setSelectedRole(role.id)}
-                activeOpacity={0.8}
-              >
-                <View style={styles.roleHeader}>
-                  <View style={[
-                    styles.roleIconContainer,
-                    selectedRole === role.id && styles.roleIconContainerSelected,
-                  ]}>
-                    <Ionicons
-                      name={role.icon}
-                      size={28}
-                      color={selectedRole === role.id ? colors.primary[500] : colors.textMuted}
-                    />
-                  </View>
-                  <View style={styles.roleInfo}>
-                    <Text style={[
-                      styles.roleTitle,
-                      selectedRole === role.id && styles.roleTitleSelected,
-                    ]}>
-                      {role.title}
-                    </Text>
-                    <Text style={styles.roleDescription}>{role.description}</Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.radioOuter,
-                      selectedRole === role.id && styles.radioOuterSelected,
-                    ]}
+            {roles.map((role, index) => (
+              <AnimatedListItem key={role.id} index={index}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setSelectedRole(role.id)}
+                >
+                  <GlassCard
+                    style={{
+                      ...styles.roleCardGlass,
+                      ...(selectedRole === role.id ? styles.roleCardSelected : {}),
+                      ...(selectedRole === role.id ? shadows.glow : {}),
+                      ...(isDesktop ? styles.desktopRoleCard : {}),
+                    }}
                   >
-                    {selectedRole === role.id && <View style={styles.radioInner} />}
-                  </View>
-                </View>
-
-                {/* Features - show when selected or on desktop */}
-                {(selectedRole === role.id || isDesktop) && (
-                  <View style={styles.featuresContainer}>
-                    {role.features.map((feature, index) => (
-                      <View key={index} style={styles.featureItem}>
+                    <View style={styles.roleHeader}>
+                      <View style={[
+                        styles.roleIconContainer,
+                        selectedRole === role.id
+                          ? styles.roleIconContainerSelected
+                          : styles.roleIconContainerDefault,
+                      ]}>
                         <Ionicons
-                          name="checkmark-circle"
-                          size={16}
-                          color={selectedRole === role.id ? colors.primary[500] : colors.textMuted}
+                          name={role.icon}
+                          size={24}
+                          color={selectedRole === role.id ? '#FFFFFF' : colors.textMuted}
                         />
-                        <Text style={[
-                          styles.featureText,
-                          selectedRole === role.id && styles.featureTextSelected,
-                        ]}>
-                          {feature}
-                        </Text>
                       </View>
-                    ))}
-                  </View>
-                )}
-              </TouchableOpacity>
+                      <View style={styles.roleInfo}>
+                        <Text style={[
+                          styles.roleTitle,
+                          selectedRole === role.id && styles.roleTitleSelected,
+                        ]}>
+                          {role.title}
+                        </Text>
+                        <Text style={styles.roleDescription}>{role.description}</Text>
+                      </View>
+                      <View
+                        style={[
+                          styles.radioOuter,
+                          selectedRole === role.id && styles.radioOuterSelected,
+                        ]}
+                      >
+                        {selectedRole === role.id && <View style={styles.radioInner} />}
+                      </View>
+                    </View>
+
+                    {/* Features - show when selected or on desktop */}
+                    {(selectedRole === role.id || isDesktop) && (
+                      <View style={styles.featuresContainer}>
+                        {role.features.map((feature, featureIndex) => (
+                          <View key={featureIndex} style={[
+                            styles.featurePill,
+                            selectedRole === role.id && styles.featurePillSelected,
+                          ]}>
+                            <Ionicons
+                              name="checkmark-circle"
+                              size={14}
+                              color={selectedRole === role.id ? colors.primary[500] : colors.textMuted}
+                            />
+                            <Text style={[
+                              styles.featureText,
+                              selectedRole === role.id && styles.featureTextSelected,
+                            ]}>
+                              {feature}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </GlassCard>
+                </TouchableOpacity>
+              </AnimatedListItem>
             ))}
           </View>
 
           {/* Footer */}
-          <View style={styles.footer}>
-            <Button
+          <Animated.View
+            entering={FadeIn.delay(400).duration(500)}
+            style={styles.footer}
+          >
+            <GradientButton
               title="Continue"
               onPress={handleContinue}
               loading={loading}
               disabled={!selectedRole}
+              fullWidth
               size="lg"
-              style={styles.continueButton}
+              icon="arrow-forward"
+              iconPosition="right"
             />
             <Text style={styles.footerNote}>You can change this later in settings</Text>
-          </View>
+          </Animated.View>
         </View>
       </ScrollView>
     </View>
@@ -252,16 +271,13 @@ const styles = StyleSheet.create({
   desktopRoles: {
     gap: spacing[4],
   },
-  roleCard: {
-    backgroundColor: colors.surfaceLight,
-    padding: spacing[4],
-    borderRadius: borderRadius.xl,
+  roleCardGlass: {
     borderWidth: 2,
     borderColor: colors.border,
   },
   roleCardSelected: {
+    borderWidth: 2,
     borderColor: colors.primary[500],
-    backgroundColor: `${colors.primary[500]}08`,
   },
   desktopRoleCard: {
     padding: spacing[5],
@@ -271,16 +287,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   roleIconContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: borderRadius.lg,
-    backgroundColor: colors.surface,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing[4],
   },
+  roleIconContainerDefault: {
+    backgroundColor: colors.surfaceLight,
+  },
   roleIconContainerSelected: {
-    backgroundColor: `${colors.primary[500]}20`,
+    backgroundColor: colors.primary[500],
   },
   roleInfo: {
     flex: 1,
@@ -327,7 +345,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing[2],
   },
-  featureItem: {
+  featurePill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[1],
@@ -335,6 +353,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
     borderRadius: borderRadius.full,
+  },
+  featurePillSelected: {
+    backgroundColor: `${colors.primary[500]}10`,
   },
   featureText: {
     fontSize: typography.fontSize.xs,
@@ -355,5 +376,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: typography.fontSize.sm,
     textAlign: 'center',
+    marginTop: spacing[3],
   },
 });

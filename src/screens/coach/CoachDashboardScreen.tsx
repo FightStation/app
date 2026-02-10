@@ -16,7 +16,17 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { Coach } from '../../types';
-import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import { colors, spacing, typography, borderRadius, gradients, textStyles, animations } from '../../lib/theme';
+import {
+  GlassCard,
+  GradientButton,
+  SectionHeader,
+  StatCard,
+  EmptyState,
+  PulseIndicator,
+  AnimatedListItem,
+} from '../../components';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type StudentWithActivity = {
   id: string;
@@ -81,6 +91,12 @@ const getActivityColor = (lastDate?: string) => {
   if (daysSince <= 7) return colors.success;
   if (daysSince <= 14) return colors.warning;
   return colors.error;
+};
+
+const isActiveStudent = (lastDate?: string) => {
+  if (!lastDate) return false;
+  const daysSince = Math.floor((Date.now() - new Date(lastDate).getTime()) / (1000 * 60 * 60 * 24));
+  return daysSince <= 7;
 };
 
 export function CoachDashboardScreen({ navigation }: CoachDashboardScreenProps) {
@@ -263,38 +279,32 @@ export function CoachDashboardScreen({ navigation }: CoachDashboardScreenProps) 
             <>
               {/* Stats Row */}
               <View style={styles.statsRow}>
-                <View style={styles.statCard}>
-                  <View style={styles.statIcon}>
-                    <Ionicons name="people" size={24} color={colors.primary[500]} />
-                  </View>
-                  <Text style={styles.statValue}>{students.length}</Text>
-                  <Text style={styles.statLabel}>Students</Text>
-                </View>
-                <View style={styles.statCard}>
-                  <View style={styles.statIcon}>
-                    <Ionicons name="calendar" size={24} color={colors.info} />
-                  </View>
-                  <Text style={styles.statValue}>{gymEvents.length}</Text>
-                  <Text style={styles.statLabel}>Gym Events</Text>
-                </View>
-                <View style={styles.statCard}>
-                  <View style={styles.statIcon}>
-                    <Ionicons name="star" size={24} color={colors.warning} />
-                  </View>
-                  <Text style={styles.statValue}>4.9</Text>
-                  <Text style={styles.statLabel}>Rating</Text>
-                </View>
+                <StatCard
+                  icon="people"
+                  value={students.length}
+                  label="Students"
+                  accentColor={colors.primary[500]}
+                />
+                <StatCard
+                  icon="calendar"
+                  value={gymEvents.length}
+                  label="Gym Events"
+                  accentColor={colors.info}
+                />
+                <StatCard
+                  icon="star"
+                  value="4.9"
+                  label="Rating"
+                  accentColor={colors.warning}
+                />
               </View>
 
               {/* Training Overview */}
               {students.length > 0 && (
                 <View style={styles.section}>
-                  <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>TRAINING OVERVIEW</Text>
-                    <Text style={styles.sectionSubtitle}>Last 30 days</Text>
-                  </View>
+                  <SectionHeader title="Training Overview" subtitle="Last 30 days" />
 
-                  <View style={styles.overviewCard}>
+                  <GlassCard>
                     <View style={styles.overviewRow}>
                       <View style={styles.overviewStat}>
                         <Text style={styles.overviewValue}>{trainingOverview.total_sessions}</Text>
@@ -322,21 +332,22 @@ export function CoachDashboardScreen({ navigation }: CoachDashboardScreenProps) 
                         </Text>
                       </View>
                     )}
-                  </View>
+                  </GlassCard>
                 </View>
               )}
 
               {/* Quick Actions */}
               <View style={styles.quickActions}>
-                <TouchableOpacity
-                  style={styles.actionButton}
+                <GradientButton
+                  title="Schedule Session"
                   onPress={() => navigation.navigate('ScheduleSession')}
-                >
-                  <Ionicons name="add-circle" size={20} color={colors.textPrimary} />
-                  <Text style={styles.actionButtonText}>Schedule Session</Text>
-                </TouchableOpacity>
+                  icon="add-circle"
+                  fullWidth
+                />
+              </View>
+              <View style={styles.quickActionsSecondary}>
                 <TouchableOpacity
-                  style={[styles.actionButton, styles.actionButtonSecondary]}
+                  style={styles.actionButtonSecondary}
                   onPress={() => navigation.navigate('StudentProgress')}
                 >
                   <Ionicons name="analytics" size={20} color={colors.textSecondary} />
@@ -347,129 +358,128 @@ export function CoachDashboardScreen({ navigation }: CoachDashboardScreenProps) 
               {/* Student Activity - Students with upcoming events */}
               {students.some(s => s.upcoming_event) && (
                 <View style={styles.section}>
-                  <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>STUDENT ACTIVITY</Text>
-                  </View>
+                  <SectionHeader title="Student Activity" />
 
-                  {students.filter(s => s.upcoming_event).map((student) => (
-                    <TouchableOpacity
-                      key={student.id}
-                      style={styles.activityCard}
-                      onPress={() => navigation.navigate('FighterProfileView', { fighterId: student.id })}
-                    >
-                      <View style={styles.activityIcon}>
-                        <Ionicons name="calendar" size={16} color={colors.primary[500]} />
-                      </View>
-                      <View style={styles.activityInfo}>
-                        <Text style={styles.activityText}>
-                          <Text style={styles.activityName}>{student.first_name}</Text> has an event
-                        </Text>
-                        <Text style={styles.activityEvent}>
-                          {student.upcoming_event?.title} • {formatDate(student.upcoming_event?.event_date || '')}
-                        </Text>
-                      </View>
-                      <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-                    </TouchableOpacity>
+                  {students.filter(s => s.upcoming_event).map((student, i) => (
+                    <AnimatedListItem key={student.id} index={i}>
+                      <GlassCard
+                        onPress={() => navigation.navigate('FighterProfileView', { fighterId: student.id })}
+                        style={styles.activityCardGlass}
+                      >
+                        <View style={styles.activityCardInner}>
+                          <View style={styles.activityIcon}>
+                            <Ionicons name="calendar" size={16} color={colors.primary[500]} />
+                          </View>
+                          <View style={styles.activityInfo}>
+                            <Text style={styles.activityText}>
+                              <Text style={styles.activityName}>{student.first_name}</Text> has an event
+                            </Text>
+                            <Text style={styles.activityEvent}>
+                              {student.upcoming_event?.title} • {formatDate(student.upcoming_event?.event_date || '')}
+                            </Text>
+                          </View>
+                          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                        </View>
+                      </GlassCard>
+                    </AnimatedListItem>
                   ))}
                 </View>
               )}
 
               {/* My Students */}
               <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>MY STUDENTS</Text>
-                  <TouchableOpacity onPress={() => navigation.navigate('AllStudents')}>
-                    <Text style={styles.seeAll}>See All</Text>
-                  </TouchableOpacity>
-                </View>
+                <SectionHeader
+                  title="My Students"
+                  onSeeAll={() => navigation.navigate('AllStudents')}
+                />
 
-                {students.map((student) => (
-                  <TouchableOpacity
-                    key={student.id}
-                    style={styles.studentCard}
-                    onPress={() => navigation.navigate('FighterProfileView', { fighterId: student.id })}
-                  >
-                    <View style={styles.studentAvatarContainer}>
-                      <View style={styles.studentAvatar}>
-                        <Ionicons name="person" size={24} color={colors.textPrimary} />
-                      </View>
-                      <View
-                        style={[
-                          styles.activityDot,
-                          { backgroundColor: getActivityColor(student.last_session_date) },
-                        ]}
-                      />
-                    </View>
-                    <View style={styles.studentInfo}>
-                      <Text style={styles.studentName}>{student.first_name} {student.last_name}</Text>
-                      <View style={styles.studentMeta}>
-                        <View style={[styles.levelBadge, { backgroundColor: `${colors.primary[500]}20` }]}>
-                          <Text style={[styles.levelText, { color: colors.primary[500] }]}>
-                            {student.experience_level}
-                          </Text>
+                {students.map((student, i) => (
+                  <AnimatedListItem key={student.id} index={i}>
+                    <GlassCard
+                      onPress={() => navigation.navigate('FighterProfileView', { fighterId: student.id })}
+                      style={styles.studentCardGlass}
+                    >
+                      <View style={styles.studentCardInner}>
+                        <View style={styles.studentAvatarContainer}>
+                          <View style={styles.studentAvatar}>
+                            <Ionicons name="person" size={24} color={colors.textPrimary} />
+                          </View>
+                          {isActiveStudent(student.last_session_date) ? (
+                            <View style={styles.pulseContainer}>
+                              <PulseIndicator color={colors.success} size="sm" />
+                            </View>
+                          ) : (
+                            <View
+                              style={[
+                                styles.activityDot,
+                                { backgroundColor: getActivityColor(student.last_session_date) },
+                              ]}
+                            />
+                          )}
                         </View>
-                        <Text style={styles.studentSessions}>
-                          {student.sessions_this_month} this mo.
-                        </Text>
+                        <View style={styles.studentInfo}>
+                          <Text style={styles.studentName}>{student.first_name} {student.last_name}</Text>
+                          <View style={styles.studentMeta}>
+                            <View style={[styles.levelBadge, { backgroundColor: `${colors.primary[500]}20` }]}>
+                              <Text style={[styles.levelText, { color: colors.primary[500] }]}>
+                                {student.experience_level}
+                              </Text>
+                            </View>
+                            <Text style={styles.studentSessions}>
+                              {student.sessions_this_month} this mo.
+                            </Text>
+                          </View>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
                       </View>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-                  </TouchableOpacity>
+                    </GlassCard>
+                  </AnimatedListItem>
                 ))}
               </View>
 
               {/* Gym Events */}
               {gymEvents.length > 0 && (
                 <View style={styles.section}>
-                  <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>GYM EVENTS</Text>
-                    <TouchableOpacity>
-                      <Text style={styles.seeAll}>See All</Text>
-                    </TouchableOpacity>
-                  </View>
+                  <SectionHeader title="Gym Events" onSeeAll={() => {}} />
 
-                  {gymEvents.map((event) => (
-                    <TouchableOpacity
-                      key={event.id}
-                      style={styles.sessionCard}
-                      onPress={() => navigation.navigate('EventDetail' as any, { eventId: event.id })}
-                    >
-                      <View style={styles.sessionIcon}>
-                        <Ionicons name="fitness" size={24} color={colors.primary[500]} />
-                      </View>
-                      <View style={styles.sessionInfo}>
-                        <Text style={styles.sessionTitle}>{event.title}</Text>
-                        <View style={styles.sessionMeta}>
-                          <Ionicons name="calendar-outline" size={14} color={colors.textMuted} />
-                          <Text style={styles.metaText}>{formatDate(event.event_date)} • {event.start_time}</Text>
+                  {gymEvents.map((event, i) => (
+                    <AnimatedListItem key={event.id} index={i}>
+                      <GlassCard
+                        onPress={() => navigation.navigate('EventDetail' as any, { eventId: event.id })}
+                        style={styles.sessionCardGlass}
+                      >
+                        <View style={styles.sessionCardInner}>
+                          <View style={styles.sessionIcon}>
+                            <Ionicons name="fitness" size={24} color={colors.primary[500]} />
+                          </View>
+                          <View style={styles.sessionInfo}>
+                            <Text style={styles.sessionTitle}>{event.title}</Text>
+                            <View style={styles.sessionMeta}>
+                              <Ionicons name="calendar-outline" size={14} color={colors.textMuted} />
+                              <Text style={styles.metaText}>{formatDate(event.event_date)} • {event.start_time}</Text>
+                            </View>
+                          </View>
+                          <View style={styles.participantsCount}>
+                            <Text style={styles.participantsText}>
+                              {event.current_participants}/{event.max_participants}
+                            </Text>
+                          </View>
                         </View>
-                      </View>
-                      <View style={styles.participantsCount}>
-                        <Text style={styles.participantsText}>
-                          {event.current_participants}/{event.max_participants}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
+                      </GlassCard>
+                    </AnimatedListItem>
                   ))}
                 </View>
               )}
 
               {/* Referral Program */}
-              <TouchableOpacity
-                style={styles.referButton}
-                onPress={() => navigation.navigate('CoachReferralDashboard')}
-              >
-                <Ionicons name="gift" size={20} color={colors.textPrimary} />
-                <Text style={styles.referButtonText}>Refer Students & Earn</Text>
-                <View style={styles.newBadge}>
-                  <Text style={styles.newBadgeText}>NEW</Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* Sign Out */}
-              <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
-                <Text style={styles.signOutText}>Sign Out</Text>
-              </TouchableOpacity>
+              <View style={styles.referralSection}>
+                <GradientButton
+                  title="Refer Students & Earn"
+                  onPress={() => navigation.navigate('CoachReferralDashboard')}
+                  icon="gift"
+                  fullWidth
+                />
+              </View>
 
               <View style={styles.bottomPadding} />
             </>
@@ -499,56 +509,34 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing[3] },
-  greeting: { color: colors.textMuted, fontSize: typography.fontSize.sm },
+  greeting: {
+    color: colors.textMuted,
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.regular,
+  },
   coachName: {
     color: colors.textPrimary,
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
+    fontSize: 22,
+    fontFamily: 'BarlowCondensed-Bold',
   },
   headerIcon: {
     width: 40,
     height: 40,
     borderRadius: borderRadius.full,
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   container: { flex: 1 },
   content: { padding: spacing[4] },
-  statsRow: { flexDirection: 'row', gap: spacing[3], marginBottom: spacing[4] },
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
+  statsRow: {
+    flexDirection: 'row',
+    gap: spacing[3],
+    marginBottom: spacing[4],
   },
-  statIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.surfaceLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing[2],
-  },
-  statValue: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: typography.fontWeight.bold,
-    marginBottom: spacing[1],
-  },
-  statLabel: { color: colors.textMuted, fontSize: typography.fontSize.xs },
   // Training Overview
-  overviewCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
   overviewRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -559,13 +547,14 @@ const styles = StyleSheet.create({
   },
   overviewValue: {
     color: colors.textPrimary,
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
+    fontSize: 24,
+    fontFamily: 'BarlowCondensed-Bold',
     marginBottom: spacing[1],
   },
   overviewLabel: {
     color: colors.textMuted,
     fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.medium,
   },
   overviewDivider: {
     width: 1,
@@ -580,81 +569,55 @@ const styles = StyleSheet.create({
     paddingTop: spacing[3],
     borderTopWidth: 1,
     borderTopColor: colors.border,
+    backgroundColor: 'rgba(245,158,11,0.08)',
+    borderRadius: borderRadius.lg,
+    padding: spacing[3],
   },
   inactiveText: {
     color: colors.warning,
     fontSize: typography.fontSize.xs,
     fontWeight: typography.fontWeight.medium,
+    fontFamily: typography.fontFamily.medium,
     flex: 1,
   },
   // Quick Actions
   quickActions: {
-    flexDirection: 'row',
-    gap: spacing[3],
+    marginBottom: spacing[3],
+  },
+  quickActionsSecondary: {
     marginBottom: spacing[4],
   },
-  actionButton: {
-    flex: 1,
+  actionButtonSecondary: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary[500],
-    paddingVertical: spacing[3],
-    borderRadius: borderRadius.lg,
-    gap: spacing[2],
-  },
-  actionButtonSecondary: {
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: colors.border,
-  },
-  actionButtonText: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.bold,
+    paddingVertical: spacing[3],
+    borderRadius: borderRadius.lg,
+    gap: spacing[2],
   },
   actionButtonTextSecondary: {
     color: colors.textSecondary,
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.semibold,
   },
   section: { marginBottom: spacing[6] },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  // Session / Event card
+  sessionCardGlass: {
     marginBottom: spacing[3],
   },
-  sectionTitle: {
-    color: colors.primary[500],
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-    letterSpacing: 0.5,
-  },
-  sectionSubtitle: {
-    color: colors.textMuted,
-    fontSize: typography.fontSize.xs,
-  },
-  seeAll: {
-    color: colors.textSecondary,
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-  },
-  sessionCard: {
+  sessionCardInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[3],
-    marginBottom: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   sessionIcon: {
     width: 48,
     height: 48,
     borderRadius: borderRadius.full,
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: `${colors.primary[500]}20`,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing[3],
@@ -664,6 +627,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontSize: typography.fontSize.base,
     fontWeight: typography.fontWeight.semibold,
+    fontFamily: typography.fontFamily.semibold,
     marginBottom: spacing[1],
   },
   sessionMeta: {
@@ -672,9 +636,13 @@ const styles = StyleSheet.create({
     gap: spacing[1],
     marginBottom: spacing[0.5],
   },
-  metaText: { color: colors.textMuted, fontSize: typography.fontSize.xs },
+  metaText: {
+    color: colors.textMuted,
+    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.regular,
+  },
   participantsCount: {
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: borderRadius.sm,
     paddingHorizontal: spacing[2],
     paddingVertical: spacing[1],
@@ -683,17 +651,15 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: typography.fontSize.xs,
     fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.semibold,
   },
-  // Student card with activity dot
-  studentCard: {
+  // Student card
+  studentCardGlass: {
+    marginBottom: spacing[3],
+  },
+  studentCardInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[3],
-    marginBottom: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   studentAvatarContainer: {
     position: 'relative',
@@ -703,9 +669,14 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: borderRadius.full,
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  pulseContainer: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
   },
   activityDot: {
     position: 'absolute',
@@ -715,13 +686,14 @@ const styles = StyleSheet.create({
     height: 14,
     borderRadius: 7,
     borderWidth: 2,
-    borderColor: colors.cardBg,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   studentInfo: { flex: 1 },
   studentName: {
     color: colors.textPrimary,
     fontSize: typography.fontSize.base,
     fontWeight: typography.fontWeight.semibold,
+    fontFamily: typography.fontFamily.semibold,
     marginBottom: spacing[1],
   },
   studentMeta: {
@@ -738,69 +710,20 @@ const styles = StyleSheet.create({
   levelText: {
     fontSize: typography.fontSize.xs,
     fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.semibold,
   },
   studentSessions: {
     color: colors.textMuted,
     fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.regular,
   },
-  referButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary[500],
-    paddingVertical: spacing[4],
-    borderRadius: borderRadius.lg,
-    gap: spacing[2],
-    marginTop: spacing[2],
-  },
-  referButtonText: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.bold,
-  },
-  newBadge: {
-    backgroundColor: colors.success,
-    paddingHorizontal: spacing[2],
-    paddingVertical: spacing[0.5],
-    borderRadius: borderRadius.sm,
-  },
-  newBadgeText: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-  },
-  signOutButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: spacing[3],
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    marginTop: spacing[4],
-  },
-  signOutText: {
-    color: colors.error,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-  },
-  bottomPadding: { height: spacing[10] },
-  // Loading state
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[10],
-  },
-  // Activity card styles
-  activityCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.lg,
-    padding: spacing[3],
+  // Activity card
+  activityCardGlass: {
     marginBottom: spacing[2],
-    borderWidth: 1,
-    borderColor: colors.border,
+  },
+  activityCardInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   activityIcon: {
     width: 32,
@@ -817,14 +740,29 @@ const styles = StyleSheet.create({
   activityText: {
     color: colors.textSecondary,
     fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.regular,
   },
   activityName: {
     color: colors.textPrimary,
     fontWeight: typography.fontWeight.semibold,
+    fontFamily: typography.fontFamily.semibold,
   },
   activityEvent: {
     color: colors.primary[400],
     fontSize: typography.fontSize.xs,
     marginTop: spacing[1],
+    fontFamily: typography.fontFamily.regular,
+  },
+  // Referral
+  referralSection: {
+    marginTop: spacing[2],
+  },
+  bottomPadding: { height: spacing[10] },
+  // Loading state
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing[10],
   },
 });

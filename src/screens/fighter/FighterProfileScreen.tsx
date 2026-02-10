@@ -14,11 +14,18 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
 import { Fighter, WEIGHT_CLASS_LABELS, EXPERIENCE_LABELS } from '../../types';
-import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import { colors, spacing, typography, borderRadius, gradients } from '../../lib/theme';
 import { pickImage, uploadFighterPhoto } from '../../lib/storage';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import {
+  GlassCard,
+  GradientButton,
+  SectionHeader,
+  StatCard,
+} from '../../components';
 
 type FighterProfileScreenProps = {
   navigation?: NativeStackNavigationProp<any>;
@@ -159,7 +166,7 @@ export function FighterProfileScreen({ navigation }: FighterProfileScreenProps) 
                   <Text style={styles.fighterAge}>Age: {fighter.age}</Text>
                 )}
                 {fighter?.age && fighter?.city && (
-                  <Text style={styles.fighterMetaDot}>•</Text>
+                  <Text style={styles.fighterMetaDot}>{'\u2022'}</Text>
                 )}
                 {fighter?.city && (
                   <Text style={styles.fighterCity}>
@@ -172,88 +179,108 @@ export function FighterProfileScreen({ navigation }: FighterProfileScreenProps) 
 
           {/* Affiliated Gym Card */}
           {(gymName || fighter?.gym_id) && (
-            <View style={styles.gymCard}>
-              <View style={styles.gymCardLeft}>
-                <View style={styles.gymLogo}>
-                  <Text style={styles.gymLogoText}>
-                    {(gymName || 'G').charAt(0).toUpperCase()}
-                  </Text>
+            <View style={styles.sectionSpacing}>
+              <GlassCard>
+                <View style={styles.gymCardInner}>
+                  <View style={styles.gymCardLeft}>
+                    <LinearGradient
+                      colors={gradients.primaryToCrimson}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.gymLogo}
+                    >
+                      <Text style={styles.gymLogoText}>
+                        {(gymName || 'G').charAt(0).toUpperCase()}
+                      </Text>
+                    </LinearGradient>
+                    <View>
+                      <Text style={styles.gymLabel}>AFFILIATED GYM</Text>
+                      <Text style={styles.gymNameText}>{gymName || 'Loading...'}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.activeBadge}>
+                    <View style={styles.activeDot} />
+                    <Text style={styles.activeText}>ACTIVE</Text>
+                  </View>
                 </View>
-                <View>
-                  <Text style={styles.gymLabel}>AFFILIATED GYM</Text>
-                  <Text style={styles.gymNameText}>{gymName || 'Loading...'}</Text>
-                </View>
-              </View>
-              <View style={styles.activeBadge}>
-                <View style={styles.activeDot} />
-                <Text style={styles.activeText}>ACTIVE</Text>
-              </View>
+              </GlassCard>
             </View>
           )}
 
           {/* Quick Stats Row */}
-          <View style={styles.quickStatsRow}>
-            <View style={styles.quickStat}>
-              <Text style={styles.quickStatLabel}>WEIGHT</Text>
-              <Text style={styles.quickStatValue}>
-                {fighter?.weight_class ? WEIGHT_CLASS_LABELS[fighter.weight_class] : '\u2014'}
-              </Text>
-            </View>
-            <View style={styles.quickStatDivider} />
-            <View style={styles.quickStat}>
-              <Text style={styles.quickStatLabel}>STANCE</Text>
-              <Text style={styles.quickStatValue}>
-                {fighter?.stance?.toUpperCase() || '\u2014'}
-              </Text>
-            </View>
-            <View style={styles.quickStatDivider} />
-            <View style={styles.quickStat}>
-              <Text style={styles.quickStatLabel}>RECORD</Text>
-              <Text style={styles.quickStatValue}>
-                {fighter?.record || '0-0-0'}
-              </Text>
+          <View style={styles.sectionSpacing}>
+            <SectionHeader title="Quick Stats" />
+            <View style={styles.statCardRow}>
+              <StatCard
+                icon="barbell"
+                value={fighter?.weight_class ? WEIGHT_CLASS_LABELS[fighter.weight_class] : '\u2014'}
+                label="Weight"
+                accentColor={colors.primary[500]}
+              />
+              <StatCard
+                icon="hand-left"
+                value={fighter?.stance?.toUpperCase() || '\u2014'}
+                label="Stance"
+                accentColor={colors.secondary[500]}
+              />
+              <StatCard
+                icon="trophy"
+                value={fighter?.record || '0-0-0'}
+                label="Record"
+                accentColor={colors.accent.gold}
+              />
             </View>
           </View>
 
           {/* Fight Stats */}
-          <View style={styles.fightStatsRow}>
-            <View style={styles.fightStatCard}>
-              <Text style={styles.fightStatValue}>{fighter?.fights_count || 0}</Text>
-              <Text style={styles.fightStatLabel}>Fights</Text>
+          <View style={styles.sectionSpacing}>
+            <SectionHeader title="Fight Stats" />
+            <View style={styles.statCardRow}>
+              <StatCard
+                icon="fitness"
+                value={fighter?.fights_count || 0}
+                label="Fights"
+                accentColor={colors.primary[500]}
+              />
+              <StatCard
+                icon="people"
+                value={fighter?.sparring_count || 0}
+                label="Sparring"
+                accentColor={colors.info}
+              />
+              {fighter?.sports && fighter.sports.length > 0 && (
+                <StatCard
+                  icon="flash"
+                  value={fighter.sports.length}
+                  label="Sports"
+                  accentColor={colors.warning}
+                />
+              )}
             </View>
-            <View style={styles.fightStatCard}>
-              <Text style={styles.fightStatValue}>{fighter?.sparring_count || 0}</Text>
-              <Text style={styles.fightStatLabel}>Sparring</Text>
-            </View>
-            {fighter?.sports && fighter.sports.length > 0 && (
-              <View style={styles.fightStatCard}>
-                <Text style={styles.fightStatValue}>{fighter.sports.length}</Text>
-                <Text style={styles.fightStatLabel}>Sports</Text>
-              </View>
-            )}
           </View>
 
           {/* Bio Section */}
-          {fighter?.bio ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>BIO</Text>
-              <Text style={styles.bioText}>{fighter.bio}</Text>
-            </View>
-          ) : (
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>BIO</Text>
-              <Text style={styles.bioPlaceholder}>No bio added yet</Text>
-            </View>
-          )}
+          <View style={styles.sectionSpacing}>
+            <SectionHeader title="Bio" />
+            <GlassCard>
+              {fighter?.bio ? (
+                <Text style={styles.bioText}>{fighter.bio}</Text>
+              ) : (
+                <Text style={styles.bioPlaceholder}>No bio added yet</Text>
+              )}
+            </GlassCard>
+          </View>
 
           {/* Refer Friends Button */}
-          <TouchableOpacity
-            style={styles.referButton}
-            onPress={() => navigation?.navigate('ReferralDashboard')}
-          >
-            <Ionicons name="gift" size={20} color={colors.textPrimary} />
-            <Text style={styles.referButtonText}>Refer Friends & Earn</Text>
-          </TouchableOpacity>
+          <View style={styles.buttonSpacing}>
+            <GradientButton
+              title="Refer Friends & Earn"
+              onPress={() => navigation?.navigate('ReferralDashboard')}
+              icon="gift"
+              fullWidth
+              size="lg"
+            />
+          </View>
 
           {/* Sign Out */}
           <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
@@ -384,18 +411,16 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: typography.fontSize.sm,
   },
-  // Gym Card
-  gymCard: {
+  // Section spacing
+  sectionSpacing: {
+    marginHorizontal: spacing[4],
+    marginTop: spacing[4],
+  },
+  // Gym Card inner
+  gymCardInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginHorizontal: spacing[4],
-    marginTop: spacing[4],
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.lg,
-    padding: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   gymCardLeft: {
     flexDirection: 'row',
@@ -406,7 +431,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: borderRadius.md,
-    backgroundColor: colors.surfaceLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -445,75 +469,12 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     fontWeight: typography.fontWeight.semibold,
   },
-  // Quick Stats
-  quickStatsRow: {
+  // Stat card row
+  statCardRow: {
     flexDirection: 'row',
-    marginHorizontal: spacing[4],
-    marginTop: spacing[3],
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.lg,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  quickStat: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  quickStatLabel: {
-    color: colors.textMuted,
-    fontSize: typography.fontSize.xs,
-    letterSpacing: 0.5,
-    marginBottom: spacing[1],
-  },
-  quickStatValue: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
-  },
-  quickStatDivider: {
-    width: 1,
-    backgroundColor: colors.border,
-    marginVertical: spacing[1],
-  },
-  // Fight Stats
-  fightStatsRow: {
-    flexDirection: 'row',
-    marginHorizontal: spacing[4],
-    marginTop: spacing[3],
     gap: spacing[3],
   },
-  fightStatCard: {
-    flex: 1,
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.lg,
-    padding: spacing[3],
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  fightStatValue: {
-    color: colors.primary[500],
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: typography.fontWeight.bold,
-  },
-  fightStatLabel: {
-    color: colors.textMuted,
-    fontSize: typography.fontSize.xs,
-    marginTop: spacing[1],
-  },
   // Bio
-  section: {
-    marginHorizontal: spacing[4],
-    marginTop: spacing[5],
-  },
-  sectionLabel: {
-    color: colors.primary[500],
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-    letterSpacing: 1,
-    marginBottom: spacing[2],
-  },
   bioText: {
     color: colors.textSecondary,
     fontSize: typography.fontSize.sm,
@@ -524,22 +485,10 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     fontStyle: 'italic',
   },
-  // Refer Button
-  referButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  // Buttons
+  buttonSpacing: {
     marginHorizontal: spacing[4],
     marginTop: spacing[6],
-    paddingVertical: spacing[4],
-    backgroundColor: colors.primary[500],
-    borderRadius: borderRadius.lg,
-    gap: spacing[2],
-  },
-  referButtonText: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.bold,
   },
   // Sign Out
   signOutButton: {

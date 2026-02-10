@@ -17,9 +17,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Post, Fighter, Gym, Coach, SparringEvent, CombatSport, COMBAT_SPORT_SHORT } from '../../types';
-import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import { colors, spacing, typography, borderRadius, gradients } from '../../lib/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { isDesktop } from '../../lib/responsive';
+import { GlassCard, PulseIndicator, AnimatedListItem } from '../../components';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CONTENT_WIDTH = isDesktop ? 600 : SCREEN_WIDTH;
@@ -53,6 +54,17 @@ const getSportBgColor = (sport: CombatSport): string => {
     kickboxing: colors.sport.kickboxingLight,
   };
   return sportColors[sport] || `${colors.primary[500]}15`;
+};
+
+// Gradient colors for each sport (used for story ring)
+const getSportGradient = (sport: CombatSport): readonly [string, string] => {
+  switch (sport) {
+    case 'boxing': return ['#C41E3A', '#7F1D1D'] as const;
+    case 'mma': return ['#F97316', '#DC2626'] as const;
+    case 'muay_thai': return ['#EAB308', '#F59E0B'] as const;
+    case 'kickboxing': return ['#3B82F6', '#6366F1'] as const;
+    default: return gradients.primaryToCrimson;
+  }
 };
 
 // Story item type
@@ -406,7 +418,7 @@ export function FeedScreen({ navigation }: any) {
     }
   };
 
-  // Render Stories Row with sport-colored rings
+  // Render Stories Row with gradient ring borders
   const renderStoriesRow = () => (
     <View style={styles.storiesContainer}>
       <ScrollView
@@ -425,9 +437,12 @@ export function FeedScreen({ navigation }: any) {
           <Text style={styles.storyLabel}>Your Story</Text>
         </TouchableOpacity>
 
-        {/* Story Items with sport-colored rings */}
+        {/* Story Items with gradient ring borders */}
         {stories.map((story) => {
           const sportColor = story.sport ? getSportColor(story.sport) : colors.border;
+          const sportGrad = story.sport ? getSportGradient(story.sport) : gradients.primaryToCrimson;
+          const ringGradient = story.isLive ? (['#EF4444', '#DC2626'] as const) : sportGrad;
+
           return (
             <TouchableOpacity
               key={story.id}
@@ -438,24 +453,37 @@ export function FeedScreen({ navigation }: any) {
                 }
               }}
             >
-              <View style={[
-                styles.storyRing,
-                { borderColor: story.isLive ? colors.error : sportColor },
-                story.isLive && styles.storyRingLive,
-              ]}>
-                <View style={styles.storyAvatar}>
-                  {story.type === 'live' && (
-                    <View style={styles.liveBadge}>
-                      <Text style={styles.liveBadgeText}>LIVE</Text>
+              {/* Gradient ring border */}
+              <View style={styles.storyRingOuter}>
+                <LinearGradient
+                  colors={ringGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.storyGradientRing}
+                >
+                  {/* 2px gap (dark background) */}
+                  <View style={styles.storyRingGap}>
+                    <View style={styles.storyAvatar}>
+                      {story.type === 'live' && (
+                        <View style={styles.liveBadge}>
+                          <Text style={styles.liveBadgeText}>LIVE</Text>
+                        </View>
+                      )}
+                      {story.type === 'event' && (
+                        <Ionicons name="calendar" size={24} color={sportColor} />
+                      )}
+                      {story.type === 'training' && (
+                        <Ionicons name="videocam" size={24} color={sportColor} />
+                      )}
                     </View>
-                  )}
-                  {story.type === 'event' && (
-                    <Ionicons name="calendar" size={24} color={sportColor} />
-                  )}
-                  {story.type === 'training' && (
-                    <Ionicons name="videocam" size={24} color={sportColor} />
-                  )}
-                </View>
+                  </View>
+                </LinearGradient>
+                {/* Live stories get PulseIndicator */}
+                {story.isLive && (
+                  <View style={styles.livePulseWrap}>
+                    <PulseIndicator color={colors.error} size="sm" />
+                  </View>
+                )}
                 {/* Sport badge */}
                 {story.sport && (
                   <View style={[styles.sportMicroBadge, { backgroundColor: sportColor }]}>
@@ -545,206 +573,208 @@ export function FeedScreen({ navigation }: any) {
     );
   };
 
-  const renderPostCard = ({ item: post }: { item: FeedPost }) => {
+  const renderPostCard = ({ item: post, index }: { item: FeedPost; index: number }) => {
     const author = getAuthorInfo(post);
     const isLiked = likedPosts.has(post.id);
     const heartAnim = heartAnimations[post.id] || new Animated.Value(0);
 
     return (
-      <View style={styles.postCard}>
-        {/* Post Header */}
-        <TouchableOpacity
-          style={styles.postHeader}
-          onPress={() => navigateToProfile(author.type, author.id)}
-        >
-          <View style={styles.avatarContainer}>
-            {author.avatar ? (
-              <Image source={{ uri: author.avatar }} style={styles.avatar} />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Ionicons
-                  name={author.type === 'gym' ? 'business' : 'person'}
-                  size={22}
-                  color={colors.primary[500]}
-                />
-              </View>
-            )}
-            {/* Type indicator */}
-            <View style={[
-              styles.typeIndicator,
-              author.type === 'gym' && styles.typeIndicatorGym,
-            ]}>
-              <Ionicons
-                name={author.type === 'gym' ? 'business' : 'fitness'}
-                size={10}
-                color={colors.textPrimary}
-              />
-            </View>
-          </View>
-          <View style={styles.authorInfo}>
-            <View style={styles.authorNameRow}>
-              <Text style={styles.authorName}>{author.name}</Text>
-              {author.type === 'gym' && (
-                <View style={styles.verifiedBadge}>
-                  <Ionicons name="checkmark-circle" size={14} color={colors.info} />
+      <AnimatedListItem index={index}>
+        <GlassCard style={styles.postCard} noPadding>
+          {/* Post Header */}
+          <TouchableOpacity
+            style={styles.postHeader}
+            onPress={() => navigateToProfile(author.type, author.id)}
+          >
+            <View style={styles.avatarContainer}>
+              {author.avatar ? (
+                <Image source={{ uri: author.avatar }} style={styles.avatar} />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Ionicons
+                    name={author.type === 'gym' ? 'business' : 'person'}
+                    size={22}
+                    color={colors.primary[500]}
+                  />
                 </View>
               )}
+              {/* Type indicator */}
+              <View style={[
+                styles.typeIndicator,
+                author.type === 'gym' && styles.typeIndicatorGym,
+              ]}>
+                <Ionicons
+                  name={author.type === 'gym' ? 'business' : 'fitness'}
+                  size={10}
+                  color={colors.textPrimary}
+                />
+              </View>
             </View>
-            {author.type === 'fighter' ? (
-              renderFighterBadges(author)
-            ) : (
-              <Text style={styles.postMeta}>
-                {author.location} • {formatTimeAgo(post.created_at)}
-              </Text>
-            )}
-            {author.type === 'fighter' && (
-              <Text style={styles.postMetaSmall}>
-                {author.location} • {formatTimeAgo(post.created_at)}
-              </Text>
-            )}
-          </View>
-          <TouchableOpacity style={styles.moreButton}>
-            <Ionicons name="ellipsis-vertical" size={18} color={colors.textMuted} />
+            <View style={styles.authorInfo}>
+              <View style={styles.authorNameRow}>
+                <Text style={styles.authorName}>{author.name}</Text>
+                {author.type === 'gym' && (
+                  <View style={styles.verifiedBadge}>
+                    <Ionicons name="checkmark-circle" size={14} color={colors.info} />
+                  </View>
+                )}
+              </View>
+              {author.type === 'fighter' ? (
+                renderFighterBadges(author)
+              ) : (
+                <Text style={styles.postMeta}>
+                  {author.location} • {formatTimeAgo(post.created_at)}
+                </Text>
+              )}
+              {author.type === 'fighter' && (
+                <Text style={styles.postMetaSmall}>
+                  {author.location} • {formatTimeAgo(post.created_at)}
+                </Text>
+              )}
+            </View>
+            <TouchableOpacity style={styles.moreButton}>
+              <Ionicons name="ellipsis-vertical" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
           </TouchableOpacity>
-        </TouchableOpacity>
 
-        {/* Post Content */}
-        {post.content && (
-          <Text style={styles.postContent}>{post.content}</Text>
-        )}
+          {/* Post Content */}
+          {post.content && (
+            <Text style={styles.postContent}>{post.content}</Text>
+          )}
 
-        {/* Media with double-tap */}
-        {post.media_urls && post.media_urls.length > 0 && (
-          <Pressable
-            style={styles.mediaContainer}
-            onPress={() => handleDoubleTap(post.id)}
-          >
-            {post.media_type === 'video' ? (
-              <View style={styles.videoPlaceholder}>
-                <View style={styles.playButton}>
-                  <Ionicons name="play" size={32} color={colors.textPrimary} />
-                </View>
-                <Text style={styles.videoText}>Tap to play</Text>
-              </View>
-            ) : (
-              <Image
-                source={{ uri: post.media_urls[0] }}
-                style={styles.postImage}
-                resizeMode="cover"
-              />
-            )}
-            {post.media_urls.length > 1 && (
-              <View style={styles.mediaCount}>
-                <Text style={styles.mediaCountText}>+{post.media_urls.length - 1}</Text>
-              </View>
-            )}
-            {/* Double-tap heart animation */}
-            <Animated.View
-              style={[
-                styles.doubleTapHeart,
-                {
-                  opacity: heartAnim,
-                  transform: [
-                    {
-                      scale: heartAnim.interpolate({
-                        inputRange: [0, 0.5, 1],
-                        outputRange: [0, 1.3, 1],
-                      }),
-                    },
-                  ],
-                },
-              ]}
-              pointerEvents="none"
+          {/* Media with double-tap */}
+          {post.media_urls && post.media_urls.length > 0 && (
+            <Pressable
+              style={styles.mediaContainer}
+              onPress={() => handleDoubleTap(post.id)}
             >
-              <Ionicons name="heart" size={80} color={colors.primary[500]} />
-            </Animated.View>
-          </Pressable>
-        )}
+              {post.media_type === 'video' ? (
+                <View style={styles.videoPlaceholder}>
+                  <View style={styles.playButton}>
+                    <Ionicons name="play" size={32} color={colors.textPrimary} />
+                  </View>
+                  <Text style={styles.videoText}>Tap to play</Text>
+                </View>
+              ) : (
+                <Image
+                  source={{ uri: post.media_urls[0] }}
+                  style={styles.postImage}
+                  resizeMode="cover"
+                />
+              )}
+              {post.media_urls.length > 1 && (
+                <View style={styles.mediaCount}>
+                  <Text style={styles.mediaCountText}>+{post.media_urls.length - 1}</Text>
+                </View>
+              )}
+              {/* Double-tap heart animation */}
+              <Animated.View
+                style={[
+                  styles.doubleTapHeart,
+                  {
+                    opacity: heartAnim,
+                    transform: [
+                      {
+                        scale: heartAnim.interpolate({
+                          inputRange: [0, 0.5, 1],
+                          outputRange: [0, 1.3, 1],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+                pointerEvents="none"
+              >
+                <Ionicons name="heart" size={80} color={colors.primary[500]} />
+              </Animated.View>
+            </Pressable>
+          )}
 
-        {/* Event Share */}
-        {post.post_type === 'event_share' && post.event && (
-          <TouchableOpacity
-            style={styles.eventCard}
-            onPress={() => navigation.navigate('EventDetail', { eventId: post.event?.id })}
-          >
-            <View style={styles.eventBanner}>
-              <Ionicons name="flash" size={16} color={colors.primary[500]} />
-              <Text style={styles.eventLabel}>SPARRING EVENT</Text>
-            </View>
-            <Text style={styles.eventTitle}>{post.event.title}</Text>
-            <View style={styles.eventDetailsRow}>
-              <View style={styles.eventDetailItem}>
-                <Ionicons name="calendar" size={14} color={colors.textMuted} />
-                <Text style={styles.eventDetailText}>
-                  {new Date(post.event.event_date).toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
+          {/* Event Share */}
+          {post.post_type === 'event_share' && post.event && (
+            <TouchableOpacity
+              style={styles.eventCard}
+              onPress={() => navigation.navigate('EventDetail', { eventId: post.event?.id })}
+            >
+              <View style={styles.eventBanner}>
+                <Ionicons name="flash" size={16} color={colors.primary[500]} />
+                <Text style={styles.eventLabel}>SPARRING EVENT</Text>
+              </View>
+              <Text style={styles.eventTitle}>{post.event.title}</Text>
+              <View style={styles.eventDetailsRow}>
+                <View style={styles.eventDetailItem}>
+                  <Ionicons name="calendar" size={14} color={colors.textMuted} />
+                  <Text style={styles.eventDetailText}>
+                    {new Date(post.event.event_date).toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </Text>
+                </View>
+                <View style={styles.eventDetailItem}>
+                  <Ionicons name="time" size={14} color={colors.textMuted} />
+                  <Text style={styles.eventDetailText}>
+                    {post.event.start_time}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.eventFooter}>
+                <Text style={styles.eventGym}>
+                  @ {post.event.gym?.name}
                 </Text>
+                <View style={styles.joinButton}>
+                  <Text style={styles.joinButtonText}>View</Text>
+                  <Ionicons name="chevron-forward" size={14} color={colors.primary[500]} />
+                </View>
               </View>
-              <View style={styles.eventDetailItem}>
-                <Ionicons name="time" size={14} color={colors.textMuted} />
-                <Text style={styles.eventDetailText}>
-                  {post.event.start_time}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.eventFooter}>
-              <Text style={styles.eventGym}>
-                @ {post.event.gym?.name}
-              </Text>
-              <View style={styles.joinButton}>
-                <Text style={styles.joinButtonText}>View</Text>
-                <Ionicons name="chevron-forward" size={14} color={colors.primary[500]} />
-              </View>
-            </View>
-          </TouchableOpacity>
-        )}
+            </TouchableOpacity>
+          )}
 
-        {/* Engagement Stats */}
-        {(post.likes_count > 0 || post.comments_count > 0) && (
-          <View style={styles.statsRow}>
-            {post.likes_count > 0 && (
-              <View style={styles.statItem}>
-                <Ionicons name="heart" size={14} color={colors.error} />
-                <Text style={styles.statsText}>{post.likes_count}</Text>
-              </View>
-            )}
-            {post.comments_count > 0 && (
-              <Text style={styles.statsText}>{post.comments_count} comments</Text>
-            )}
+          {/* Engagement Stats */}
+          {(post.likes_count > 0 || post.comments_count > 0) && (
+            <View style={styles.statsRow}>
+              {post.likes_count > 0 && (
+                <View style={styles.statItem}>
+                  <Ionicons name="heart" size={14} color={colors.error} />
+                  <Text style={styles.statsText}>{post.likes_count}</Text>
+                </View>
+              )}
+              {post.comments_count > 0 && (
+                <Text style={styles.statsText}>{post.comments_count} comments</Text>
+              )}
+            </View>
+          )}
+
+          {/* Action Buttons */}
+          <View style={styles.actionsRow}>
+            <TouchableOpacity
+              style={[styles.actionButton, isLiked && styles.actionButtonActive]}
+              onPress={() => handleLike(post.id)}
+            >
+              <Ionicons
+                name={isLiked ? 'heart' : 'heart-outline'}
+                size={22}
+                color={isLiked ? colors.error : colors.textSecondary}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.actionButton}>
+              <Ionicons name="chatbubble-outline" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.actionButton}>
+              <Ionicons name="paper-plane-outline" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+
+            <View style={{ flex: 1 }} />
+
+            <TouchableOpacity style={styles.actionButton}>
+              <Ionicons name="bookmark-outline" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
           </View>
-        )}
-
-        {/* Action Buttons */}
-        <View style={styles.actionsRow}>
-          <TouchableOpacity
-            style={[styles.actionButton, isLiked && styles.actionButtonActive]}
-            onPress={() => handleLike(post.id)}
-          >
-            <Ionicons
-              name={isLiked ? 'heart' : 'heart-outline'}
-              size={22}
-              color={isLiked ? colors.error : colors.textSecondary}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="chatbubble-outline" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="paper-plane-outline" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
-
-          <View style={{ flex: 1 }} />
-
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="bookmark-outline" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
-        </View>
-      </View>
+        </GlassCard>
+      </AnimatedListItem>
     );
   };
 
@@ -839,7 +869,7 @@ export function FeedScreen({ navigation }: any) {
 
         {/* Discovery Section */}
         <View style={styles.discoverySection}>
-          <Text style={styles.discoverySectionTitle}>🔥 TRENDING</Text>
+          <Text style={styles.discoverySectionTitle}>TRENDING</Text>
 
           {discovery.map((item) => {
             const sportColor = item.sport ? getSportColor(item.sport) : colors.primary[500];
@@ -897,7 +927,7 @@ export function FeedScreen({ navigation }: any) {
 
   // Skeleton loading card
   const renderSkeletonCard = (index: number) => (
-    <View key={`skeleton-${index}`} style={styles.postCard}>
+    <View key={`skeleton-${index}`} style={styles.skeletonPostCard}>
       <View style={styles.postHeader}>
         <View style={[styles.skeletonAvatar, styles.skeleton]} />
         <View style={styles.authorInfo}>
@@ -998,11 +1028,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: borderRadius.lg,
-    backgroundColor: colors.cardBg,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(255,255,255,0.1)',
     position: 'relative',
   },
   notificationDot: {
@@ -1015,7 +1045,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.error,
     zIndex: 1,
   },
-  // Stories
+  // Stories with gradient rings
   storiesContainer: {
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -1033,7 +1063,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: borderRadius.xl,
-    backgroundColor: colors.cardBg,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 2,
     borderColor: colors.primary[500],
     borderStyle: 'dashed',
@@ -1045,33 +1075,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: 72,
   },
-  storyRing: {
+  storyRingOuter: {
+    width: 68,
+    height: 68,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing[2],
+    position: 'relative',
+  },
+  storyGradientRing: {
     width: 68,
     height: 68,
     borderRadius: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 3,
+  },
+  storyRingGap: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    backgroundColor: colors.background,
     padding: 2,
-    backgroundColor: colors.cardBg,
-    borderWidth: 2,
-    borderColor: colors.border,
-    marginBottom: spacing[2],
     alignItems: 'center',
     justifyContent: 'center',
   },
-  storyRingLive: {
-    borderColor: colors.error,
-    borderWidth: 3,
-  },
-  storyRingEvent: {
-    borderColor: colors.primary[500],
-    borderWidth: 2,
-  },
   storyAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     backgroundColor: colors.surfaceLight,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  livePulseWrap: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
   },
   liveBadge: {
     position: 'absolute',
@@ -1110,7 +1150,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: borderRadius.sm,
     borderWidth: 2,
-    borderColor: colors.cardBg,
+    borderColor: colors.background,
   },
   sportMicroBadgeText: {
     fontSize: 7,
@@ -1136,7 +1176,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.cardBg,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     gap: spacing[1],
   },
   sportChipDot: {
@@ -1229,8 +1269,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: borderRadius.sm,
   },
-  // Post Card
-  postCard: {
+  skeletonPostCard: {
     backgroundColor: colors.cardBg,
     marginHorizontal: spacing[4],
     marginBottom: spacing[4],
@@ -1238,6 +1277,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
+  },
+  // Post Card - using GlassCard noPadding
+  postCard: {
+    marginHorizontal: spacing[4],
+    marginBottom: spacing[4],
   },
   postHeader: {
     flexDirection: 'row',
@@ -1315,7 +1359,7 @@ const styles = StyleSheet.create({
     backgroundColor: `${colors.warning}20`,
   },
   badgeRecord: {
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   badgeText: {
     fontSize: 10,
@@ -1408,7 +1452,7 @@ const styles = StyleSheet.create({
     margin: spacing[4],
     marginTop: 0,
     padding: spacing[4],
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: 'rgba(255,255,255,0.04)',
     borderRadius: borderRadius.xl,
     borderWidth: 1,
     borderColor: colors.primary[500],
@@ -1452,7 +1496,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: spacing[3],
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: 'rgba(255,255,255,0.06)',
   },
   eventGym: {
     fontSize: typography.fontSize.sm,
@@ -1494,7 +1538,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: 'rgba(255,255,255,0.06)',
     gap: spacing[4],
   },
   actionButton: {
@@ -1511,10 +1555,10 @@ const styles = StyleSheet.create({
   emptyMessageBox: {
     alignItems: 'center',
     paddingVertical: spacing[8],
-    backgroundColor: colors.cardBg,
+    backgroundColor: 'rgba(255,255,255,0.04)',
     borderRadius: borderRadius.xl,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(255,255,255,0.08)',
     marginBottom: spacing[6],
   },
   emptyTitle: {
@@ -1541,12 +1585,12 @@ const styles = StyleSheet.create({
   discoveryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.cardBg,
+    backgroundColor: 'rgba(255,255,255,0.04)',
     borderRadius: borderRadius.xl,
     padding: spacing[3],
     marginBottom: spacing[2],
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   discoveryAvatar: {
     width: 44,

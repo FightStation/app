@@ -8,13 +8,32 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedScrollHandler,
+} from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Card, Button, ProfileCompletenessCard, MatchScoreBadge, SkeletonCard } from '../../components';
+import {
+  Card,
+  ProfileCompletenessCard,
+  MatchScoreBadge,
+  SkeletonCard,
+  GlassCard,
+  GradientButton,
+  SectionHeader,
+  StatCard,
+  EmptyState,
+  PulseIndicator,
+  ProgressRing,
+  AnimatedListItem,
+} from '../../components';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { SparringEvent, Fighter, WEIGHT_CLASS_LABELS, MatchScore } from '../../types';
-import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import { colors, spacing, typography, borderRadius, gradients, textStyles, animations } from '../../lib/theme';
 import { calculateFighterCompleteness } from '../../utils/profileCompleteness';
 import { useMatching } from '../../hooks/useMatching';
 
@@ -25,6 +44,7 @@ type FighterDashboardScreenProps = {
 export function FighterDashboardScreen({ navigation }: FighterDashboardScreenProps) {
   const { profile, signOut } = useAuth();
   const fighter = profile as Fighter;
+  const insets = useSafeAreaInsets();
 
   const [upcomingEvents, setUpcomingEvents] = useState<SparringEvent[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -41,6 +61,14 @@ export function FighterDashboardScreen({ navigation }: FighterDashboardScreenPro
     () => calculateFighterCompleteness(fighter),
     [fighter]
   );
+
+  // Animated scroll value
+  const scrollY = useSharedValue(0);
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
 
   useEffect(() => {
     loadData();
@@ -83,29 +111,56 @@ export function FighterDashboardScreen({ navigation }: FighterDashboardScreenPro
     });
   };
 
+  // Calculate days until an event
+  const getDaysUntil = (dateStr: string) => {
+    const eventDate = new Date(dateStr);
+    const now = new Date();
+    const diff = eventDate.getTime() - now.getTime();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  };
+
   return (
-    <ScrollView
+    <Animated.ScrollView
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top }]}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={colors.primary[500]}
+        />
       }
+      onScroll={scrollHandler}
+      scrollEventThrottle={16}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Welcome back,</Text>
-          <Text style={styles.name}>{fighter?.first_name}</Text>
+      {/* Header with warm gradient glow */}
+      <View style={styles.headerWrapper}>
+        <LinearGradient
+          colors={gradients.warmGlow}
+          style={styles.headerGlow}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+        />
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.greeting}>Welcome back,</Text>
+            <Text style={styles.name}>{fighter?.first_name}</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.avatarContainer}
+            onPress={() => navigation.navigate('FighterProfile')}
+          >
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {fighter?.first_name?.charAt(0)}
+                {fighter?.last_name?.charAt(0)}
+              </Text>
+            </View>
+            <View style={styles.pulseWrapper}>
+              <PulseIndicator color={colors.success} size="sm" />
+            </View>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.avatar}
-          onPress={() => navigation.navigate('FighterProfile')}
-        >
-          <Text style={styles.avatarText}>
-            {fighter?.first_name?.charAt(0)}
-            {fighter?.last_name?.charAt(0)}
-          </Text>
-        </TouchableOpacity>
       </View>
 
       {/* Profile Completeness */}
@@ -114,34 +169,60 @@ export function FighterDashboardScreen({ navigation }: FighterDashboardScreenPro
         onPress={() => navigation.navigate('FighterProfile')}
       />
 
-      {/* Your Next Event - Highlighted (most valuable for fighters) */}
+      {/* Your Next Event - Hero Card */}
       {upcomingEvents.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Next Event</Text>
+          <SectionHeader title="Your Next Event" />
           <TouchableOpacity
-            style={styles.nextEventCard}
+            activeOpacity={0.9}
             onPress={() => navigation.navigate('EventDetail', { eventId: upcomingEvents[0].id })}
           >
-            <View style={styles.nextEventHeader}>
-              <View style={styles.nextEventBadge}>
-                <Text style={styles.nextEventBadgeText}>CONFIRMED</Text>
+            <LinearGradient
+              colors={gradients.primaryToDeep}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.nextEventCard}
+            >
+              <View style={styles.nextEventContent}>
+                <View style={styles.nextEventLeft}>
+                  <View style={styles.nextEventHeader}>
+                    <View style={styles.nextEventBadge}>
+                      <Text style={styles.nextEventBadgeText}>CONFIRMED</Text>
+                    </View>
+                    <Text style={styles.nextEventDate}>{formatDate(upcomingEvents[0].event_date)}</Text>
+                  </View>
+                  <Text style={styles.nextEventTitle}>{upcomingEvents[0].title}</Text>
+                  <Text style={styles.nextEventGym}>@ {upcomingEvents[0].gym?.name}</Text>
+                </View>
+                <View style={styles.nextEventRing}>
+                  <ProgressRing
+                    progress={Math.max(0, 100 - getDaysUntil(upcomingEvents[0].event_date) * 3.33)}
+                    size={56}
+                    strokeWidth={4}
+                    color="rgba(255,255,255,0.9)"
+                    backgroundColor="rgba(255,255,255,0.2)"
+                    showLabel={false}
+                  >
+                    <View style={styles.ringLabel}>
+                      <Text style={styles.ringDays}>{getDaysUntil(upcomingEvents[0].event_date)}</Text>
+                      <Text style={styles.ringDaysLabel}>days</Text>
+                    </View>
+                  </ProgressRing>
+                </View>
               </View>
-              <Text style={styles.nextEventDate}>{formatDate(upcomingEvents[0].event_date)}</Text>
-            </View>
-            <Text style={styles.nextEventTitle}>{upcomingEvents[0].title}</Text>
-            <Text style={styles.nextEventGym}>@ {upcomingEvents[0].gym?.name}</Text>
-            <View style={styles.nextEventFooter}>
-              <View style={styles.nextEventTime}>
-                <Ionicons name="time-outline" size={14} color={colors.neutral[400]} />
-                <Text style={styles.nextEventTimeText}>
-                  {upcomingEvents[0].start_time} - {upcomingEvents[0].end_time}
-                </Text>
+              <View style={styles.nextEventFooter}>
+                <View style={styles.nextEventTime}>
+                  <Ionicons name="time-outline" size={14} color="rgba(255,255,255,0.7)" />
+                  <Text style={styles.nextEventTimeText}>
+                    {upcomingEvents[0].start_time} - {upcomingEvents[0].end_time}
+                  </Text>
+                </View>
+                <TouchableOpacity style={styles.nextEventAction}>
+                  <Ionicons name="navigate-outline" size={16} color="rgba(255,255,255,0.95)" />
+                  <Text style={styles.nextEventActionText}>Directions</Text>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity style={styles.nextEventAction}>
-                <Ionicons name="navigate-outline" size={16} color={colors.primary[500]} />
-                <Text style={styles.nextEventActionText}>Directions</Text>
-              </TouchableOpacity>
-            </View>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       )}
@@ -149,35 +230,42 @@ export function FighterDashboardScreen({ navigation }: FighterDashboardScreenPro
       {/* No Events Fallback */}
       {upcomingEvents.length === 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Upcoming Events</Text>
-          <Card style={styles.emptyCard}>
-            <Ionicons name="calendar-outline" size={32} color={colors.neutral[500]} />
-            <Text style={styles.emptyText}>No upcoming events</Text>
-            <Text style={styles.emptySubtext}>
-              Browse events to find sparring opportunities
-            </Text>
-          </Card>
+          <SectionHeader title="Your Upcoming Events" />
+          <EmptyState
+            icon="calendar-outline"
+            title="No Upcoming Events"
+            description="Browse events to find sparring opportunities"
+            actionLabel="Find Events"
+            onAction={() => navigation.navigate('MatchesTab')}
+          />
         </View>
       )}
 
-      {/* Quick Stats */}
+      {/* Quick Stats - 3 StatCards */}
       <View style={styles.statsRow}>
-        <Card style={styles.statCard}>
-          <Text style={styles.statValue}>{fighter?.sparring_count || 0}</Text>
-          <Text style={styles.statLabel}>Sparring Sessions</Text>
-        </Card>
-        <Card style={styles.statCard}>
-          <Text style={styles.statValue}>{fighter?.fights_count || 0}</Text>
-          <Text style={styles.statLabel}>Fights</Text>
-        </Card>
+        <StatCard
+          icon="flash"
+          value={fighter?.sparring_count || 0}
+          label="Sessions"
+          accentColor={colors.primary[500]}
+        />
+        <StatCard
+          icon="trophy"
+          value={fighter?.fights_count || 0}
+          label="Fights"
+          accentColor={colors.warning}
+        />
+        <StatCard
+          icon="star"
+          value="4.9"
+          label="Rating"
+          accentColor={colors.info}
+        />
       </View>
 
       {/* Recommended Sparring Partners */}
       <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recommended Partners</Text>
-          <Text style={styles.sectionSubtitle}>Based on your profile</Text>
-        </View>
+        <SectionHeader title="Recommended Partners" subtitle="Based on your profile" />
         {matchingLoading ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.fightersScroll}>
             {[1, 2, 3].map((i) => (
@@ -194,86 +282,88 @@ export function FighterDashboardScreen({ navigation }: FighterDashboardScreenPro
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.fightersScroll}
           >
-            {matchedPartners.map((match: MatchScore) => {
+            {matchedPartners.map((match: MatchScore, index: number) => {
               const f = match.fighter;
               if (!f) return null;
               return (
-                <TouchableOpacity
-                  key={match.entity_id}
-                  style={styles.fighterCard}
-                  onPress={() => navigation.navigate('FighterProfileView', { fighterId: match.entity_id })}
-                >
-                  <View style={styles.matchBadgeContainer}>
-                    <MatchScoreBadge score={match.overall_score} />
-                  </View>
-                  <View style={styles.fighterAvatar}>
-                    {f.avatar_url ? (
-                      <Image source={{ uri: f.avatar_url }} style={styles.fighterAvatarImage} />
-                    ) : (
-                      <Text style={styles.fighterAvatarText}>
-                        {f.first_name?.charAt(0)}{f.last_name?.charAt(0)}
+                <AnimatedListItem key={match.entity_id} index={index}>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('FighterProfileView', { fighterId: match.entity_id })}
+                  >
+                    <GlassCard style={styles.fighterCard}>
+                      <View style={styles.matchBadgeContainer}>
+                        <MatchScoreBadge score={match.overall_score} />
+                      </View>
+                      <View style={styles.fighterAvatar}>
+                        {f.avatar_url ? (
+                          <Image source={{ uri: f.avatar_url }} style={styles.fighterAvatarImage} />
+                        ) : (
+                          <Text style={styles.fighterAvatarText}>
+                            {f.first_name?.charAt(0)}{f.last_name?.charAt(0)}
+                          </Text>
+                        )}
+                      </View>
+                      <Text style={styles.fighterName} numberOfLines={1}>
+                        {f.first_name} {f.last_name?.charAt(0)}.
                       </Text>
-                    )}
-                  </View>
-                  <Text style={styles.fighterName} numberOfLines={1}>
-                    {f.first_name} {f.last_name?.charAt(0)}.
-                  </Text>
-                  <Text style={styles.fighterWeight} numberOfLines={1}>
-                    {f.weight_class ? WEIGHT_CLASS_LABELS[f.weight_class as keyof typeof WEIGHT_CLASS_LABELS]?.split(' ')[0] : ''}
-                  </Text>
-                  {match.reasons.length > 0 && (
-                    <Text style={styles.matchReason} numberOfLines={1}>
-                      {match.reasons[0]}
-                    </Text>
-                  )}
-                </TouchableOpacity>
+                      <Text style={styles.fighterWeight} numberOfLines={1}>
+                        {f.weight_class ? WEIGHT_CLASS_LABELS[f.weight_class as keyof typeof WEIGHT_CLASS_LABELS]?.split(' ')[0] : ''}
+                      </Text>
+                      {match.reasons.length > 0 && (
+                        <Text style={styles.matchReason} numberOfLines={1}>
+                          {match.reasons[0]}
+                        </Text>
+                      )}
+                    </GlassCard>
+                  </TouchableOpacity>
+                </AnimatedListItem>
               );
             })}
           </ScrollView>
         ) : (
-          <Card style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No partners found yet</Text>
-            <Text style={styles.emptySubtext}>Complete your profile for better matches</Text>
-          </Card>
+          <EmptyState
+            icon="people-outline"
+            title="No Partners Found"
+            description="Complete your profile for better matches"
+          />
         )}
       </View>
 
       {/* Other Upcoming Events */}
       {upcomingEvents.length > 1 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>More Upcoming Events</Text>
-          {upcomingEvents.slice(1).map((event) => (
-            <Card
-              key={event.id}
-              style={styles.eventCard}
-              onPress={() => navigation.navigate('EventDetail', { eventId: event.id })}
-            >
-              <View style={styles.eventHeader}>
-                <Text style={styles.eventTitle}>{event.title}</Text>
-                <View style={styles.eventBadge}>
-                  <Text style={styles.eventBadgeText}>Confirmed</Text>
+          <SectionHeader title="Your Upcoming Events" />
+          {upcomingEvents.slice(1).map((event, i) => (
+            <AnimatedListItem key={event.id} index={i}>
+              <GlassCard
+                style={styles.eventCard}
+                onPress={() => navigation.navigate('EventDetail', { eventId: event.id })}
+              >
+                <View style={styles.eventHeader}>
+                  <Text style={styles.eventTitle}>{event.title}</Text>
+                  <View style={styles.eventBadge}>
+                    <Text style={styles.eventBadgeText}>Confirmed</Text>
+                  </View>
                 </View>
-              </View>
-              <Text style={styles.eventGym}>{event.gym?.name}</Text>
-              <View style={styles.eventMeta}>
-                <Text style={styles.eventDate}>{formatDate(event.event_date)}</Text>
-                <Text style={styles.eventTime}>
-                  {event.start_time} - {event.end_time}
-                </Text>
-              </View>
-            </Card>
+                <Text style={styles.eventGym}>{event.gym?.name}</Text>
+                <View style={styles.eventMeta}>
+                  <Text style={styles.eventDate}>{formatDate(event.event_date)}</Text>
+                  <Text style={styles.eventTime}>
+                    {event.start_time} - {event.end_time}
+                  </Text>
+                </View>
+              </GlassCard>
+            </AnimatedListItem>
           ))}
         </View>
       )}
 
       {/* Recommended Events */}
       <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recommended Events</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('MatchesTab')}>
-            <Text style={styles.seeAll}>See All</Text>
-          </TouchableOpacity>
-        </View>
+        <SectionHeader
+          title="Recommended Events"
+          onSeeAll={() => navigation.navigate('MatchesTab')}
+        />
 
         {matchingLoading ? (
           <>
@@ -281,60 +371,71 @@ export function FighterDashboardScreen({ navigation }: FighterDashboardScreenPro
             <SkeletonCard />
           </>
         ) : matchedEvents.length > 0 ? (
-          matchedEvents.slice(0, 3).map((match: MatchScore) => {
+          matchedEvents.slice(0, 3).map((match: MatchScore, i: number) => {
             const event = match.event;
             if (!event) return null;
+            // Determine sport color for the accent bar
+            const sportType = (event as any).sport_type as string | undefined;
+            const sportColorKey = sportType as keyof typeof colors.sport;
+            const accentColor = sportType && colors.sport[sportColorKey]
+              ? colors.sport[sportColorKey]
+              : colors.primary[500];
             return (
-              <Card
-                key={match.entity_id}
-                style={styles.eventCard}
-                onPress={() => navigation.navigate('EventDetail', { eventId: match.entity_id })}
-              >
-                <View style={styles.eventHeader}>
-                  <Text style={styles.eventTitle}>{event.title}</Text>
-                  <MatchScoreBadge score={match.overall_score} />
-                </View>
-                <Text style={styles.eventGym}>{event.gym?.name}</Text>
-                {match.reasons.length > 0 && (
-                  <Text style={styles.matchReasonEvent}>
-                    {match.reasons.slice(0, 2).join(' \u00B7 ')}
-                  </Text>
-                )}
-                <View style={styles.eventMeta}>
-                  <Text style={styles.eventDate}>{formatDate(event.event_date)}</Text>
-                  <Text style={styles.eventLocation}>
-                    {event.gym?.city}, {event.gym?.country}
-                  </Text>
-                </View>
-              </Card>
+              <AnimatedListItem key={match.entity_id} index={i}>
+                <GlassCard
+                  style={styles.eventCard}
+                  onPress={() => navigation.navigate('EventDetail', { eventId: match.entity_id })}
+                  accentColor={accentColor}
+                >
+                  <View style={styles.eventHeader}>
+                    <Text style={styles.eventTitle}>{event.title}</Text>
+                    <MatchScoreBadge score={match.overall_score} />
+                  </View>
+                  <Text style={styles.eventGym}>{event.gym?.name}</Text>
+                  {match.reasons.length > 0 && (
+                    <Text style={styles.matchReasonEvent}>
+                      {match.reasons.slice(0, 2).join(' \u00B7 ')}
+                    </Text>
+                  )}
+                  <View style={styles.eventMeta}>
+                    <Text style={styles.eventDate}>{formatDate(event.event_date)}</Text>
+                    <Text style={styles.eventLocation}>
+                      {event.gym?.city}, {event.gym?.country}
+                    </Text>
+                  </View>
+                </GlassCard>
+              </AnimatedListItem>
             );
           })
         ) : (
-          <Card style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No events found</Text>
-            <Text style={styles.emptySubtext}>
-              Check back later for new events in your area
-            </Text>
-          </Card>
+          <EmptyState
+            icon="calendar-outline"
+            title="No Events Found"
+            description="Check back later for new events in your area"
+            actionLabel="Find Events"
+            onAction={() => navigation.navigate('MatchesTab')}
+          />
         )}
       </View>
 
       {/* Quick Actions */}
       <View style={styles.actions}>
-        <Button
+        <GradientButton
           title="Find Events"
           onPress={() => navigation.navigate('MatchesTab')}
-          size="lg"
+          icon="search"
+          fullWidth
         />
-        <Button
-          title="Sign Out"
-          onPress={signOut}
-          variant="ghost"
-          size="lg"
-          style={{ marginTop: spacing[2] }}
+        <View style={styles.actionSpacer} />
+        <GradientButton
+          title="Find Partners"
+          onPress={() => navigation.navigate('ExploreTab')}
+          icon="people"
+          fullWidth
+          gradient={['#3B82F6', '#1D4ED8']}
         />
       </View>
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
 
@@ -347,21 +448,40 @@ const styles = StyleSheet.create({
     padding: spacing[4],
     paddingBottom: spacing[10],
   },
+  // Header
+  headerWrapper: {
+    position: 'relative',
+    marginBottom: spacing[6],
+    marginTop: spacing[4],
+  },
+  headerGlow: {
+    position: 'absolute',
+    top: -40,
+    left: -40,
+    right: -40,
+    height: 160,
+    opacity: 0.6,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing[6],
-    marginTop: spacing[4],
+    position: 'relative',
+    zIndex: 1,
   },
   greeting: {
-    fontSize: typography.fontSize.base,
-    color: colors.neutral[400],
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: colors.textSecondary,
   },
   name: {
-    fontSize: typography.fontSize['2xl'],
-    fontFamily: typography.fontFamily.display,
+    fontFamily: 'BarlowCondensed-Bold',
+    fontSize: 28,
     color: colors.neutral[50],
+    marginTop: 2,
+  },
+  avatarContainer: {
+    position: 'relative',
   },
   avatar: {
     width: 48,
@@ -370,56 +490,30 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary[500],
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.primary[500],
   },
   avatarText: {
     color: colors.neutral[50],
     fontSize: typography.fontSize.lg,
     fontWeight: 'bold',
   },
+  pulseWrapper: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+  },
+  // Stats
   statsRow: {
     flexDirection: 'row',
-    gap: spacing[4],
+    gap: spacing[3],
     marginBottom: spacing[4],
   },
-  statCard: {
-    flex: 1,
-    alignItems: 'center',
-    padding: spacing[4],
-  },
-  statValue: {
-    fontSize: typography.fontSize['3xl'],
-    fontFamily: typography.fontFamily.display,
-    color: colors.primary[500],
-  },
-  statLabel: {
-    fontSize: typography.fontSize.sm,
-    color: colors.secondary[500],
-    marginTop: spacing[1],
-  },
+  // Sections
   section: {
     marginBottom: spacing[6],
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing[3],
-  },
-  sectionTitle: {
-    fontSize: typography.fontSize.lg,
-    fontFamily: typography.fontFamily.displayMedium,
-    color: colors.neutral[50],
-    marginBottom: spacing[3],
-  },
-  sectionSubtitle: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[500],
-  },
-  seeAll: {
-    fontSize: typography.fontSize.sm,
-    color: colors.primary[500],
-    fontWeight: '500',
-  },
+  // Event card shared styles
   eventCard: {
     marginBottom: spacing[3],
   },
@@ -431,6 +525,7 @@ const styles = StyleSheet.create({
   },
   eventTitle: {
     fontSize: typography.fontSize.base,
+    fontFamily: typography.fontFamily.semibold,
     fontWeight: '600',
     color: colors.neutral[50],
     flex: 1,
@@ -474,29 +569,41 @@ const styles = StyleSheet.create({
     color: colors.secondary[400],
     marginBottom: spacing[2],
   },
-  emptyCard: {
-    alignItems: 'center',
-    padding: spacing[6],
-    gap: spacing[2],
-  },
-  emptyText: {
-    fontSize: typography.fontSize.base,
-    color: colors.neutral[400],
-    marginBottom: spacing[1],
-  },
-  emptySubtext: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[500],
-    textAlign: 'center',
-  },
-  actions: {
-    marginTop: spacing[4],
-  },
-  // Next Event Card styles
+  // Next Event Hero Card
   nextEventCard: {
-    backgroundColor: colors.primary[500],
-    borderRadius: borderRadius.xl,
+    borderRadius: borderRadius['2xl'],
     padding: spacing[4],
+    overflow: 'hidden',
+  },
+  nextEventContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  nextEventLeft: {
+    flex: 1,
+    marginRight: spacing[3],
+  },
+  nextEventRing: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing[1],
+  },
+  ringLabel: {
+    alignItems: 'center',
+  },
+  ringDays: {
+    fontFamily: 'BarlowCondensed-Bold',
+    fontSize: 18,
+    color: '#FFFFFF',
+    lineHeight: 20,
+  },
+  ringDaysLabel: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 9,
+    color: 'rgba(255,255,255,0.7)',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   nextEventHeader: {
     flexDirection: 'row',
@@ -538,6 +645,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.2)',
     paddingTop: spacing[3],
+    marginTop: spacing[3],
   },
   nextEventTime: {
     flexDirection: 'row',
@@ -568,13 +676,9 @@ const styles = StyleSheet.create({
     gap: spacing[3],
   },
   fighterCard: {
-    width: 110,
+    width: 130,
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
     padding: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.neutral[800],
   },
   matchBadgeContainer: {
     alignSelf: 'flex-end',
@@ -617,5 +721,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
     textAlign: 'center',
     marginTop: spacing[1],
+  },
+  // Quick Actions
+  actions: {
+    marginTop: spacing[4],
+  },
+  actionSpacer: {
+    height: spacing[3],
   },
 });

@@ -414,9 +414,101 @@ export const commonStyles = {
   },
 };
 
-// Animation durations
+// Animation durations & presets
 export const animations = {
   fast: 150,
   normal: 250,
   slow: 400,
+  // Spring configs for react-native-reanimated
+  spring: {
+    snappy: { damping: 20, stiffness: 300, mass: 0.8 },
+    gentle: { damping: 25, stiffness: 150, mass: 1 },
+    bouncy: { damping: 12, stiffness: 200, mass: 0.6 },
+  },
+  // Stagger delays for list entrance animations
+  stagger: {
+    fast: 50,
+    normal: 80,
+    slow: 120,
+  },
+};
+
+// Gradient presets (color arrays for expo-linear-gradient)
+export const gradients = {
+  primaryToDeep: ['#C41E3A', '#7F1D1D'] as const,
+  primaryToCrimson: ['#DC2626', '#C41E3A'] as const,
+  darkFade: ['rgba(13,13,13,0)', 'rgba(13,13,13,0.95)'] as const,
+  cardShine: ['rgba(255,255,255,0.08)', 'rgba(255,255,255,0)'] as const,
+  heroOverlay: ['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.85)'] as const,
+  warmGlow: ['rgba(196,30,58,0.15)', 'rgba(196,30,58,0)'] as const,
+  surface: ['#1E1E1E', '#1A1A1A'] as const,
+};
+
+// Glassmorphism tokens
+export const glass = {
+  light: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    blurIntensity: 20,
+  },
+  medium: {
+    backgroundColor: 'rgba(255, 255, 255, 0.10)',
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 1,
+    blurIntensity: 40,
+  },
+  dark: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    blurIntensity: 60,
+  },
+  accent: {
+    backgroundColor: 'rgba(196, 30, 58, 0.08)',
+    borderColor: 'rgba(196, 30, 58, 0.2)',
+    borderWidth: 1,
+    blurIntensity: 30,
+  },
+};
+
+// Elevation system - layered surfaces for depth
+export const elevation = {
+  level0: { backgroundColor: '#0D0D0D' },   // Screen background
+  level1: { backgroundColor: '#141414' },   // Recessed areas
+  level2: { backgroundColor: '#1A1A1A' },   // Default surface
+  level3: { backgroundColor: '#202020' },   // Cards, raised
+  level4: { backgroundColor: '#282828' },   // Floating elements
+  level5: { backgroundColor: '#303030' },   // Top-most (modals)
+};
+
+// Pre-built text style presets
+export const textStyles = {
+  heroDisplay: {
+    fontFamily: 'BarlowCondensed-Black' as const,
+    fontSize: 48,
+    letterSpacing: 2,
+    lineHeight: 52,
+    textTransform: 'uppercase' as const,
+    color: colors.textPrimary,
+  },
+  sectionHeader: {
+    fontFamily: 'BarlowCondensed-SemiBold' as const,
+    fontSize: 13,
+    letterSpacing: 2,
+    textTransform: 'uppercase' as const,
+    color: colors.primary[500],
+  },
+  statValue: {
+    fontFamily: 'BarlowCondensed-Bold' as const,
+    fontSize: 36,
+    letterSpacing: 0,
+    color: colors.textPrimary,
+  },
+  cardTitle: {
+    fontFamily: 'Inter-SemiBold' as const,
+    fontSize: 16,
+    letterSpacing: 0.2,
+    color: colors.textPrimary,
+  },
 };

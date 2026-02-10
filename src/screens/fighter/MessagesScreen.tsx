@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import { GlassCard, BadgeRow, PulseIndicator, AnimatedListItem } from '../../components';
 import { useAuth } from '../../context/AuthContext';
 import {
   getUserConversations,
@@ -30,6 +31,12 @@ type MessagesScreenProps = {
 const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
 const containerMaxWidth = isWeb ? 480 : width;
+
+const TAB_ITEMS = [
+  { key: 'all', label: 'All', icon: 'chatbubbles' as keyof typeof Ionicons.glyphMap },
+  { key: 'gyms', label: 'Gyms', icon: 'business' as keyof typeof Ionicons.glyphMap },
+  { key: 'fighters', label: 'Fighters', icon: 'fitness' as keyof typeof Ionicons.glyphMap },
+];
 
 export function MessagesScreen({ navigation }: MessagesScreenProps) {
   const { user } = useAuth();
@@ -123,35 +130,13 @@ export function MessagesScreen({ navigation }: MessagesScreenProps) {
           </TouchableOpacity>
         </View>
 
-        {/* Tabs */}
+        {/* Tabs - using BadgeRow */}
         <View style={styles.tabsContainer}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'all' && styles.tabActive]}
-            onPress={() => setActiveTab('all')}
-          >
-            <Text style={[styles.tabText, activeTab === 'all' && styles.tabTextActive]}>
-              All
-            </Text>
-            {activeTab === 'all' && <View style={styles.tabIndicator} />}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'gyms' && styles.tabActive]}
-            onPress={() => setActiveTab('gyms')}
-          >
-            <Text style={[styles.tabText, activeTab === 'gyms' && styles.tabTextActive]}>
-              Gyms
-            </Text>
-            {activeTab === 'gyms' && <View style={styles.tabIndicator} />}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'fighters' && styles.tabActive]}
-            onPress={() => setActiveTab('fighters')}
-          >
-            <Text style={[styles.tabText, activeTab === 'fighters' && styles.tabTextActive]}>
-              Fighters
-            </Text>
-            {activeTab === 'fighters' && <View style={styles.tabIndicator} />}
-          </TouchableOpacity>
+          <BadgeRow
+            items={TAB_ITEMS}
+            selected={activeTab}
+            onSelect={(key) => setActiveTab(key as 'all' | 'gyms' | 'fighters')}
+          />
         </View>
 
         {/* Conversations List */}
@@ -173,58 +158,71 @@ export function MessagesScreen({ navigation }: MessagesScreenProps) {
               </Text>
             </View>
           ) : (
-            filteredConversations.map((conversation) => (
-              <TouchableOpacity
-                key={conversation.id}
-                style={styles.conversationCard}
-                onPress={() => handleConversationPress(conversation)}
-              >
-                <View style={styles.avatarContainer}>
-                  {conversation.other_participant.avatar_url ? (
-                    <Image
-                      source={{ uri: conversation.other_participant.avatar_url }}
-                      style={styles.avatar}
-                    />
-                  ) : (
-                    <View style={styles.avatarPlaceholder}>
-                      <Ionicons
-                        name={
-                          conversation.other_participant.role === 'gym' ? 'business' : 'person'
-                        }
-                        size={24}
-                        color={colors.textMuted}
-                      />
+            filteredConversations.map((conversation, index) => (
+              <AnimatedListItem key={conversation.id} index={index}>
+                <GlassCard
+                  style={styles.conversationCard}
+                  onPress={() => handleConversationPress(conversation)}
+                  accentColor={conversation.unread_count > 0 ? colors.primary[500] : undefined}
+                >
+                  <View style={styles.conversationRow}>
+                    <View style={styles.avatarContainer}>
+                      {conversation.other_participant.avatar_url ? (
+                        <Image
+                          source={{ uri: conversation.other_participant.avatar_url }}
+                          style={styles.avatar}
+                        />
+                      ) : (
+                        <View style={styles.avatarPlaceholder}>
+                          <Ionicons
+                            name={
+                              conversation.other_participant.role === 'gym' ? 'business' : 'person'
+                            }
+                            size={24}
+                            color={colors.textMuted}
+                          />
+                        </View>
+                      )}
+                      {/* Online indicator using PulseIndicator */}
+                      {conversation.other_participant.role === 'fighter' && (
+                        <View style={styles.onlineIndicatorWrap}>
+                          <PulseIndicator color={colors.success} size="sm" />
+                        </View>
+                      )}
                     </View>
-                  )}
-                </View>
 
-                <View style={styles.conversationInfo}>
-                  <View style={styles.conversationHeader}>
-                    <Text style={styles.conversationName}>
-                      {conversation.other_participant.name}
-                    </Text>
-                    <Text style={styles.timestamp}>
-                      {formatTimestamp(conversation.last_message_at)}
-                    </Text>
-                  </View>
-                  <View style={styles.messageRow}>
-                    <Text
-                      style={[
-                        styles.lastMessage,
-                        conversation.unread_count > 0 && styles.lastMessageUnread,
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {conversation.last_message || 'No messages yet'}
-                    </Text>
-                    {conversation.unread_count > 0 && (
-                      <View style={styles.unreadCount}>
-                        <Text style={styles.unreadCountText}>{conversation.unread_count}</Text>
+                    <View style={styles.conversationInfo}>
+                      <View style={styles.conversationHeader}>
+                        <Text style={[
+                          styles.conversationName,
+                          conversation.unread_count > 0 && styles.conversationNameUnread,
+                        ]}>
+                          {conversation.other_participant.name}
+                        </Text>
+                        <Text style={styles.timestamp}>
+                          {formatTimestamp(conversation.last_message_at)}
+                        </Text>
                       </View>
-                    )}
+                      <View style={styles.messageRow}>
+                        <Text
+                          style={[
+                            styles.lastMessage,
+                            conversation.unread_count > 0 && styles.lastMessageUnread,
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {conversation.last_message || 'No messages yet'}
+                        </Text>
+                        {conversation.unread_count > 0 && (
+                          <View style={styles.unreadCount}>
+                            <Text style={styles.unreadCountText}>{conversation.unread_count}</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
                   </View>
-                </View>
-              </TouchableOpacity>
+                </GlassCard>
+              </AnimatedListItem>
             ))
           )}
 
@@ -263,6 +261,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontSize: typography.fontSize.xl,
     fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.display,
   },
   unreadBadge: {
     backgroundColor: colors.primary[500],
@@ -282,39 +281,16 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: borderRadius.full,
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   tabsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: spacing[3],
-    alignItems: 'center',
-    position: 'relative',
-  },
-  tabActive: {},
-  tabText: {
-    color: colors.textMuted,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
-  },
-  tabTextActive: {
-    color: colors.textPrimary,
-    fontWeight: typography.fontWeight.bold,
-  },
-  tabIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: colors.primary[500],
   },
   container: {
     flex: 1,
@@ -323,14 +299,11 @@ const styles = StyleSheet.create({
     padding: spacing[4],
   },
   conversationCard: {
+    marginBottom: spacing[3],
+  },
+  conversationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[3],
-    marginBottom: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   avatarContainer: {
     position: 'relative',
@@ -345,20 +318,14 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: borderRadius.full,
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  onlineIndicator: {
+  onlineIndicatorWrap: {
     position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 14,
-    height: 14,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.success,
-    borderWidth: 2,
-    borderColor: colors.cardBg,
+    bottom: 0,
+    right: -2,
   },
   conversationInfo: {
     flex: 1,
@@ -373,10 +340,16 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontSize: typography.fontSize.base,
     fontWeight: typography.fontWeight.semibold,
+    fontFamily: typography.fontFamily.semibold,
+  },
+  conversationNameUnread: {
+    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.bold,
   },
   timestamp: {
     color: colors.textMuted,
     fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.regular,
   },
   messageRow: {
     flexDirection: 'row',
@@ -387,10 +360,12 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.textMuted,
     fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.regular,
   },
   lastMessageUnread: {
     color: colors.textSecondary,
     fontWeight: typography.fontWeight.medium,
+    fontFamily: typography.fontFamily.medium,
   },
   unreadCount: {
     backgroundColor: colors.primary[500],
@@ -419,12 +394,14 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.bold,
     marginTop: spacing[4],
     marginBottom: spacing[2],
+    fontFamily: typography.fontFamily.semibold,
   },
   emptySubtitle: {
     color: colors.textMuted,
     fontSize: typography.fontSize.base,
     textAlign: 'center',
     paddingHorizontal: spacing[8],
+    fontFamily: typography.fontFamily.regular,
   },
   bottomPadding: {
     height: spacing[20],

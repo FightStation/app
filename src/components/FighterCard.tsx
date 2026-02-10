@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform } from 'react-native';
 import { Fighter, WEIGHT_CLASS_LABELS, EXPERIENCE_LABELS } from '../types';
-import { colors, spacing, typography, borderRadius } from '../lib/theme';
+import { colors, spacing, typography, borderRadius, glass } from '../lib/theme';
 
 interface FighterCardProps {
   fighter: Fighter;
@@ -107,11 +107,16 @@ export function FighterCard({ fighter, onPress, variant = 'default' }: FighterCa
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
+    backgroundColor: glass.light.backgroundColor,
+    borderRadius: borderRadius.xl,
     padding: spacing[4],
     borderWidth: 1,
-    borderColor: colors.neutral[800],
+    borderColor: glass.light.borderColor,
+    ...(Platform.OS === 'web' ? {
+      // @ts-ignore
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+    } : {}),
   },
   header: {
     flexDirection: 'row',
@@ -200,11 +205,16 @@ const styles = StyleSheet.create({
   compactContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
+    backgroundColor: glass.light.backgroundColor,
+    borderRadius: borderRadius.lg,
     padding: spacing[3],
     borderWidth: 1,
-    borderColor: colors.neutral[800],
+    borderColor: glass.light.borderColor,
+    ...(Platform.OS === 'web' ? {
+      // @ts-ignore
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+    } : {}),
   },
   compactAvatar: {
     width: 48,

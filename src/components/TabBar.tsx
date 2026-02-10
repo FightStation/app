@@ -62,12 +62,15 @@ function TabItem({
   }));
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.9, { damping: 15, stiffness: 300 });
+    scale.value = withSpring(0.85, { damping: 15, stiffness: 300 });
     Haptics.selectionAsync();
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+    scale.value = withSpring(1.1, { damping: 12, stiffness: 200 });
+    setTimeout(() => {
+      scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+    }, 100);
   };
 
   return (
@@ -253,7 +256,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   indicatorPill: {
-    width: 32,
+    width: 40,
     height: 3,
     backgroundColor: colors.primary[500],
     borderRadius: 1.5,
@@ -281,7 +284,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing[0.5],
   },
   iconContainerFocused: {
-    backgroundColor: 'rgba(196, 30, 58, 0.12)',
+    backgroundColor: 'rgba(196, 30, 58, 0.15)',
+    shadowColor: colors.primary[500],
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   tabLabel: {
     fontSize: typography.fontSize.xs,

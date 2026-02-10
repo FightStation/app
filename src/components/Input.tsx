@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   StyleProp,
   TextStyle,
+  Platform,
 } from 'react-native';
 import { colors, borderRadius, spacing, typography } from '../lib/theme';
 
@@ -37,12 +38,16 @@ export function Input({
 }: InputProps) {
   const [isFocused, setIsFocused] = useState(false);
 
-  const inputContainerStyles = [
-    styles.inputContainer,
-    multiline && styles.inputContainerMultiline,
-    isFocused && styles.inputFocused,
-    error && styles.inputError,
-  ];
+  const inputContainerStyles: ViewStyle[] = [
+    styles.inputContainer as ViewStyle,
+    multiline ? (styles.inputContainerMultiline as ViewStyle) : undefined,
+    isFocused ? (styles.inputFocused as ViewStyle) : undefined,
+    // Red glow shadow on focus - only on iOS/web where shadows render well
+    isFocused && !error && (Platform.OS === 'ios' || Platform.OS === 'web')
+      ? (styles.inputFocusGlow as ViewStyle)
+      : undefined,
+    error ? (styles.inputError as ViewStyle) : undefined,
+  ].filter(Boolean) as ViewStyle[];
 
   return (
     <View style={[styles.container, containerStyle]}>
@@ -97,7 +102,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: 'transparent',
   },
@@ -106,6 +111,13 @@ const styles = StyleSheet.create({
   },
   inputFocused: {
     borderColor: colors.primary[500],
+  },
+  inputFocusGlow: {
+    shadowColor: colors.primary[500],
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 2,
   },
   inputError: {
     borderColor: colors.error,

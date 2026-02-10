@@ -16,6 +16,11 @@ import { useAuth } from '../../context/AuthContext';
 import { Gym } from '../../types';
 import { createEvent } from '../../services/events';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import {
+  GlassCard,
+  GradientButton,
+  SectionHeader,
+} from '../../components';
 
 type CreateEventScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -154,9 +159,7 @@ export function CreateEventScreen({ navigation }: CreateEventScreenProps) {
         >
           {/* Event Type */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>
-              EVENT TYPE <Text style={styles.required}>*</Text>
-            </Text>
+            <SectionHeader title="Event Type" subtitle="Select the type of event *" />
             <View style={styles.eventTypesGrid}>
               {EVENT_TYPES.map((type) => (
                 <TouchableOpacity
@@ -190,7 +193,7 @@ export function CreateEventScreen({ navigation }: CreateEventScreenProps) {
 
           {/* Basic Info */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>EVENT DETAILS</Text>
+            <SectionHeader title="Event Details" />
 
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>
@@ -222,111 +225,111 @@ export function CreateEventScreen({ navigation }: CreateEventScreenProps) {
 
           {/* Date & Time */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>DATE & TIME</Text>
+            <SectionHeader title="Date & Time" />
 
-            <View style={styles.row}>
-              <View style={[styles.inputGroup, { flex: 1 }]}>
+            <GlassCard style={styles.dateTimeCard}>
+              <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>
                   Date <Text style={styles.required}>*</Text>
                 </Text>
                 <TextInput
-                  style={styles.input}
+                  style={styles.inputInCard}
                   placeholder="Nov 5, 2024"
                   placeholderTextColor={colors.textMuted}
                   value={eventDate}
                   onChangeText={setEventDate}
                 />
               </View>
-            </View>
 
-            <View style={styles.row}>
-              <View style={[styles.inputGroup, { flex: 1, marginRight: spacing[2] }]}>
-                <Text style={styles.inputLabel}>
-                  Start Time <Text style={styles.required}>*</Text>
-                </Text>
+              <View style={styles.row}>
+                <View style={[styles.inputGroup, { flex: 1, marginRight: spacing[2] }]}>
+                  <Text style={styles.inputLabel}>
+                    Start Time <Text style={styles.required}>*</Text>
+                  </Text>
+                  <TextInput
+                    style={styles.inputInCard}
+                    placeholder="18:00"
+                    placeholderTextColor={colors.textMuted}
+                    value={startTime}
+                    onChangeText={setStartTime}
+                  />
+                </View>
+                <View style={[styles.inputGroup, { flex: 1 }]}>
+                  <Text style={styles.inputLabel}>End Time</Text>
+                  <TextInput
+                    style={styles.inputInCard}
+                    placeholder="20:00"
+                    placeholderTextColor={colors.textMuted}
+                    value={endTime}
+                    onChangeText={setEndTime}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.inputGroupLast}>
+                <Text style={styles.inputLabel}>Max Participants</Text>
                 <TextInput
-                  style={styles.input}
-                  placeholder="18:00"
+                  style={styles.inputInCard}
+                  placeholder="16"
                   placeholderTextColor={colors.textMuted}
-                  value={startTime}
-                  onChangeText={setStartTime}
+                  value={maxParticipants}
+                  onChangeText={setMaxParticipants}
+                  keyboardType="numeric"
                 />
               </View>
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.inputLabel}>End Time</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="20:00"
-                  placeholderTextColor={colors.textMuted}
-                  value={endTime}
-                  onChangeText={setEndTime}
-                />
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Max Participants</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="16"
-                placeholderTextColor={colors.textMuted}
-                value={maxParticipants}
-                onChangeText={setMaxParticipants}
-                keyboardType="numeric"
-              />
-            </View>
+            </GlassCard>
           </View>
 
           {/* Fight-specific fields */}
           {eventType === 'fight' && (
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>FIGHT DETAILS</Text>
+              <SectionHeader title="Fight Details" />
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>
-                  Fighter Name <Text style={styles.required}>*</Text>
-                </Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Your fighter's name"
-                  placeholderTextColor={colors.textMuted}
-                  value={fighterName}
-                  onChangeText={setFighterName}
-                />
-              </View>
+              <GlassCard style={styles.dateTimeCard}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>
+                    Fighter Name <Text style={styles.required}>*</Text>
+                  </Text>
+                  <TextInput
+                    style={styles.inputInCard}
+                    placeholder="Your fighter's name"
+                    placeholderTextColor={colors.textMuted}
+                    value={fighterName}
+                    onChangeText={setFighterName}
+                  />
+                </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>
-                  Opponent <Text style={styles.required}>*</Text>
-                </Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Opponent's name"
-                  placeholderTextColor={colors.textMuted}
-                  value={opponent}
-                  onChangeText={setOpponent}
-                />
-              </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>
+                    Opponent <Text style={styles.required}>*</Text>
+                  </Text>
+                  <TextInput
+                    style={styles.inputInCard}
+                    placeholder="Opponent's name"
+                    placeholderTextColor={colors.textMuted}
+                    value={opponent}
+                    onChangeText={setOpponent}
+                  />
+                </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Venue</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Fight venue/location"
-                  placeholderTextColor={colors.textMuted}
-                  value={venue}
-                  onChangeText={setVenue}
-                />
-              </View>
+                <View style={styles.inputGroupLast}>
+                  <Text style={styles.inputLabel}>Venue</Text>
+                  <TextInput
+                    style={styles.inputInCard}
+                    placeholder="Fight venue/location"
+                    placeholderTextColor={colors.textMuted}
+                    value={venue}
+                    onChangeText={setVenue}
+                  />
+                </View>
+              </GlassCard>
             </View>
           )}
 
           {/* Intensity - only for sparring events */}
           {eventType === 'sparring' && (
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>
-                INTENSITY <Text style={styles.required}>*</Text>
-              </Text>
+              <SectionHeader title="Intensity" subtitle="Select sparring intensity *" />
               {INTENSITY_OPTIONS.map((option) => (
                 <TouchableOpacity
                   key={option.id}
@@ -364,10 +367,10 @@ export function CreateEventScreen({ navigation }: CreateEventScreenProps) {
 
           {/* Weight Classes */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>WEIGHT CLASSES</Text>
-            <Text style={styles.sectionHint}>
-              Select all weight classes welcome at this session
-            </Text>
+            <SectionHeader
+              title="Weight Classes"
+              subtitle="Select all weight classes welcome at this session"
+            />
             <View style={styles.tagsContainer}>
               {WEIGHT_CLASSES.map((wc) => (
                 <TouchableOpacity
@@ -393,10 +396,10 @@ export function CreateEventScreen({ navigation }: CreateEventScreenProps) {
 
           {/* Experience Levels */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>EXPERIENCE LEVELS</Text>
-            <Text style={styles.sectionHint}>
-              Who is this session appropriate for?
-            </Text>
+            <SectionHeader
+              title="Experience Levels"
+              subtitle="Who is this session appropriate for?"
+            />
             <View style={styles.tagsContainer}>
               {EXPERIENCE_LEVELS.map((exp) => (
                 <TouchableOpacity
@@ -421,20 +424,17 @@ export function CreateEventScreen({ navigation }: CreateEventScreenProps) {
           </View>
 
           {/* Create Button */}
-          <TouchableOpacity
-            style={[styles.createButton, loading && styles.createButtonDisabled]}
-            onPress={handleCreate}
-            disabled={loading}
-          >
-            <Ionicons
-              name="add-circle"
-              size={20}
-              color={colors.textPrimary}
+          <View style={styles.createButtonWrapper}>
+            <GradientButton
+              title={loading ? 'Creating...' : 'Create Event'}
+              onPress={handleCreate}
+              disabled={loading}
+              loading={loading}
+              fullWidth
+              size="lg"
+              icon="checkmark-circle"
             />
-            <Text style={styles.createButtonText}>
-              {loading ? 'Creating...' : 'Create Event'}
-            </Text>
-          </TouchableOpacity>
+          </View>
 
           <View style={styles.bottomPadding} />
         </ScrollView>
@@ -487,13 +487,6 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: spacing[6],
   },
-  sectionLabel: {
-    color: colors.primary[500],
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-    letterSpacing: 0.5,
-    marginBottom: spacing[3],
-  },
   eventTypesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -529,13 +522,11 @@ const styles = StyleSheet.create({
     marginTop: spacing[1],
     textAlign: 'center',
   },
-  sectionHint: {
-    color: colors.textMuted,
-    fontSize: typography.fontSize.sm,
-    marginBottom: spacing[3],
-  },
   inputGroup: {
     marginBottom: spacing[4],
+  },
+  inputGroupLast: {
+    marginBottom: 0,
   },
   inputLabel: {
     color: colors.textSecondary,
@@ -557,12 +548,26 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.base,
     ...(Platform.OS === 'web' && { outlineStyle: 'none' as any }),
   },
+  inputInCard: {
+    backgroundColor: colors.surfaceLight,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.lg,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    color: colors.textPrimary,
+    fontSize: typography.fontSize.base,
+    ...(Platform.OS === 'web' && { outlineStyle: 'none' as any }),
+  },
   textArea: {
     height: 100,
     paddingTop: spacing[3],
   },
   row: {
     flexDirection: 'row',
+  },
+  dateTimeCard: {
+    marginTop: spacing[1],
   },
   optionCard: {
     backgroundColor: colors.surfaceLight,
@@ -637,23 +642,8 @@ const styles = StyleSheet.create({
   tagTextSelected: {
     color: colors.textPrimary,
   },
-  createButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary[500],
-    paddingVertical: spacing[4],
-    borderRadius: borderRadius.lg,
-    gap: spacing[2],
+  createButtonWrapper: {
     marginTop: spacing[4],
-  },
-  createButtonDisabled: {
-    opacity: 0.5,
-  },
-  createButtonText: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.bold,
   },
   bottomPadding: {
     height: spacing[10],
