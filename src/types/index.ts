@@ -596,6 +596,8 @@ export const COUNTRY_FLAGS: Record<string, string> = {
   BG: '🇧🇬',
   RO: '🇷🇴',
   FI: '🇫🇮',
+  SE: '🇸🇪',
+  CZ: '🇨🇿',
   RU: '🇷🇺',
   GE: '🇬🇪',
 };
