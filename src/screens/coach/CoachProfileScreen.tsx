@@ -14,6 +14,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import {
+  GlassCard,
+  GradientButton,
+  SectionHeader,
+  StatCard,
+} from '../../components';
 
 type CoachProfileScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -72,7 +78,7 @@ export function CoachProfileScreen({ navigation }: CoachProfileScreenProps) {
 
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
           {/* Profile Card */}
-          <View style={styles.profileCard}>
+          <GlassCard style={styles.profileCard}>
             <View style={styles.avatarContainer}>
               <View style={styles.avatar}>
                 <Ionicons name="person" size={40} color={colors.textPrimary} />
@@ -84,25 +90,14 @@ export function CoachProfileScreen({ navigation }: CoachProfileScreenProps) {
             <Text style={styles.name}>{coachName}</Text>
             <Text style={styles.subtitle}>Professional Coach</Text>
             <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>48</Text>
-                <Text style={styles.statLabel}>Sessions</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>5</Text>
-                <Text style={styles.statLabel}>Students</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>4.9</Text>
-                <Text style={styles.statLabel}>Rating</Text>
-              </View>
+              <StatCard icon="calendar" value={48} label="Sessions" />
+              <StatCard icon="people" value={5} label="Students" />
+              <StatCard icon="star" value={4.9} label="Rating" />
             </View>
-          </View>
+          </GlassCard>
 
           {/* Quick Toggles */}
-          <View style={styles.toggleSection}>
+          <GlassCard style={styles.toggleSection}>
             <View style={styles.toggleItem}>
               <View style={styles.toggleInfo}>
                 <Ionicons name="notifications-outline" size={22} color={colors.textSecondary} />
@@ -115,7 +110,7 @@ export function CoachProfileScreen({ navigation }: CoachProfileScreenProps) {
                 thumbColor={colors.textPrimary}
               />
             </View>
-            <View style={styles.toggleItem}>
+            <View style={[styles.toggleItem, styles.toggleItemLast]}>
               <View style={styles.toggleInfo}>
                 <Ionicons name="calendar-outline" size={22} color={colors.textSecondary} />
                 <Text style={styles.toggleLabel}>Available for Booking</Text>
@@ -127,13 +122,13 @@ export function CoachProfileScreen({ navigation }: CoachProfileScreenProps) {
                 thumbColor={colors.textPrimary}
               />
             </View>
-          </View>
+          </GlassCard>
 
           {/* Menu Sections */}
           {menuSections.map((section) => (
             <View key={section.title} style={styles.menuSection}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-              <View style={styles.menuCard}>
+              <SectionHeader title={section.title} />
+              <GlassCard noPadding>
                 {section.items.map((item, index) => (
                   <TouchableOpacity
                     key={item.label}
@@ -148,15 +143,19 @@ export function CoachProfileScreen({ navigation }: CoachProfileScreenProps) {
                     <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
                   </TouchableOpacity>
                 ))}
-              </View>
+              </GlassCard>
             </View>
           ))}
 
           {/* Sign Out */}
-          <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
-            <Ionicons name="log-out-outline" size={22} color={colors.error} />
-            <Text style={styles.signOutText}>Sign Out</Text>
-          </TouchableOpacity>
+          <GradientButton
+            title="Sign Out"
+            onPress={signOut}
+            icon="log-out-outline"
+            gradient={['#DC2626', '#991B1B'] as readonly [string, string]}
+            fullWidth
+            style={styles.signOutButton}
+          />
 
           {/* App Version */}
           <Text style={styles.version}>Fight Station v1.0.0</Text>
@@ -191,12 +190,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: spacing[4] },
   profileCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[5],
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
     marginBottom: spacing[4],
   },
   avatarContainer: {
@@ -235,35 +229,12 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    gap: spacing[3],
     width: '100%',
-    justifyContent: 'space-around',
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-  },
-  statLabel: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-    marginTop: spacing[1],
-  },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: colors.border,
   },
   toggleSection: {
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
     marginBottom: spacing[4],
-    overflow: 'hidden',
+    padding: 0,
   },
   toggleItem: {
     flexDirection: 'row',
@@ -273,6 +244,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+  },
+  toggleItemLast: {
+    borderBottomWidth: 0,
   },
   toggleInfo: {
     flexDirection: 'row',
@@ -285,21 +259,6 @@ const styles = StyleSheet.create({
   },
   menuSection: {
     marginBottom: spacing[4],
-  },
-  sectionTitle: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.primary[500],
-    letterSpacing: 0.5,
-    marginBottom: spacing[2],
-    marginLeft: spacing[1],
-  },
-  menuCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
   },
   menuItem: {
     flexDirection: 'row',
@@ -318,21 +277,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   signOutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    paddingVertical: spacing[4],
-    gap: spacing[2],
-    borderWidth: 1,
-    borderColor: colors.error,
     marginTop: spacing[2],
-  },
-  signOutText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.error,
   },
   version: {
     textAlign: 'center',

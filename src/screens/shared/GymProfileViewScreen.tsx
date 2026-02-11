@@ -18,6 +18,13 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { getOrCreateConversation } from '../../services/messaging';
+import {
+  GlassCard,
+  GradientButton,
+  SectionHeader,
+  StatCard,
+  AnimatedListItem,
+} from '../../components';
 
 type GymProfile = {
   id: string;
@@ -192,30 +199,30 @@ export function GymProfileViewScreen({ navigation, route }: any) {
 
   // Contact Card Component
   const ContactCard = () => (
-    <View style={[styles.card, isDesktop && styles.stickyCard]}>
-      <Text style={styles.cardTitle}>Contact & Actions</Text>
+    <GlassCard style={isDesktop ? styles.stickyCard : undefined}>
+      <SectionHeader title="Contact & Actions" />
 
       {/* Quick Actions */}
       {!isOwnGym && (
         <View style={styles.actionButtonsVertical}>
-          <TouchableOpacity
-            style={styles.primaryButton}
+          <GradientButton
+            title="Send Message"
             onPress={handleMessage}
+            icon="chatbubble"
+            loading={startingChat}
             disabled={startingChat}
+            fullWidth
+          />
+          <GlassCard
+            intensity="light"
+            onPress={handleViewEvents}
+            style={styles.secondaryActionCard}
           >
-            {startingChat ? (
-              <ActivityIndicator size="small" color={colors.textPrimary} />
-            ) : (
-              <>
-                <Ionicons name="chatbubble" size={20} color={colors.textPrimary} />
-                <Text style={styles.primaryButtonText}>Send Message</Text>
-              </>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryButton} onPress={handleViewEvents}>
-            <Ionicons name="calendar" size={20} color={colors.primary[500]} />
-            <Text style={styles.secondaryButtonText}>View Events</Text>
-          </TouchableOpacity>
+            <View style={styles.secondaryActionRow}>
+              <Ionicons name="calendar" size={20} color={colors.primary[500]} />
+              <Text style={styles.secondaryButtonText}>View Events</Text>
+            </View>
+          </GlassCard>
         </View>
       )}
 
@@ -298,56 +305,62 @@ export function GymProfileViewScreen({ navigation, route }: any) {
           </View>
         </View>
       )}
-    </View>
+    </GlassCard>
   );
 
-  // Stats Card Component
-  const StatsCard = () => (
-    <View style={styles.statsCard}>
-      <View style={styles.statBox}>
-        <Text style={styles.statNumber}>{gym.member_count || 0}</Text>
-        <Text style={styles.statLabel}>Members</Text>
-      </View>
-      <View style={styles.statDivider} />
-      <View style={styles.statBox}>
-        <Text style={styles.statNumber}>{gym.events_this_month || 0}</Text>
-        <Text style={styles.statLabel}>Events/Month</Text>
-      </View>
-      <View style={styles.statDivider} />
-      <View style={styles.statBox}>
-        <Text style={styles.statNumber}>{coaches.length}</Text>
-        <Text style={styles.statLabel}>Coaches</Text>
-      </View>
+  // Stats Row Component
+  const StatsRow = () => (
+    <View style={styles.statsRow}>
+      <StatCard
+        icon="people"
+        value={gym.member_count || 0}
+        label="Members"
+      />
+      <StatCard
+        icon="calendar"
+        value={gym.events_this_month || 0}
+        label="Events/Mo"
+      />
+      <StatCard
+        icon="school"
+        value={coaches.length}
+        label="Coaches"
+      />
     </View>
   );
 
   // Team Member Card Component
-  const TeamMemberCard = ({ member, type }: { member: AffiliatedFighter | AffiliatedCoach, type: 'fighter' | 'coach' }) => (
-    <TouchableOpacity
-      style={styles.memberCard}
-      onPress={() => navigation.navigate(
-        type === 'fighter' ? 'FighterProfileView' : 'CoachProfileView',
-        type === 'fighter' ? { fighterId: member.id } : { coachId: member.id }
-      )}
-    >
-      {member.avatar_url ? (
-        <Image source={{ uri: member.avatar_url }} style={styles.memberAvatar} />
-      ) : (
-        <View style={styles.memberAvatarPlaceholder}>
-          <Ionicons name="person" size={28} color={colors.textMuted} />
+  const TeamMemberCard = ({ member, type, index }: { member: AffiliatedFighter | AffiliatedCoach, type: 'fighter' | 'coach', index: number }) => (
+    <AnimatedListItem index={index}>
+      <GlassCard
+        intensity="light"
+        onPress={() => navigation.navigate(
+          type === 'fighter' ? 'FighterProfileView' : 'CoachProfileView',
+          type === 'fighter' ? { fighterId: member.id } : { coachId: member.id }
+        )}
+        style={styles.memberCard}
+      >
+        <View style={styles.memberRow}>
+          {member.avatar_url ? (
+            <Image source={{ uri: member.avatar_url }} style={styles.memberAvatar} />
+          ) : (
+            <View style={styles.memberAvatarPlaceholder}>
+              <Ionicons name="person" size={28} color={colors.textMuted} />
+            </View>
+          )}
+          <View style={styles.memberInfo}>
+            <Text style={styles.memberName}>{member.first_name} {member.last_name}</Text>
+            <Text style={styles.memberSubtitle}>
+              {type === 'fighter'
+                ? (member as AffiliatedFighter).weight_class || 'Fighter'
+                : (member as AffiliatedCoach).specializations?.[0] || 'Coach'
+              }
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </View>
-      )}
-      <View style={styles.memberInfo}>
-        <Text style={styles.memberName}>{member.first_name} {member.last_name}</Text>
-        <Text style={styles.memberSubtitle}>
-          {type === 'fighter'
-            ? (member as AffiliatedFighter).weight_class || 'Fighter'
-            : (member as AffiliatedCoach).specializations?.[0] || 'Coach'
-          }
-        </Text>
-      </View>
-      <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-    </TouchableOpacity>
+      </GlassCard>
+    </AnimatedListItem>
   );
 
   // Photo Gallery
@@ -420,20 +433,20 @@ export function GymProfileViewScreen({ navigation, route }: any) {
               </View>
 
               {/* Stats */}
-              <StatsCard />
+              <StatsRow />
 
               {/* About Section */}
               {gym.description && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>About</Text>
+                <GlassCard style={styles.sectionCard}>
+                  <SectionHeader title="About" />
                   <Text style={styles.descriptionText}>{gym.description}</Text>
-                </View>
+                </GlassCard>
               )}
 
               {/* Facilities */}
               {gym.facilities && gym.facilities.length > 0 && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Facilities & Amenities</Text>
+                <GlassCard style={styles.sectionCard}>
+                  <SectionHeader title="Facilities & Amenities" />
                   <View style={styles.facilitiesGrid}>
                     {gym.facilities.map((facility, index) => (
                       <View key={index} style={styles.facilityItem}>
@@ -442,20 +455,20 @@ export function GymProfileViewScreen({ navigation, route }: any) {
                       </View>
                     ))}
                   </View>
-                </View>
+                </GlassCard>
               )}
 
               {/* Team Section */}
               {(coaches.length > 0 || fighters.length > 0) && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Team</Text>
+                <GlassCard style={styles.sectionCard}>
+                  <SectionHeader title="Team" />
 
                   {coaches.length > 0 && (
                     <View style={styles.teamSection}>
                       <Text style={styles.teamSubtitle}>Coaches ({coaches.length})</Text>
                       <View style={styles.teamGrid}>
-                        {coaches.map((coach) => (
-                          <TeamMemberCard key={coach.id} member={coach} type="coach" />
+                        {coaches.map((coach, index) => (
+                          <TeamMemberCard key={coach.id} member={coach} type="coach" index={index} />
                         ))}
                       </View>
                     </View>
@@ -465,8 +478,8 @@ export function GymProfileViewScreen({ navigation, route }: any) {
                     <View style={styles.teamSection}>
                       <Text style={styles.teamSubtitle}>Fighters ({fighters.length})</Text>
                       <View style={styles.teamGrid}>
-                        {fighters.slice(0, 6).map((fighter) => (
-                          <TeamMemberCard key={fighter.id} member={fighter} type="fighter" />
+                        {fighters.slice(0, 6).map((fighter, index) => (
+                          <TeamMemberCard key={fighter.id} member={fighter} type="fighter" index={index} />
                         ))}
                       </View>
                       {fighters.length > 6 && (
@@ -477,7 +490,7 @@ export function GymProfileViewScreen({ navigation, route }: any) {
                       )}
                     </View>
                   )}
-                </View>
+                </GlassCard>
               )}
             </View>
 
@@ -491,7 +504,7 @@ export function GymProfileViewScreen({ navigation, route }: any) {
     );
   }
 
-  // MOBILE LAYOUT (Original with improvements)
+  // MOBILE LAYOUT
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
@@ -528,40 +541,42 @@ export function GymProfileViewScreen({ navigation, route }: any) {
 
           {!isOwnGym && (
             <View style={styles.actionButtons}>
-              <TouchableOpacity
-                style={styles.messageButton}
+              <GradientButton
+                title="Message"
                 onPress={handleMessage}
+                icon="chatbubble"
+                loading={startingChat}
                 disabled={startingChat}
+                style={{ flex: 1 }}
+              />
+              <GlassCard
+                intensity="light"
+                onPress={handleViewEvents}
+                style={styles.viewEventsCard}
               >
-                {startingChat ? (
-                  <ActivityIndicator size="small" color={colors.textPrimary} />
-                ) : (
-                  <>
-                    <Ionicons name="chatbubble" size={18} color={colors.textPrimary} />
-                    <Text style={styles.messageButtonText}>Message</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.viewEventsButton} onPress={handleViewEvents}>
-                <Ionicons name="calendar" size={18} color={colors.primary[500]} />
-                <Text style={styles.viewEventsButtonText}>View Events</Text>
-              </TouchableOpacity>
+                <View style={styles.secondaryActionRow}>
+                  <Ionicons name="calendar" size={18} color={colors.primary[500]} />
+                  <Text style={styles.viewEventsButtonText}>Events</Text>
+                </View>
+              </GlassCard>
             </View>
           )}
         </View>
 
-        <StatsCard />
+        <View style={styles.mobileStatsContainer}>
+          <StatsRow />
+        </View>
 
         {gym.description && (
           <View style={styles.mobileSection}>
-            <Text style={styles.sectionTitle}>About</Text>
+            <SectionHeader title="About" />
             <Text style={styles.descriptionText}>{gym.description}</Text>
           </View>
         )}
 
         {gym.facilities && gym.facilities.length > 0 && (
           <View style={styles.mobileSection}>
-            <Text style={styles.sectionTitle}>Facilities</Text>
+            <SectionHeader title="Facilities" />
             <View style={styles.facilitiesWrap}>
               {gym.facilities.map((facility, index) => (
                 <View key={index} style={styles.facilityChip}>
@@ -575,7 +590,7 @@ export function GymProfileViewScreen({ navigation, route }: any) {
 
         {/* Contact Section - Mobile */}
         <View style={styles.mobileSection}>
-          <Text style={styles.sectionTitle}>Contact</Text>
+          <SectionHeader title="Contact" />
           {gym.address && (
             <View style={styles.mobileContactRow}>
               <Ionicons name="location" size={20} color={colors.textMuted} />
@@ -605,20 +620,20 @@ export function GymProfileViewScreen({ navigation, route }: any) {
         {/* Team Section - Mobile */}
         {(coaches.length > 0 || fighters.length > 0) && (
           <View style={styles.mobileSection}>
-            <Text style={styles.sectionTitle}>Team</Text>
+            <SectionHeader title="Team" />
             {coaches.length > 0 && (
               <View style={styles.mobileTeamSection}>
                 <Text style={styles.mobileTeamSubtitle}>Coaches</Text>
-                {coaches.map((coach) => (
-                  <TeamMemberCard key={coach.id} member={coach} type="coach" />
+                {coaches.map((coach, index) => (
+                  <TeamMemberCard key={coach.id} member={coach} type="coach" index={index} />
                 ))}
               </View>
             )}
             {fighters.length > 0 && (
               <View style={styles.mobileTeamSection}>
                 <Text style={styles.mobileTeamSubtitle}>Fighters ({fighters.length})</Text>
-                {fighters.slice(0, 4).map((fighter) => (
-                  <TeamMemberCard key={fighter.id} member={fighter} type="fighter" />
+                {fighters.slice(0, 4).map((fighter, index) => (
+                  <TeamMemberCard key={fighter.id} member={fighter} type="fighter" index={index} />
                 ))}
                 {fighters.length > 4 && (
                   <TouchableOpacity style={styles.viewAllButton}>
@@ -786,55 +801,27 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
 
-  // Stats Card
-  statsCard: {
+  // Stats
+  statsRow: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing[5],
+    gap: spacing[3],
     marginBottom: spacing[5],
-    borderWidth: 1,
-    borderColor: colors.border,
   },
-  statBox: {
-    flex: 1,
-    alignItems: 'center',
+  mobileStatsContainer: {
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[4],
   },
-  statNumber: {
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.primary[500],
-    marginBottom: spacing[1],
-  },
-  statLabel: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textMuted,
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: colors.border,
-    marginHorizontal: spacing[4],
+
+  // Section Card (Desktop)
+  sectionCard: {
+    marginBottom: spacing[5],
   },
 
   // Sections
-  section: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing[5],
-    marginBottom: spacing[5],
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
   mobileSection: {
     padding: spacing[4],
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-  },
-  sectionTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginBottom: spacing[4],
   },
   descriptionText: {
     fontSize: typography.fontSize.base,
@@ -878,23 +865,10 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
 
-  // Card (Sidebar)
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing[5],
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
+  // Sticky card (sidebar)
   stickyCard: {
     position: Platform.OS === 'web' ? 'sticky' as any : 'relative',
     top: spacing[6],
-  },
-  cardTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginBottom: spacing[4],
   },
 
   // Action Buttons
@@ -902,30 +876,14 @@ const styles = StyleSheet.create({
     gap: spacing[3],
     marginBottom: spacing[5],
   },
-  primaryButton: {
+  secondaryActionCard: {
+    padding: spacing[3],
+  },
+  secondaryActionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing[2],
-    paddingVertical: spacing[4],
-    backgroundColor: colors.primary[500],
-    borderRadius: borderRadius.lg,
-  },
-  primaryButtonText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
-  },
-  secondaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[2],
-    paddingVertical: spacing[4],
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colors.primary[500],
-    borderRadius: borderRadius.lg,
   },
   secondaryButtonText: {
     fontSize: typography.fontSize.base,
@@ -1009,12 +967,13 @@ const styles = StyleSheet.create({
     gap: spacing[2],
   },
   memberCard: {
+    padding: spacing[2],
+    marginBottom: spacing[1],
+  },
+  memberRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[3],
-    padding: spacing[3],
-    backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.lg,
   },
   memberAvatar: {
     width: 48,
@@ -1099,32 +1058,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing[3],
   },
-  messageButton: {
+  viewEventsCard: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    padding: spacing[2.5],
     justifyContent: 'center',
-    gap: spacing[2],
-    paddingVertical: spacing[3],
-    backgroundColor: colors.primary[500],
-    borderRadius: borderRadius.lg,
-  },
-  messageButtonText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
-  },
-  viewEventsButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[2],
-    paddingVertical: spacing[3],
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colors.primary[500],
-    borderRadius: borderRadius.lg,
   },
   viewEventsButtonText: {
     fontSize: typography.fontSize.base,

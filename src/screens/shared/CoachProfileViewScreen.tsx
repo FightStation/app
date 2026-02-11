@@ -15,6 +15,12 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { getOrCreateConversation } from '../../services/messaging';
+import {
+  GlassCard,
+  GradientButton,
+  SectionHeader,
+  AnimatedListItem,
+} from '../../components';
 
 type CoachProfile = {
   id: string;
@@ -193,26 +199,19 @@ export function CoachProfileViewScreen({ navigation, route }: any) {
             </Text>
           )}
 
-          <TouchableOpacity
-            style={styles.messageButton}
+          <GradientButton
+            title="Send Message"
             onPress={handleMessage}
+            icon="chatbubble"
+            loading={startingChat}
             disabled={startingChat}
-          >
-            {startingChat ? (
-              <ActivityIndicator size="small" color={colors.textPrimary} />
-            ) : (
-              <>
-                <Ionicons name="chatbubble" size={18} color={colors.textPrimary} />
-                <Text style={styles.messageButtonText}>Send Message</Text>
-              </>
-            )}
-          </TouchableOpacity>
+          />
         </View>
 
         {/* Bio */}
         {coach.bio && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>About</Text>
+            <SectionHeader title="About" />
             <Text style={styles.bioText}>{coach.bio}</Text>
           </View>
         )}
@@ -220,7 +219,7 @@ export function CoachProfileViewScreen({ navigation, route }: any) {
         {/* Specializations */}
         {coach.specializations && coach.specializations.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Specializations</Text>
+            <SectionHeader title="Specializations" />
             <View style={styles.tagsContainer}>
               {coach.specializations.map((spec, index) => (
                 <View key={index} style={styles.tag}>
@@ -234,13 +233,17 @@ export function CoachProfileViewScreen({ navigation, route }: any) {
         {/* Certifications */}
         {coach.certifications && coach.certifications.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Certifications</Text>
+            <SectionHeader title="Certifications" />
             <View style={styles.certificationsList}>
               {coach.certifications.map((cert, index) => (
-                <View key={index} style={styles.certificationItem}>
-                  <Ionicons name="ribbon" size={18} color={colors.primary[500]} />
-                  <Text style={styles.certificationText}>{cert}</Text>
-                </View>
+                <AnimatedListItem key={index} index={index}>
+                  <GlassCard intensity="light" style={styles.certCard}>
+                    <View style={styles.certRow}>
+                      <Ionicons name="ribbon" size={18} color={colors.primary[500]} />
+                      <Text style={styles.certificationText}>{cert}</Text>
+                    </View>
+                  </GlassCard>
+                </AnimatedListItem>
               ))}
             </View>
           </View>
@@ -249,33 +252,38 @@ export function CoachProfileViewScreen({ navigation, route }: any) {
         {/* Affiliated Gym */}
         {affiliatedGym && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Gym</Text>
-            <TouchableOpacity
-              style={styles.gymCard}
-              onPress={() => navigation.navigate('GymProfileView', { gymId: affiliatedGym.id })}
-            >
-              <View style={styles.gymIconContainer}>
-                {affiliatedGym.logo_url ? (
-                  <Image source={{ uri: affiliatedGym.logo_url }} style={styles.gymLogo} />
-                ) : (
-                  <Ionicons name="business" size={28} color={colors.primary[500]} />
-                )}
-              </View>
-              <View style={styles.gymInfo}>
-                <Text style={styles.gymName}>{affiliatedGym.name}</Text>
-                <Text style={styles.gymLocation}>
-                  {affiliatedGym.city}, {affiliatedGym.country}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
+            <SectionHeader title="Gym" />
+            <AnimatedListItem index={0}>
+              <GlassCard
+                intensity="light"
+                onPress={() => navigation.navigate('GymProfileView', { gymId: affiliatedGym.id })}
+                style={styles.gymCard}
+              >
+                <View style={styles.gymRow}>
+                  <View style={styles.gymIconContainer}>
+                    {affiliatedGym.logo_url ? (
+                      <Image source={{ uri: affiliatedGym.logo_url }} style={styles.gymLogo} />
+                    ) : (
+                      <Ionicons name="business" size={28} color={colors.primary[500]} />
+                    )}
+                  </View>
+                  <View style={styles.gymInfo}>
+                    <Text style={styles.gymName}>{affiliatedGym.name}</Text>
+                    <Text style={styles.gymLocation}>
+                      {affiliatedGym.city}, {affiliatedGym.country}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+                </View>
+              </GlassCard>
+            </AnimatedListItem>
           </View>
         )}
 
         {/* Fighters */}
         {fighters.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Fighters ({fighters.length})</Text>
+            <SectionHeader title={`Fighters (${fighters.length})`} />
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -384,30 +392,10 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginBottom: spacing[4],
   },
-  messageButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-    paddingHorizontal: spacing[6],
-    paddingVertical: spacing[3],
-    backgroundColor: colors.primary[500],
-    borderRadius: borderRadius.lg,
-  },
-  messageButtonText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
-  },
   section: {
     padding: spacing[4],
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-  },
-  sectionTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginBottom: spacing[3],
   },
   bioText: {
     fontSize: typography.fontSize.base,
@@ -433,13 +421,13 @@ const styles = StyleSheet.create({
   certificationsList: {
     gap: spacing[2],
   },
-  certificationItem: {
+  certCard: {
+    padding: spacing[2],
+  },
+  certRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[2],
-    padding: spacing[3],
-    backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.lg,
   },
   certificationText: {
     fontSize: typography.fontSize.base,
@@ -447,11 +435,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   gymCard: {
+    padding: spacing[2],
+  },
+  gymRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing[3],
-    backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.lg,
   },
   gymIconContainer: {
     width: 56,

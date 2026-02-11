@@ -5,13 +5,17 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import {
+  GlassCard,
+  GlassInput,
+  EmptyState,
+} from '../../components';
 
 type GymSearchScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -114,9 +118,10 @@ export function GymSearchScreen({ navigation }: GymSearchScreenProps) {
 
   const renderGym = ({ item }: { item: Gym }) => {
     return (
-      <TouchableOpacity
-        style={styles.gymCard}
+      <GlassCard
+        intensity="light"
         onPress={() => navigation.navigate('GymProfileView', { gymId: item.id })}
+        style={styles.gymCard}
       >
         <View style={styles.gymHeader}>
           <View style={styles.gymAvatar}>
@@ -159,12 +164,12 @@ export function GymSearchScreen({ navigation }: GymSearchScreenProps) {
               <Text style={styles.memberCountText}>{item.member_count} members</Text>
             </View>
           )}
-          <TouchableOpacity style={styles.viewButton}>
+          <View style={styles.viewButton}>
             <Text style={styles.viewButtonText}>View Details</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.primary[500]} />
-          </TouchableOpacity>
+          </View>
         </View>
-      </TouchableOpacity>
+      </GlassCard>
     );
   };
 
@@ -182,19 +187,19 @@ export function GymSearchScreen({ navigation }: GymSearchScreenProps) {
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color={colors.textMuted} />
-        <TextInput
-          style={styles.searchInput}
+        <GlassInput
           placeholder="Search by name or location..."
-          placeholderTextColor={colors.textMuted}
           value={searchQuery}
           onChangeText={setSearchQuery}
+          leftIcon={<Ionicons name="search" size={20} color={colors.textMuted} />}
+          rightIcon={
+            searchQuery.length > 0 ? (
+              <Ionicons name="close-circle" size={20} color={colors.textMuted} />
+            ) : undefined
+          }
+          onRightIconPress={searchQuery.length > 0 ? () => setSearchQuery('') : undefined}
+          containerStyle={styles.searchInputContainer}
         />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={20} color={colors.textMuted} />
-          </TouchableOpacity>
-        )}
       </View>
 
       <FlatList
@@ -205,13 +210,13 @@ export function GymSearchScreen({ navigation }: GymSearchScreenProps) {
         refreshing={loading}
         onRefresh={loadGyms}
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="business-outline" size={64} color={colors.textMuted} />
-            <Text style={styles.emptyStateText}>No gyms found</Text>
-            <Text style={styles.emptyStateSubtext}>
-              {searchQuery ? 'Try a different search term' : 'Check back later for new gyms'}
-            </Text>
-          </View>
+          <EmptyState
+            icon="business-outline"
+            title="No gyms found"
+            description={
+              searchQuery ? 'Try a different search term' : 'Check back later for new gyms'
+            }
+          />
         }
       />
     </SafeAreaView>
@@ -238,31 +243,18 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.lg,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    margin: spacing[4],
-    gap: spacing[2],
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[3],
   },
-  searchInput: {
-    flex: 1,
-    fontSize: typography.fontSize.base,
-    color: colors.textPrimary,
-    paddingVertical: spacing[1],
+  searchInputContainer: {
+    marginBottom: 0,
   },
   listContent: {
     padding: spacing[4],
     gap: spacing[4],
   },
   gymCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
     padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   gymHeader: {
     flexDirection: 'row',
@@ -344,23 +336,5 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.semibold,
     color: colors.primary[500],
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[10],
-  },
-  emptyStateText: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginTop: spacing[4],
-  },
-  emptyStateSubtext: {
-    fontSize: typography.fontSize.base,
-    color: colors.textMuted,
-    marginTop: spacing[2],
-    textAlign: 'center',
   },
 });

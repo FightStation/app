@@ -15,6 +15,13 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { getOrCreateConversation } from '../../services/messaging';
+import {
+  GlassCard,
+  GradientButton,
+  SectionHeader,
+  StatCard,
+  AnimatedListItem,
+} from '../../components';
 
 
 type FighterProfile = {
@@ -235,115 +242,129 @@ export function FighterProfileViewScreen({ navigation, route }: any) {
           </View>
 
           {!isOwnProfile && (
-            <TouchableOpacity
-              style={styles.messageButton}
+            <GradientButton
+              title="Send Message"
               onPress={handleMessage}
+              icon="chatbubble"
+              loading={startingChat}
               disabled={startingChat}
-            >
-              {startingChat ? (
-                <ActivityIndicator size="small" color={colors.textPrimary} />
-              ) : (
-                <>
-                  <Ionicons name="chatbubble" size={18} color={colors.textPrimary} />
-                  <Text style={styles.messageButtonText}>Send Message</Text>
-                </>
-              )}
-            </TouchableOpacity>
+            />
           )}
         </View>
 
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{fighter.record || '0-0-0'}</Text>
-            <Text style={styles.statLabel}>Record</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{fighter.fights_count || 0}</Text>
-            <Text style={styles.statLabel}>Fights</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{fighter.sparring_count || 0}</Text>
-            <Text style={styles.statLabel}>Sparring</Text>
-          </View>
+          <StatCard
+            icon="trophy"
+            value={fighter.record || '0-0-0'}
+            label="Record"
+          />
+          <StatCard
+            icon="fitness"
+            value={fighter.fights_count || 0}
+            label="Fights"
+          />
+          <StatCard
+            icon="flash"
+            value={fighter.sparring_count || 0}
+            label="Sparring"
+          />
         </View>
 
         {/* Bio */}
         {fighter.bio && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>About</Text>
+            <SectionHeader title="About" />
             <Text style={styles.bioText}>{fighter.bio}</Text>
           </View>
         )}
 
         {/* Fighter Info */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Fighter Info</Text>
+          <SectionHeader title="Fighter Info" />
 
-          <View style={styles.infoGrid}>
-            <View style={styles.infoRow}>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Weight Class</Text>
-                <Text style={styles.infoValue}>{fighter.weight_class || 'N/A'}</Text>
+          <GlassCard intensity="light">
+            <View style={styles.infoGrid}>
+              <View style={styles.infoRow}>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Weight Class</Text>
+                  <Text style={styles.infoValue}>{fighter.weight_class || 'N/A'}</Text>
+                </View>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Experience</Text>
+                  <Text style={styles.infoValue}>{fighter.experience_level || 'N/A'}</Text>
+                </View>
               </View>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Experience</Text>
-                <Text style={styles.infoValue}>{fighter.experience_level || 'N/A'}</Text>
+
+              <View style={styles.infoRow}>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Height</Text>
+                  <Text style={styles.infoValue}>{formatHeight(fighter.height_cm)}</Text>
+                </View>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Reach</Text>
+                  <Text style={styles.infoValue}>{formatReach(fighter.reach_cm)}</Text>
+                </View>
+              </View>
+
+              <View style={styles.infoRow}>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Stance</Text>
+                  <Text style={styles.infoValue}>{fighter.stance || 'N/A'}</Text>
+                </View>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Age</Text>
+                  <Text style={styles.infoValue}>{fighter.age || 'N/A'}</Text>
+                </View>
               </View>
             </View>
-
-            <View style={styles.infoRow}>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Height</Text>
-                <Text style={styles.infoValue}>{formatHeight(fighter.height_cm)}</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Reach</Text>
-                <Text style={styles.infoValue}>{formatReach(fighter.reach_cm)}</Text>
-              </View>
-            </View>
-
-            <View style={styles.infoRow}>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Stance</Text>
-                <Text style={styles.infoValue}>{fighter.stance || 'N/A'}</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Age</Text>
-                <Text style={styles.infoValue}>{fighter.age || 'N/A'}</Text>
-              </View>
-            </View>
-          </View>
+          </GlassCard>
         </View>
 
         {/* Social Media */}
         {(fighter.instagram || fighter.facebook || fighter.tiktok || fighter.youtube) && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Social Media</Text>
+            <SectionHeader title="Social Media" />
             <View style={styles.socialLinks}>
               {fighter.instagram && (
-                <TouchableOpacity style={styles.socialButton}>
-                  <Ionicons name="logo-instagram" size={24} color={colors.textPrimary} />
-                  <Text style={styles.socialText}>{fighter.instagram}</Text>
-                </TouchableOpacity>
+                <AnimatedListItem index={0}>
+                  <GlassCard intensity="light" style={styles.socialCard}>
+                    <View style={styles.socialRow}>
+                      <Ionicons name="logo-instagram" size={24} color={colors.textPrimary} />
+                      <Text style={styles.socialText}>{fighter.instagram}</Text>
+                    </View>
+                  </GlassCard>
+                </AnimatedListItem>
               )}
               {fighter.facebook && (
-                <TouchableOpacity style={styles.socialButton}>
-                  <Ionicons name="logo-facebook" size={24} color={colors.textPrimary} />
-                  <Text style={styles.socialText}>Facebook</Text>
-                </TouchableOpacity>
+                <AnimatedListItem index={1}>
+                  <GlassCard intensity="light" style={styles.socialCard}>
+                    <View style={styles.socialRow}>
+                      <Ionicons name="logo-facebook" size={24} color={colors.textPrimary} />
+                      <Text style={styles.socialText}>Facebook</Text>
+                    </View>
+                  </GlassCard>
+                </AnimatedListItem>
               )}
               {fighter.tiktok && (
-                <TouchableOpacity style={styles.socialButton}>
-                  <Ionicons name="logo-tiktok" size={24} color={colors.textPrimary} />
-                  <Text style={styles.socialText}>{fighter.tiktok}</Text>
-                </TouchableOpacity>
+                <AnimatedListItem index={2}>
+                  <GlassCard intensity="light" style={styles.socialCard}>
+                    <View style={styles.socialRow}>
+                      <Ionicons name="logo-tiktok" size={24} color={colors.textPrimary} />
+                      <Text style={styles.socialText}>{fighter.tiktok}</Text>
+                    </View>
+                  </GlassCard>
+                </AnimatedListItem>
               )}
               {fighter.youtube && (
-                <TouchableOpacity style={styles.socialButton}>
-                  <Ionicons name="logo-youtube" size={24} color={colors.textPrimary} />
-                  <Text style={styles.socialText}>YouTube</Text>
-                </TouchableOpacity>
+                <AnimatedListItem index={3}>
+                  <GlassCard intensity="light" style={styles.socialCard}>
+                    <View style={styles.socialRow}>
+                      <Ionicons name="logo-youtube" size={24} color={colors.textPrimary} />
+                      <Text style={styles.socialText}>YouTube</Text>
+                    </View>
+                  </GlassCard>
+                </AnimatedListItem>
               )}
             </View>
           </View>
@@ -352,29 +373,34 @@ export function FighterProfileViewScreen({ navigation, route }: any) {
         {/* Affiliations Section */}
         {(affiliatedGym || coaches.length > 0) && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Affiliations</Text>
+            <SectionHeader title="Affiliations" />
 
             {/* Gym */}
             {affiliatedGym && (
-              <TouchableOpacity
-                style={styles.gymCard}
-                onPress={() => navigation.navigate('GymProfileView', { gymId: affiliatedGym.id })}
-              >
-                <View style={styles.gymIconContainer}>
-                  {affiliatedGym.logo_url ? (
-                    <Image source={{ uri: affiliatedGym.logo_url }} style={styles.gymLogo} />
-                  ) : (
-                    <Ionicons name="business" size={28} color={colors.primary[500]} />
-                  )}
-                </View>
-                <View style={styles.gymInfo}>
-                  <Text style={styles.gymName}>{affiliatedGym.name}</Text>
-                  <Text style={styles.gymLocation}>
-                    {affiliatedGym.city}, {affiliatedGym.country}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-              </TouchableOpacity>
+              <AnimatedListItem index={0}>
+                <GlassCard
+                  intensity="light"
+                  onPress={() => navigation.navigate('GymProfileView', { gymId: affiliatedGym.id })}
+                  style={styles.gymCard}
+                >
+                  <View style={styles.gymRow}>
+                    <View style={styles.gymIconContainer}>
+                      {affiliatedGym.logo_url ? (
+                        <Image source={{ uri: affiliatedGym.logo_url }} style={styles.gymLogo} />
+                      ) : (
+                        <Ionicons name="business" size={28} color={colors.primary[500]} />
+                      )}
+                    </View>
+                    <View style={styles.gymInfo}>
+                      <Text style={styles.gymName}>{affiliatedGym.name}</Text>
+                      <Text style={styles.gymLocation}>
+                        {affiliatedGym.city}, {affiliatedGym.country}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+                  </View>
+                </GlassCard>
+              </AnimatedListItem>
             )}
 
             {/* Coaches */}
@@ -491,20 +517,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.base,
     color: colors.textMuted,
   },
-  messageButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-    paddingHorizontal: spacing[6],
-    paddingVertical: spacing[3],
-    backgroundColor: colors.primary[500],
-    borderRadius: borderRadius.lg,
-  },
-  messageButtonText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
-  },
   statsGrid: {
     flexDirection: 'row',
     paddingHorizontal: spacing[4],
@@ -513,35 +525,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  statCard: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: spacing[3],
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  statValue: {
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.primary[500],
-    marginBottom: spacing[1],
-  },
-  statLabel: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textMuted,
-  },
   section: {
     padding: spacing[4],
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-  },
-  sectionTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginBottom: spacing[3],
   },
   bioText: {
     fontSize: typography.fontSize.base,
@@ -576,25 +563,25 @@ const styles = StyleSheet.create({
   socialLinks: {
     gap: spacing[2],
   },
-  socialButton: {
+  socialCard: {
+    padding: spacing[2],
+  },
+  socialRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[3],
-    padding: spacing[3],
-    backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.lg,
   },
   socialText: {
     fontSize: typography.fontSize.base,
     color: colors.textPrimary,
   },
   gymCard: {
+    padding: spacing[2],
+    marginBottom: spacing[3],
+  },
+  gymRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing[3],
-    backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.lg,
-    marginBottom: spacing[3],
   },
   gymIconContainer: {
     width: 56,
