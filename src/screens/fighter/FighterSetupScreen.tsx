@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Input } from '../../components';
+import { GradientButton, GlassInput } from '../../components';
 import { useAuth } from '../../context/AuthContext';
 import { useReferral } from '../../context/ReferralContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
@@ -172,7 +172,7 @@ export function FighterSetupScreen({ navigation }: FighterSetupScreenProps) {
 
   const renderStep1 = () => (
     <>
-      <Input
+      <GlassInput
         label="First Name"
         placeholder="Enter your first name"
         value={firstName}
@@ -180,7 +180,7 @@ export function FighterSetupScreen({ navigation }: FighterSetupScreenProps) {
         autoCapitalize="words"
       />
 
-      <Input
+      <GlassInput
         label="Last Name"
         placeholder="Enter your last name"
         value={lastName}
@@ -207,7 +207,7 @@ export function FighterSetupScreen({ navigation }: FighterSetupScreenProps) {
         ))}
       </View>
 
-      <Input
+      <GlassInput
         label="City"
         placeholder="Enter your city"
         value={city}
@@ -377,14 +377,13 @@ export function FighterSetupScreen({ navigation }: FighterSetupScreenProps) {
         <View style={styles.footerRight}>
           <Text style={styles.stepIndicator}>Step {step} of {TOTAL_STEPS}</Text>
           {step < TOTAL_STEPS ? (
-            <Button title="Continue" onPress={handleNext} size="lg" style={styles.nextButton} />
+            <GradientButton title="Continue" onPress={handleNext} size="lg" />
           ) : (
-            <Button
+            <GradientButton
               title="Get Started"
               onPress={handleSubmit}
               loading={loading}
               size="lg"
-              style={styles.nextButton}
             />
           )}
         </View>

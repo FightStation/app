@@ -20,6 +20,7 @@ import {
   submitEventReview,
   getFighterReview,
 } from '../../services/events';
+import { GlassCard, GradientButton, SectionHeader, GlassInput } from '../../components';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 
 type EventReviewScreenProps = NativeStackScreenProps<{
@@ -171,14 +172,14 @@ export function EventReviewScreen({ navigation, route }: EventReviewScreenProps)
           )}
 
           {/* Overall Rating */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>OVERALL RATING</Text>
+          <GlassCard style={styles.section}>
+            <SectionHeader title="Overall Rating" />
             <StarRow rating={overallRating} onRate={setOverallRating} size={40} />
-          </View>
+          </GlassCard>
 
           {/* Category Ratings */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>CATEGORY RATINGS</Text>
+          <GlassCard style={styles.section}>
+            <SectionHeader title="Category Ratings" />
 
             <View style={styles.categoryRow}>
               <Text style={styles.categoryLabel}>Organization</Text>
@@ -194,26 +195,23 @@ export function EventReviewScreen({ navigation, route }: EventReviewScreenProps)
               <Text style={styles.categoryLabel}>Coaching</Text>
               <StarRow rating={coachingRating} onRate={setCoachingRating} size={24} />
             </View>
-          </View>
+          </GlassCard>
 
           {/* Review Text */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>YOUR REVIEW</Text>
-            <TextInput
-              style={styles.textArea}
+          <GlassCard style={styles.section}>
+            <SectionHeader title="Your Review" />
+            <GlassInput
               placeholder="Share your experience..."
-              placeholderTextColor={colors.textMuted}
               value={reviewText}
               onChangeText={setReviewText}
               multiline
               numberOfLines={4}
-              textAlignVertical="top"
             />
-          </View>
+          </GlassCard>
 
           {/* Would Recommend */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>WOULD YOU RECOMMEND THIS EVENT?</Text>
+          <GlassCard style={styles.section}>
+            <SectionHeader title="Would you recommend this event?" />
             <View style={styles.recommendRow}>
               <TouchableOpacity
                 style={[
@@ -259,22 +257,17 @@ export function EventReviewScreen({ navigation, route }: EventReviewScreenProps)
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </GlassCard>
 
           {/* Submit Button */}
-          <TouchableOpacity
-            style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+          <GradientButton
+            title={isEditing ? 'Update Review' : 'Submit Review'}
             onPress={handleSubmit}
+            loading={submitting}
             disabled={submitting}
-          >
-            <Text style={styles.submitText}>
-              {submitting
-                ? 'Submitting...'
-                : isEditing
-                ? 'Update Review'
-                : 'Submit Review'}
-            </Text>
-          </TouchableOpacity>
+            fullWidth
+            size="lg"
+          />
 
           <View style={styles.bottomPadding} />
         </ScrollView>

@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Input } from '../../components';
+import { GradientButton, GlassInput } from '../../components';
 import { useAuth } from '../../context/AuthContext';
 import { useReferral } from '../../context/ReferralContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
@@ -165,14 +165,14 @@ export function GymSetupScreen({ navigation }: GymSetupScreenProps) {
 
   const renderStep1 = () => (
     <>
-      <Input
+      <GlassInput
         label="Gym Name"
         placeholder="Enter your gym name"
         value={gymName}
         onChangeText={setGymName}
       />
 
-      <Input
+      <GlassInput
         label="Contact Email"
         placeholder="gym@example.com"
         value={contactEmail}
@@ -200,7 +200,7 @@ export function GymSetupScreen({ navigation }: GymSetupScreenProps) {
         ))}
       </View>
 
-      <Input
+      <GlassInput
         label="City"
         placeholder="Enter city"
         value={city}
@@ -357,14 +357,13 @@ export function GymSetupScreen({ navigation }: GymSetupScreenProps) {
             <View style={styles.footerRight}>
               <Text style={styles.stepIndicator}>Step {step} of {TOTAL_STEPS}</Text>
               {step < TOTAL_STEPS ? (
-                <Button title="Continue" onPress={handleNext} size="lg" style={styles.nextButton} />
+                <GradientButton title="Continue" onPress={handleNext} size="lg" />
               ) : (
-                <Button
+                <GradientButton
                   title="Get Started"
                   onPress={handleSubmit}
                   loading={loading}
                   size="lg"
-                  style={styles.nextButton}
                 />
               )}
             </View>

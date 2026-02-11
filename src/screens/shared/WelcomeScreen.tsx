@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useReferral } from '../../context/ReferralContext';
 import { useAuth } from '../../context/AuthContext';
+import { GlassCard, GradientButton, SectionHeader, AnimatedListItem } from '../../components';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { isDesktop } from '../../lib/responsive';
 
@@ -68,7 +69,7 @@ export function WelcomeScreen({ navigation }: WelcomeScreenProps) {
         </Text>
 
         {/* Referral Code Card */}
-        <View style={styles.codeCard}>
+        <GlassCard style={styles.codeCard}>
           <View style={styles.codeHeader}>
             <View style={styles.codeIconContainer}>
               <Ionicons name="gift" size={24} color={colors.primary[500]} />
@@ -94,13 +95,12 @@ export function WelcomeScreen({ navigation }: WelcomeScreenProps) {
 
           {/* Action Buttons */}
           <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={styles.shareButton}
+            <GradientButton
+              title="Share Now"
               onPress={shareReferralCode}
-            >
-              <Ionicons name="share-social" size={20} color={colors.textPrimary} />
-              <Text style={styles.shareButtonText}>Share Now</Text>
-            </TouchableOpacity>
+              fullWidth
+              icon="share-social"
+            />
 
             <TouchableOpacity
               style={styles.copyButton}
@@ -110,31 +110,33 @@ export function WelcomeScreen({ navigation }: WelcomeScreenProps) {
               <Text style={styles.copyButtonText}>Copy Code</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </GlassCard>
 
         {/* Benefits */}
-        <View style={styles.benefitsCard}>
-          <Text style={styles.benefitsTitle}>Why share your code?</Text>
+        <GlassCard style={styles.benefitsCard}>
+          <SectionHeader title="Why share your code?" />
           {benefits.map((benefit, index) => (
-            <View key={index} style={styles.benefitItem}>
-              <View style={styles.benefitIconContainer}>
-                <Ionicons name={benefit.icon} size={16} color={colors.primary[500]} />
+            <AnimatedListItem key={index} index={index}>
+              <View style={styles.benefitItem}>
+                <View style={styles.benefitIconContainer}>
+                  <Ionicons name={benefit.icon} size={16} color={colors.primary[500]} />
+                </View>
+                <Text style={styles.benefitText}>{benefit.text}</Text>
               </View>
-              <Text style={styles.benefitText}>{benefit.text}</Text>
-            </View>
+            </AnimatedListItem>
           ))}
-        </View>
+        </GlassCard>
       </View>
 
       {/* Footer Buttons */}
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.continueButton}
+        <GradientButton
+          title="Continue to Dashboard"
           onPress={handleContinue}
-        >
-          <Text style={styles.continueButtonText}>Continue to Dashboard</Text>
-          <Ionicons name="arrow-forward" size={20} color={colors.textPrimary} />
-        </TouchableOpacity>
+          fullWidth
+          size="lg"
+          icon="arrow-forward"
+        />
 
         <TouchableOpacity onPress={handleContinue}>
           <Text style={styles.skipText}>Skip for now</Text>
