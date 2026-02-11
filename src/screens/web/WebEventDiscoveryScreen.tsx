@@ -4,16 +4,21 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
-  TextInput,
   ActivityIndicator,
-  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WebLayout } from '../../components/WebLayout';
+import {
+  GlassCard,
+  GlassInput,
+  GradientButton,
+  SectionHeader,
+  EmptyState,
+  BadgeRow,
+} from '../../components';
 import { useAuth } from '../../context/AuthContext';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
-import { isWeb, getGridColumns } from '../../lib/responsive';
+import { getGridColumns } from '../../lib/responsive';
 import {
   searchEvents,
   getNearbyEvents,
@@ -118,13 +123,20 @@ export function WebEventDiscoveryScreen({ navigation }: WebEventDiscoveryScreenP
 
   const gridColumns = getGridColumns();
 
+  const viewTabItems = [
+    { key: 'recommended', label: 'Recommended', icon: 'star' as const },
+    { key: 'nearby', label: 'Nearby', icon: 'navigate' as const },
+    { key: 'all', label: 'All Events', icon: 'grid' as const },
+    { key: 'map', label: 'Map View', icon: 'map' as const },
+  ];
+
   const renderEventCard = (event: EventWithDistance) => {
     const isFull = (event.current_participants || 0) >= event.max_participants;
     const hasRequested = event.request_status === 'pending';
     const isApproved = event.request_status === 'approved';
 
     return (
-      <View key={event.id} style={[styles.eventCard, { width: `${100 / gridColumns - 2}%` }]}>
+      <GlassCard key={event.id} style={[styles.eventCard, { width: `${100 / gridColumns - 2}%` }]}>
         <TouchableOpacity
           onPress={() => navigation.navigate('EventDetail', { eventId: event.id })}
         >
@@ -209,18 +221,15 @@ export function WebEventDiscoveryScreen({ navigation }: WebEventDiscoveryScreenP
 
           {/* Action Button */}
           {!hasRequested && !isApproved && !isFull && (
-            <TouchableOpacity
-              style={styles.joinButton}
-              onPress={(e) => {
-                e.stopPropagation();
-                handleRequestToJoin(event);
-              }}
-            >
-              <Text style={styles.joinButtonText}>Request to Join</Text>
-            </TouchableOpacity>
+            <GradientButton
+              title="Request to Join"
+              size="sm"
+              fullWidth
+              onPress={() => handleRequestToJoin(event)}
+            />
           )}
         </TouchableOpacity>
-      </View>
+      </GlassCard>
     );
   };
 
@@ -229,83 +238,26 @@ export function WebEventDiscoveryScreen({ navigation }: WebEventDiscoveryScreenP
       <View style={styles.container}>
         {/* Header with Search */}
         <View style={styles.header}>
-          <View style={styles.searchBar}>
-            <Ionicons name="search" size={20} color={colors.textMuted} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search events or gyms..."
-              placeholderTextColor={colors.textMuted}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
+          <GlassInput
+            placeholder="Search events or gyms..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            leftIcon={<Ionicons name="search" size={20} color={colors.textMuted} />}
+            containerStyle={styles.searchBarContainer}
+          />
 
-          <View style={styles.viewTabs}>
-            <TouchableOpacity
-              style={[styles.viewTab, view === 'recommended' && styles.viewTabActive]}
-              onPress={() => setView('recommended')}
-            >
-              <Ionicons
-                name="star"
-                size={18}
-                color={view === 'recommended' ? colors.primary[500] : colors.textMuted}
-              />
-              <Text
-                style={[styles.viewTabText, view === 'recommended' && styles.viewTabTextActive]}
-              >
-                Recommended
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.viewTab, view === 'nearby' && styles.viewTabActive]}
-              onPress={() => setView('nearby')}
-            >
-              <Ionicons
-                name="navigate"
-                size={18}
-                color={view === 'nearby' ? colors.primary[500] : colors.textMuted}
-              />
-              <Text style={[styles.viewTabText, view === 'nearby' && styles.viewTabTextActive]}>
-                Nearby
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.viewTab, view === 'all' && styles.viewTabActive]}
-              onPress={() => setView('all')}
-            >
-              <Ionicons
-                name="grid"
-                size={18}
-                color={view === 'all' ? colors.primary[500] : colors.textMuted}
-              />
-              <Text style={[styles.viewTabText, view === 'all' && styles.viewTabTextActive]}>
-                All Events
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.viewTab, view === 'map' && styles.viewTabActive]}
-              onPress={() => setView('map')}
-            >
-              <Ionicons
-                name="map"
-                size={18}
-                color={view === 'map' ? colors.primary[500] : colors.textMuted}
-              />
-              <Text style={[styles.viewTabText, view === 'map' && styles.viewTabTextActive]}>
-                Map View
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <BadgeRow
+            items={viewTabItems}
+            selected={view}
+            onSelect={(key) => setView(key as any)}
+          />
         </View>
 
         {/* Main Content with Sidebar Filters */}
         <View style={styles.mainContent}>
           {/* Filters Sidebar */}
-          <View style={styles.filtersSidebar}>
-            <Text style={styles.filtersTitle}>Filters</Text>
+          <GlassCard style={styles.filtersSidebar}>
+            <SectionHeader title="Filters" />
 
             {/* Event Type Filter */}
             <View style={styles.filterSection}>
@@ -380,11 +332,14 @@ export function WebEventDiscoveryScreen({ navigation }: WebEventDiscoveryScreenP
               <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
                 <Text style={styles.clearButtonText}>Clear All</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.applyButton} onPress={applyFilters}>
-                <Text style={styles.applyButtonText}>Apply</Text>
-              </TouchableOpacity>
+              <GradientButton
+                title="Apply"
+                size="sm"
+                onPress={applyFilters}
+                style={styles.applyButton}
+              />
             </View>
-          </View>
+          </GlassCard>
 
           {/* Events Grid */}
           <View style={styles.eventsContent}>
@@ -394,23 +349,19 @@ export function WebEventDiscoveryScreen({ navigation }: WebEventDiscoveryScreenP
                 <Text style={styles.loadingText}>Finding events...</Text>
               </View>
             ) : view === 'map' ? (
-              <View style={styles.mapPlaceholder}>
-                <Ionicons name="map" size={64} color={colors.textMuted} />
-                <Text style={styles.mapPlaceholderText}>Map View Coming Soon</Text>
-                <Text style={styles.mapPlaceholderSubtext}>
-                  We're working on an interactive map to help you find events near you
-                </Text>
-              </View>
+              <EmptyState
+                icon="map"
+                title="Map View Coming Soon"
+                description="We're working on an interactive map to help you find events near you"
+              />
             ) : (
               <View style={styles.eventsGrid}>
                 {filteredEvents.length === 0 ? (
-                  <View style={styles.emptyState}>
-                    <Ionicons name="calendar-outline" size={64} color={colors.textMuted} />
-                    <Text style={styles.emptyStateText}>No events found</Text>
-                    <Text style={styles.emptyStateSubtext}>
-                      Try adjusting your filters or check back later
-                    </Text>
-                  </View>
+                  <EmptyState
+                    icon="calendar-outline"
+                    title="No events found"
+                    description="Try adjusting your filters or check back later"
+                  />
                 ) : (
                   filteredEvents.map(renderEventCard)
                 )}
@@ -430,51 +381,8 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: spacing[6],
   },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[3],
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
+  searchBarContainer: {
     marginBottom: spacing[4],
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: typography.fontSize.base,
-    color: colors.textPrimary,
-    outlineStyle: 'none' as any,
-  },
-  viewTabs: {
-    flexDirection: 'row',
-    gap: spacing[2],
-  },
-  viewTab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[2],
-    paddingVertical: spacing[3],
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  viewTabActive: {
-    backgroundColor: `${colors.primary[500]}20`,
-    borderColor: colors.primary[500],
-  },
-  viewTabText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textMuted,
-  },
-  viewTabTextActive: {
-    color: colors.primary[500],
   },
   mainContent: {
     flexDirection: 'row',
@@ -482,18 +390,7 @@ const styles = StyleSheet.create({
   },
   filtersSidebar: {
     width: 280,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing[6],
-    borderWidth: 1,
-    borderColor: colors.border,
     alignSelf: 'flex-start',
-  },
-  filtersTitle: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginBottom: spacing[6],
   },
   filterSection: {
     marginBottom: spacing[6],
@@ -560,15 +457,6 @@ const styles = StyleSheet.create({
   },
   applyButton: {
     flex: 1,
-    paddingVertical: spacing[3],
-    backgroundColor: colors.primary[500],
-    borderRadius: borderRadius.lg,
-    alignItems: 'center',
-  },
-  applyButtonText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
   },
   eventsContent: {
     flex: 1,
@@ -579,11 +467,6 @@ const styles = StyleSheet.create({
     gap: spacing[4],
   },
   eventCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
     marginBottom: spacing[4],
   },
   eventHeader: {
@@ -700,17 +583,6 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.bold,
     color: colors.success,
   },
-  joinButton: {
-    paddingVertical: spacing[3],
-    backgroundColor: colors.primary[500],
-    borderRadius: borderRadius.lg,
-    alignItems: 'center',
-  },
-  joinButtonText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
-  },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
@@ -721,45 +593,5 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.base,
     color: colors.textMuted,
     marginTop: spacing[4],
-  },
-  mapPlaceholder: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[10],
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  mapPlaceholderText: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginTop: spacing[4],
-  },
-  mapPlaceholderSubtext: {
-    fontSize: typography.fontSize.base,
-    color: colors.textMuted,
-    marginTop: spacing[2],
-    textAlign: 'center',
-    maxWidth: 400,
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[10],
-  },
-  emptyStateText: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginTop: spacing[4],
-  },
-  emptyStateSubtext: {
-    fontSize: typography.fontSize.base,
-    color: colors.textMuted,
-    marginTop: spacing[2],
   },
 });

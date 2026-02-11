@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   ActivityIndicator,
   Image,
 } from 'react-native';
@@ -14,6 +13,15 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import {
+  GlassCard,
+  GlassInput,
+  GradientButton,
+  SectionHeader,
+  EmptyState,
+  BadgeRow,
+  AnimatedListItem,
+} from '../../components';
 
 type FighterSearchScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -205,6 +213,10 @@ export function FighterSearchScreen({ navigation }: FighterSearchScreenProps) {
     return count;
   };
 
+  const weightClassBadges = WEIGHT_CLASSES.map((wc) => ({ key: wc, label: wc }));
+  const experienceBadges = EXPERIENCE_LEVELS.map((exp) => ({ key: exp, label: exp }));
+  const stanceBadges = STANCES.map((s) => ({ key: s, label: s }));
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
@@ -217,21 +229,15 @@ export function FighterSearchScreen({ navigation }: FighterSearchScreenProps) {
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color={colors.textMuted} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by name, location..."
-            placeholderTextColor={colors.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
+        <GlassInput
+          placeholder="Search by name, location..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          leftIcon={<Ionicons name="search" size={20} color={colors.textMuted} />}
+          rightIcon={searchQuery.length > 0 ? <Ionicons name="close-circle" size={20} color={colors.textMuted} /> : undefined}
+          onRightIconPress={searchQuery.length > 0 ? () => setSearchQuery('') : undefined}
+          containerStyle={styles.searchInputContainer}
+        />
 
         <TouchableOpacity
           style={[styles.filterButton, getActiveFilterCount() > 0 && styles.filterButtonActive]}
@@ -248,95 +254,37 @@ export function FighterSearchScreen({ navigation }: FighterSearchScreenProps) {
 
       {/* Filters Panel */}
       {showFilters && (
-        <View style={styles.filtersPanel}>
-          {/* Weight Class */}
-          <View style={styles.filterSection}>
-            <Text style={styles.filterLabel}>Weight Class</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.filterChips}>
-                {WEIGHT_CLASSES.map((wc) => (
-                  <TouchableOpacity
-                    key={wc}
-                    style={[
-                      styles.filterChip,
-                      selectedWeightClass === wc && styles.filterChipActive,
-                    ]}
-                    onPress={() => setSelectedWeightClass(wc)}
-                  >
-                    <Text
-                      style={[
-                        styles.filterChipText,
-                        selectedWeightClass === wc && styles.filterChipTextActive,
-                      ]}
-                    >
-                      {wc}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-          </View>
+        <GlassCard style={styles.filtersPanel} noPadding>
+          <View style={styles.filtersPanelInner}>
+            {/* Weight Class */}
+            <SectionHeader title="Weight Class" />
+            <BadgeRow
+              items={weightClassBadges}
+              selected={selectedWeightClass}
+              onSelect={setSelectedWeightClass}
+            />
 
-          {/* Experience Level */}
-          <View style={styles.filterSection}>
-            <Text style={styles.filterLabel}>Experience</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.filterChips}>
-                {EXPERIENCE_LEVELS.map((exp) => (
-                  <TouchableOpacity
-                    key={exp}
-                    style={[
-                      styles.filterChip,
-                      selectedExperience === exp && styles.filterChipActive,
-                    ]}
-                    onPress={() => setSelectedExperience(exp)}
-                  >
-                    <Text
-                      style={[
-                        styles.filterChipText,
-                        selectedExperience === exp && styles.filterChipTextActive,
-                      ]}
-                    >
-                      {exp}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-          </View>
+            {/* Experience Level */}
+            <SectionHeader title="Experience" />
+            <BadgeRow
+              items={experienceBadges}
+              selected={selectedExperience}
+              onSelect={setSelectedExperience}
+            />
 
-          {/* Stance */}
-          <View style={styles.filterSection}>
-            <Text style={styles.filterLabel}>Stance</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.filterChips}>
-                {STANCES.map((stance) => (
-                  <TouchableOpacity
-                    key={stance}
-                    style={[
-                      styles.filterChip,
-                      selectedStance === stance && styles.filterChipActive,
-                    ]}
-                    onPress={() => setSelectedStance(stance)}
-                  >
-                    <Text
-                      style={[
-                        styles.filterChipText,
-                        selectedStance === stance && styles.filterChipTextActive,
-                      ]}
-                    >
-                      {stance}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-          </View>
+            {/* Stance */}
+            <SectionHeader title="Stance" />
+            <BadgeRow
+              items={stanceBadges}
+              selected={selectedStance}
+              onSelect={setSelectedStance}
+            />
 
-          <TouchableOpacity style={styles.clearFiltersButton} onPress={clearFilters}>
-            <Text style={styles.clearFiltersText}>Clear All Filters</Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity style={styles.clearFiltersButton} onPress={clearFilters}>
+              <Text style={styles.clearFiltersText}>Clear All Filters</Text>
+            </TouchableOpacity>
+          </View>
+        </GlassCard>
       )}
 
       {/* Results */}
@@ -352,69 +300,72 @@ export function FighterSearchScreen({ navigation }: FighterSearchScreenProps) {
             <ActivityIndicator size="large" color={colors.primary[500]} />
           </View>
         ) : filteredFighters.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="people-outline" size={64} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>No fighters found</Text>
-            <Text style={styles.emptySubtitle}>Try adjusting your search or filters</Text>
-          </View>
+          <EmptyState
+            icon="people-outline"
+            title="No fighters found"
+            description="Try adjusting your search or filters"
+          />
         ) : (
-          filteredFighters.map((fighter) => (
-            <TouchableOpacity
-              key={fighter.id}
-              style={styles.fighterCard}
-              onPress={() => handleFighterPress(fighter.id)}
-            >
-              <View style={styles.fighterAvatar}>
-                {fighter.avatar_url ? (
-                  <Image source={{ uri: fighter.avatar_url }} style={styles.avatar} />
-                ) : (
-                  <View style={styles.avatarPlaceholder}>
-                    <Ionicons name="person" size={32} color={colors.textMuted} />
+          filteredFighters.map((fighter, index) => (
+            <AnimatedListItem key={fighter.id} index={index}>
+              <GlassCard
+                style={styles.fighterCard}
+                onPress={() => handleFighterPress(fighter.id)}
+              >
+                <View style={styles.fighterCardContent}>
+                  <View style={styles.fighterAvatar}>
+                    {fighter.avatar_url ? (
+                      <Image source={{ uri: fighter.avatar_url }} style={styles.avatar} />
+                    ) : (
+                      <View style={styles.avatarPlaceholder}>
+                        <Ionicons name="person" size={32} color={colors.textMuted} />
+                      </View>
+                    )}
                   </View>
-                )}
-              </View>
 
-              <View style={styles.fighterInfo}>
-                <View style={styles.fighterHeader}>
-                  <Text style={styles.fighterName}>
-                    {fighter.first_name} {fighter.last_name}
-                  </Text>
-                  {fighter.nickname && (
-                    <Text style={styles.fighterNickname}>"{fighter.nickname}"</Text>
-                  )}
-                </View>
-
-                <View style={styles.fighterStats}>
-                  {fighter.weight_class && (
-                    <View style={styles.stat}>
-                      <Ionicons name="barbell" size={14} color={colors.textMuted} />
-                      <Text style={styles.statText}>{fighter.weight_class}</Text>
+                  <View style={styles.fighterInfo}>
+                    <View style={styles.fighterHeader}>
+                      <Text style={styles.fighterName}>
+                        {fighter.first_name} {fighter.last_name}
+                      </Text>
+                      {fighter.nickname && (
+                        <Text style={styles.fighterNickname}>"{fighter.nickname}"</Text>
+                      )}
                     </View>
-                  )}
-                  {fighter.experience_level && (
-                    <View style={styles.stat}>
-                      <Ionicons name="medal" size={14} color={colors.textMuted} />
-                      <Text style={styles.statText}>{fighter.experience_level}</Text>
-                    </View>
-                  )}
-                  {fighter.record && (
-                    <View style={styles.stat}>
-                      <Ionicons name="trophy" size={14} color={colors.textMuted} />
-                      <Text style={styles.statText}>{fighter.record}</Text>
-                    </View>
-                  )}
-                </View>
 
-                <View style={styles.fighterLocation}>
-                  <Ionicons name="location" size={14} color={colors.textMuted} />
-                  <Text style={styles.locationText}>
-                    {fighter.city}, {fighter.country}
-                  </Text>
-                </View>
-              </View>
+                    <View style={styles.fighterStats}>
+                      {fighter.weight_class && (
+                        <View style={styles.stat}>
+                          <Ionicons name="barbell" size={14} color={colors.textMuted} />
+                          <Text style={styles.statText}>{fighter.weight_class}</Text>
+                        </View>
+                      )}
+                      {fighter.experience_level && (
+                        <View style={styles.stat}>
+                          <Ionicons name="medal" size={14} color={colors.textMuted} />
+                          <Text style={styles.statText}>{fighter.experience_level}</Text>
+                        </View>
+                      )}
+                      {fighter.record && (
+                        <View style={styles.stat}>
+                          <Ionicons name="trophy" size={14} color={colors.textMuted} />
+                          <Text style={styles.statText}>{fighter.record}</Text>
+                        </View>
+                      )}
+                    </View>
 
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
+                    <View style={styles.fighterLocation}>
+                      <Ionicons name="location" size={14} color={colors.textMuted} />
+                      <Text style={styles.locationText}>
+                        {fighter.city}, {fighter.country}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+                </View>
+              </GlassCard>
+            </AnimatedListItem>
           ))
         )}
 
@@ -448,21 +399,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
     gap: spacing[2],
+    alignItems: 'flex-start',
   },
-  searchBar: {
+  searchInputContainer: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.lg,
-    paddingHorizontal: spacing[3],
-    gap: spacing[2],
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: spacing[2],
-    fontSize: typography.fontSize.base,
-    color: colors.textPrimary,
+    marginBottom: 0,
   },
   filterButton: {
     width: 44,
@@ -472,6 +413,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    marginTop: spacing[0.5],
   },
   filterButtonActive: {
     backgroundColor: colors.primary[500],
@@ -494,46 +436,11 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.bold,
   },
   filtersPanel: {
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    paddingVertical: spacing[3],
-  },
-  filterSection: {
+    marginHorizontal: spacing[4],
     marginBottom: spacing[3],
   },
-  filterLabel: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textSecondary,
-    paddingHorizontal: spacing[4],
-    marginBottom: spacing[2],
-  },
-  filterChips: {
-    flexDirection: 'row',
-    gap: spacing[2],
-    paddingHorizontal: spacing[4],
-  },
-  filterChip: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.surfaceLight,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  filterChipActive: {
-    backgroundColor: colors.primary[500],
-    borderColor: colors.primary[500],
-  },
-  filterChipText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    fontWeight: typography.fontWeight.medium,
-  },
-  filterChipTextActive: {
-    color: colors.textPrimary,
-    fontWeight: typography.fontWeight.bold,
+  filtersPanelInner: {
+    paddingVertical: spacing[3],
   },
   clearFiltersButton: {
     marginHorizontal: spacing[4],
@@ -549,9 +456,6 @@ const styles = StyleSheet.create({
   resultsHeader: {
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   resultsCount: {
     fontSize: typography.fontSize.sm,
@@ -566,35 +470,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: spacing[10],
   },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[10],
-  },
-  emptyTitle: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginTop: spacing[4],
-    marginBottom: spacing[2],
-  },
-  emptySubtitle: {
-    fontSize: typography.fontSize.base,
-    color: colors.textMuted,
-    textAlign: 'center',
-    paddingHorizontal: spacing[8],
-  },
   fighterCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.cardBg,
     marginHorizontal: spacing[4],
     marginTop: spacing[3],
-    padding: spacing[3],
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+  },
+  fighterCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   fighterAvatar: {
     marginRight: spacing[3],

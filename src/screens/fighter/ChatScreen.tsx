@@ -18,6 +18,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { useAuth } from '../../context/AuthContext';
 import {
+  GlassCard,
+  EmptyState,
+} from '../../components';
+import {
   sendMessage,
   getConversationMessages,
   markConversationAsRead,
@@ -319,29 +323,31 @@ export function ChatScreen({ navigation, route }: any) {
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <View style={styles.webContainer}>
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
-          </TouchableOpacity>
-          <View style={styles.headerCenter}>
-            <View style={styles.avatar}>
-              <Ionicons name="person" size={20} color={colors.textPrimary} />
+        <GlassCard intensity="dark" noPadding style={styles.headerCard}>
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+            </TouchableOpacity>
+            <View style={styles.headerCenter}>
+              <View style={styles.avatar}>
+                <Ionicons name="person" size={20} color={colors.textPrimary} />
+              </View>
+              <View style={styles.headerInfo}>
+                <Text style={styles.headerName}>{name}</Text>
+                <Text style={styles.headerStatus}>Active now</Text>
+              </View>
             </View>
-            <View style={styles.headerInfo}>
-              <Text style={styles.headerName}>{name}</Text>
-              <Text style={styles.headerStatus}>Active now</Text>
-            </View>
+            <TouchableOpacity
+              style={styles.headerIcon}
+              onPress={() => setShowLanguageModal(true)}
+            >
+              <Ionicons name="language-outline" size={24} color={colors.textPrimary} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.headerIcon}
-            onPress={() => setShowLanguageModal(true)}
-          >
-            <Ionicons name="language-outline" size={24} color={colors.textPrimary} />
-          </TouchableOpacity>
-        </View>
+        </GlassCard>
 
         {/* Language preference indicator */}
         <TouchableOpacity
@@ -373,49 +379,51 @@ export function ChatScreen({ navigation, route }: any) {
                 <ActivityIndicator size="large" color={colors.primary[500]} />
               </View>
             ) : messages.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="chatbubbles-outline" size={64} color={colors.textMuted} />
-                <Text style={styles.emptyText}>No messages yet</Text>
-                <Text style={styles.emptySubtext}>Start the conversation!</Text>
-              </View>
+              <EmptyState
+                icon="chatbubbles-outline"
+                title="No messages yet"
+                description="Start the conversation!"
+              />
             ) : (
               messages.map(renderMessage)
             )}
           </ScrollView>
 
           {/* Input */}
-          <View style={styles.inputContainer}>
-            <TouchableOpacity style={styles.attachButton}>
-              <Ionicons name="add-circle" size={24} color={colors.textMuted} />
-            </TouchableOpacity>
-            <TextInput
-              style={styles.input}
-              placeholder="Type a message..."
-              placeholderTextColor={colors.textMuted}
-              value={messageText}
-              onChangeText={setMessageText}
-              multiline
-              maxLength={500}
-            />
-            <TouchableOpacity
-              style={[
-                styles.sendButton,
-                messageText.trim() && !sending && styles.sendButtonActive,
-              ]}
-              onPress={handleSend}
-              disabled={!messageText.trim() || sending}
-            >
-              {sending ? (
-                <ActivityIndicator size="small" color={colors.textPrimary} />
-              ) : (
-                <Ionicons
-                  name="send"
-                  size={20}
-                  color={messageText.trim() ? colors.textPrimary : colors.textMuted}
-                />
-              )}
-            </TouchableOpacity>
-          </View>
+          <GlassCard noPadding style={styles.inputCard}>
+            <View style={styles.inputContainer}>
+              <TouchableOpacity style={styles.attachButton}>
+                <Ionicons name="add-circle" size={24} color={colors.textMuted} />
+              </TouchableOpacity>
+              <TextInput
+                style={styles.input}
+                placeholder="Type a message..."
+                placeholderTextColor={colors.textMuted}
+                value={messageText}
+                onChangeText={setMessageText}
+                multiline
+                maxLength={500}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.sendButton,
+                  messageText.trim() && !sending && styles.sendButtonActive,
+                ]}
+                onPress={handleSend}
+                disabled={!messageText.trim() || sending}
+              >
+                {sending ? (
+                  <ActivityIndicator size="small" color={colors.textPrimary} />
+                ) : (
+                  <Ionicons
+                    name="send"
+                    size={20}
+                    color={messageText.trim() ? colors.textPrimary : colors.textMuted}
+                  />
+                )}
+              </TouchableOpacity>
+            </View>
+          </GlassCard>
         </KeyboardAvoidingView>
 
         {/* Language Selection Modal */}
@@ -481,14 +489,15 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     backgroundColor: colors.background,
   },
+  headerCard: {
+    borderRadius: 0,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   backButton: {
     width: 40,
@@ -674,14 +683,14 @@ const styles = StyleSheet.create({
   statusIcon: {
     marginLeft: spacing[0.5],
   },
+  inputCard: {
+    borderRadius: 0,
+  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.background,
   },
   attachButton: {
     width: 40,
@@ -718,23 +727,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: spacing[10],
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[10],
-  },
-  emptyText: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginTop: spacing[4],
-    marginBottom: spacing[2],
-  },
-  emptySubtext: {
-    fontSize: typography.fontSize.base,
-    color: colors.textMuted,
   },
   // Modal styles
   modalOverlay: {

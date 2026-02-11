@@ -19,6 +19,12 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { isDesktop } from '../../lib/responsive';
+import {
+  GlassCard,
+  GradientButton,
+  EmptyState,
+  SectionHeader,
+} from '../../components';
 
 type GymReelsScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -194,7 +200,7 @@ export function GymReelsScreen({ navigation }: GymReelsScreenProps) {
   }).current;
 
   const renderReelCard = (item: Reel) => (
-    <View key={item.id} style={styles.reelCard}>
+    <GlassCard key={item.id} style={styles.reelCard} noPadding>
       {/* Thumbnail */}
       <View style={styles.thumbnailContainer}>
         <Image source={{ uri: item.thumbnailUrl }} style={styles.thumbnail} />
@@ -247,7 +253,7 @@ export function GymReelsScreen({ navigation }: GymReelsScreenProps) {
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </GlassCard>
   );
 
   const renderMobileReel = ({ item, index }: { item: Reel; index: number }) => {
@@ -264,12 +270,14 @@ export function GymReelsScreen({ navigation }: GymReelsScreenProps) {
         {/* Gym Info Overlay */}
         <View style={styles.overlay}>
           <View style={styles.topInfo}>
-            <View style={styles.gymHeader}>
-              <View style={styles.gymAvatarLarge}>
-                <Ionicons name="business" size={20} color={colors.textPrimary} />
+            <GlassCard intensity="dark" noPadding style={styles.gymHeaderCard}>
+              <View style={styles.gymHeader}>
+                <View style={styles.gymAvatarLarge}>
+                  <Ionicons name="business" size={20} color={colors.textPrimary} />
+                </View>
+                <Text style={styles.gymName}>{item.gymName}</Text>
               </View>
-              <Text style={styles.gymName}>{item.gymName}</Text>
-            </View>
+            </GlassCard>
             <Text style={styles.timestampMobile}>{item.createdAt}</Text>
           </View>
 
@@ -326,13 +334,12 @@ export function GymReelsScreen({ navigation }: GymReelsScreenProps) {
             <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.desktopHeaderTitle}>Training Videos</Text>
-          <TouchableOpacity
-            style={styles.uploadButtonDesktop}
+          <GradientButton
+            title="Upload Video"
+            icon="cloud-upload-outline"
+            size="sm"
             onPress={handleUploadVideo}
-          >
-            <Ionicons name="cloud-upload-outline" size={24} color={colors.primary[500]} />
-            <Text style={styles.uploadButtonText}>Upload Video</Text>
-          </TouchableOpacity>
+          />
         </View>
 
         <ScrollView
@@ -340,7 +347,7 @@ export function GymReelsScreen({ navigation }: GymReelsScreenProps) {
           contentContainerStyle={styles.desktopScrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.desktopCard}>
+          <GlassCard style={styles.desktopCard}>
             {/* Icon and Title */}
             <View style={styles.cardHeader}>
               <View style={styles.iconContainer}>
@@ -358,26 +365,26 @@ export function GymReelsScreen({ navigation }: GymReelsScreenProps) {
             </View>
 
             {reels.length === 0 && (
-              <View style={styles.emptyState}>
-                <View style={styles.emptyIconContainer}>
-                  <Ionicons name="videocam-outline" size={48} color={colors.primary[500]} />
-                </View>
-                <Text style={styles.emptyStateText}>No videos yet</Text>
-                <Text style={styles.emptyStateSubtext}>
-                  Upload your first training video to share with fighters
-                </Text>
-              </View>
+              <EmptyState
+                icon="videocam-outline"
+                title="No videos yet"
+                description="Upload your first training video to share with fighters"
+                actionLabel="Upload Video"
+                onAction={handleUploadVideo}
+              />
             )}
 
             {/* Info Box */}
-            <View style={styles.infoBox}>
-              <Ionicons name="information-circle" size={20} color={colors.primary[500]} />
-              <Text style={styles.infoText}>
-                Upload short training videos (up to 60 seconds) to showcase your gym's
-                training style and attract new fighters.
-              </Text>
-            </View>
-          </View>
+            <GlassCard intensity="accent" style={styles.infoBox}>
+              <View style={styles.infoBoxContent}>
+                <Ionicons name="information-circle" size={20} color={colors.primary[500]} />
+                <Text style={styles.infoText}>
+                  Upload short training videos (up to 60 seconds) to showcase your gym's
+                  training style and attract new fighters.
+                </Text>
+              </View>
+            </GlassCard>
+          </GlassCard>
         </ScrollView>
       </View>
     );
@@ -476,20 +483,6 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.bold,
     color: colors.textPrimary,
   },
-  uploadButtonDesktop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    backgroundColor: `${colors.primary[500]}15`,
-    borderRadius: borderRadius.lg,
-  },
-  uploadButtonText: {
-    color: colors.primary[500],
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
-  },
   headerTitle: {
     fontSize: typography.fontSize.lg,
     fontWeight: typography.fontWeight.bold,
@@ -506,14 +499,6 @@ const styles = StyleSheet.create({
   desktopCard: {
     width: '100%',
     maxWidth: 900,
-    borderRadius: borderRadius['2xl'],
-    padding: spacing[8],
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3)',
-    } : {}),
   },
   cardHeader: {
     alignItems: 'center',
@@ -549,11 +534,6 @@ const styles = StyleSheet.create({
   },
   reelCard: {
     width: '48%',
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
   },
   thumbnailContainer: {
     position: 'relative',
@@ -640,39 +620,12 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.textMuted,
   },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: spacing[12],
-  },
-  emptyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: borderRadius.xl,
-    backgroundColor: `${colors.primary[500]}15`,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing[4],
-  },
-  emptyStateText: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginTop: spacing[4],
-  },
-  emptyStateSubtext: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
-    marginTop: spacing[2],
-    textAlign: 'center',
-  },
   infoBox: {
+    // handled by GlassCard accent
+  },
+  infoBoxContent: {
     flexDirection: 'row',
-    backgroundColor: `${colors.primary[500]}10`,
-    borderRadius: borderRadius.lg,
-    padding: spacing[4],
     gap: spacing[3],
-    borderWidth: 1,
-    borderColor: `${colors.primary[500]}30`,
   },
   infoText: {
     flex: 1,
@@ -715,14 +668,15 @@ const styles = StyleSheet.create({
   topInfo: {
     alignItems: 'flex-start',
   },
+  gymHeaderCard: {
+    borderRadius: borderRadius.full,
+  },
   gymHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[2],
-    backgroundColor: 'rgba(0,0,0,0.5)',
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
-    borderRadius: borderRadius.full,
   },
   gymAvatarLarge: {
     width: 32,

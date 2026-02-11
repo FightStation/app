@@ -16,6 +16,11 @@ import { SkeletonCard } from '../../components/Skeleton';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import {
+  GlassCard,
+  SectionHeader,
+  AnimatedListItem,
+} from '../../components';
 import type { Gym, Fighter } from '../../types';
 
 type ExploreScreenProps = {
@@ -151,6 +156,39 @@ export function ExploreScreen({ navigation }: ExploreScreenProps) {
     setRefreshing(false);
   };
 
+  const quickActions = [
+    {
+      icon: 'people' as const,
+      title: 'Find Fighters',
+      description: 'Search fighters by weight class and experience',
+      route: 'FighterSearch',
+    },
+    {
+      icon: 'search' as const,
+      title: 'Find Gyms',
+      description: 'Discover gyms in your area',
+      route: 'GymSearch',
+    },
+    {
+      icon: 'calendar' as const,
+      title: 'Browse Events',
+      description: 'View upcoming sparring sessions',
+      route: 'EventBrowse',
+    },
+    {
+      icon: 'map' as const,
+      title: 'Map View',
+      description: 'Find nearby gyms and events',
+      route: 'MapView',
+    },
+    {
+      icon: 'chatbubble' as const,
+      title: 'Messages',
+      description: 'Connect with gyms and fighters',
+      route: 'MessagesTab',
+    },
+  ];
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.webContainer}>
@@ -187,47 +225,51 @@ export function ExploreScreen({ navigation }: ExploreScreenProps) {
           <>
           {/* Trending Gyms */}
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>TRENDING GYMS</Text>
-              <TouchableOpacity>
-                <Text style={styles.seeAll}>See All</Text>
-              </TouchableOpacity>
+            <View style={styles.sectionHeaderWrapper}>
+              <SectionHeader
+                title="Trending Gyms"
+                onSeeAll={() => {}}
+              />
             </View>
 
-            {trendingGyms.map((gym) => (
-              <TouchableOpacity key={gym.id} style={styles.gymCard}>
-                <Image source={{ uri: gym.image }} style={styles.gymImage} />
-                <View style={styles.gymInfo}>
-                  <Text style={styles.gymName}>{gym.name}</Text>
-                  <View style={styles.gymMeta}>
-                    <Ionicons name="location" size={14} color={colors.textMuted} />
-                    <Text style={styles.gymLocation}>{gym.location}</Text>
-                  </View>
-                  <View style={styles.gymStats}>
-                    <View style={styles.stat}>
-                      <Ionicons name="people" size={14} color={colors.primary[500]} />
-                      <Text style={styles.statText}>{gym.members} members</Text>
+            {trendingGyms.map((gym, index) => (
+              <AnimatedListItem key={gym.id} index={index}>
+                <GlassCard style={styles.gymCard} onPress={() => {}}>
+                  <View style={styles.gymCardContent}>
+                    <Image source={{ uri: gym.image }} style={styles.gymImage} />
+                    <View style={styles.gymInfo}>
+                      <Text style={styles.gymName}>{gym.name}</Text>
+                      <View style={styles.gymMeta}>
+                        <Ionicons name="location" size={14} color={colors.textMuted} />
+                        <Text style={styles.gymLocation}>{gym.location}</Text>
+                      </View>
+                      <View style={styles.gymStats}>
+                        <View style={styles.stat}>
+                          <Ionicons name="people" size={14} color={colors.primary[500]} />
+                          <Text style={styles.statText}>{gym.members} members</Text>
+                        </View>
+                        <View style={styles.stat}>
+                          <Ionicons name="calendar" size={14} color={colors.primary[500]} />
+                          <Text style={styles.statText}>
+                            {gym.sessionsThisWeek} sessions this week
+                          </Text>
+                        </View>
+                      </View>
                     </View>
-                    <View style={styles.stat}>
-                      <Ionicons name="calendar" size={14} color={colors.primary[500]} />
-                      <Text style={styles.statText}>
-                        {gym.sessionsThisWeek} sessions this week
-                      </Text>
-                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
                   </View>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-              </TouchableOpacity>
+                </GlassCard>
+              </AnimatedListItem>
             ))}
           </View>
 
           {/* Featured Fighters */}
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>FEATURED FIGHTERS</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('FighterSearch')}>
-                <Text style={styles.seeAll}>See All</Text>
-              </TouchableOpacity>
+            <View style={styles.sectionHeaderWrapper}>
+              <SectionHeader
+                title="Featured Fighters"
+                onSeeAll={() => navigation.navigate('FighterSearch')}
+              />
             </View>
 
             <ScrollView
@@ -261,87 +303,31 @@ export function ExploreScreen({ navigation }: ExploreScreenProps) {
 
           {/* Quick Actions */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>QUICK ACTIONS</Text>
+            <View style={styles.sectionHeaderWrapper}>
+              <SectionHeader title="Quick Actions" />
+            </View>
 
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => navigation.navigate('FighterSearch')}
-            >
-              <View style={styles.actionIcon}>
-                <Ionicons name="people" size={24} color={colors.primary[500]} />
-              </View>
-              <View style={styles.actionInfo}>
-                <Text style={styles.actionTitle}>Find Fighters</Text>
-                <Text style={styles.actionDescription}>
-                  Search fighters by weight class and experience
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => navigation.navigate('GymSearch')}
-            >
-              <View style={styles.actionIcon}>
-                <Ionicons name="search" size={24} color={colors.primary[500]} />
-              </View>
-              <View style={styles.actionInfo}>
-                <Text style={styles.actionTitle}>Find Gyms</Text>
-                <Text style={styles.actionDescription}>
-                  Discover gyms in your area
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => navigation.navigate('EventBrowse')}
-            >
-              <View style={styles.actionIcon}>
-                <Ionicons name="calendar" size={24} color={colors.primary[500]} />
-              </View>
-              <View style={styles.actionInfo}>
-                <Text style={styles.actionTitle}>Browse Events</Text>
-                <Text style={styles.actionDescription}>
-                  View upcoming sparring sessions
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => navigation.navigate('MapView')}
-            >
-              <View style={styles.actionIcon}>
-                <Ionicons name="map" size={24} color={colors.primary[500]} />
-              </View>
-              <View style={styles.actionInfo}>
-                <Text style={styles.actionTitle}>Map View</Text>
-                <Text style={styles.actionDescription}>
-                  Find nearby gyms and events
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => navigation.navigate('MessagesTab' as any)}
-            >
-              <View style={styles.actionIcon}>
-                <Ionicons name="chatbubble" size={24} color={colors.primary[500]} />
-              </View>
-              <View style={styles.actionInfo}>
-                <Text style={styles.actionTitle}>Messages</Text>
-                <Text style={styles.actionDescription}>
-                  Connect with gyms and fighters
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
+            {quickActions.map((action, index) => (
+              <AnimatedListItem key={action.route} index={index}>
+                <GlassCard
+                  style={styles.actionCard}
+                  onPress={() => navigation.navigate(action.route as any)}
+                >
+                  <View style={styles.actionCardContent}>
+                    <View style={styles.actionIcon}>
+                      <Ionicons name={action.icon} size={24} color={colors.primary[500]} />
+                    </View>
+                    <View style={styles.actionInfo}>
+                      <Text style={styles.actionTitle}>{action.title}</Text>
+                      <Text style={styles.actionDescription}>
+                        {action.description}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+                  </View>
+                </GlassCard>
+              </AnimatedListItem>
+            ))}
           </View>
 
           <View style={styles.bottomPadding} />
@@ -399,35 +385,17 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: spacing[6],
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  sectionHeaderWrapper: {
     paddingHorizontal: spacing[4],
-    marginBottom: spacing[3],
-  },
-  sectionTitle: {
-    color: colors.secondary[500],
-    fontSize: typography.fontSize.xs,
-    fontFamily: typography.fontFamily.displayMedium,
-    letterSpacing: 0.5,
-  },
-  seeAll: {
-    color: colors.textSecondary,
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
   },
   // Gym Cards
   gymCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[3],
     marginHorizontal: spacing[4],
     marginBottom: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.border,
+  },
+  gymCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   gymImage: {
     width: 60,
@@ -526,15 +494,12 @@ const styles = StyleSheet.create({
   },
   // Action Cards
   actionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
     marginHorizontal: spacing[4],
     marginBottom: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.border,
+  },
+  actionCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   actionIcon: {
     width: 48,
