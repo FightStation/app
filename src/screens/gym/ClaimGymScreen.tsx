@@ -7,13 +7,18 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  TextInput,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { Button, Card } from '../../components';
+import {
+  GlassCard,
+  GlassInput,
+  GradientButton,
+  SectionHeader,
+  EmptyState,
+} from '../../components';
 import {
   getDirectoryGym,
   createGymClaimRequest,
@@ -155,9 +160,13 @@ export function ClaimGymScreen({ navigation, route }: ClaimGymScreenProps) {
   if (!gym) {
     return (
       <View style={styles.errorContainer}>
-        <Ionicons name="alert-circle-outline" size={48} color={colors.neutral[500]} />
-        <Text style={styles.errorText}>{t('errors.notFound')}</Text>
-        <Button title={t('common.back')} onPress={() => navigation.goBack()} />
+        <EmptyState
+          icon="alert-circle-outline"
+          title={t('errors.notFound')}
+          description="The gym could not be loaded."
+          actionLabel={t('common.back')}
+          onAction={() => navigation.goBack()}
+        />
       </View>
     );
   }
@@ -175,15 +184,15 @@ export function ClaimGymScreen({ navigation, route }: ClaimGymScreenProps) {
         </View>
 
         <View style={styles.content}>
-          <Card style={styles.gymCard}>
+          <GlassCard intensity="light" style={styles.gymCard}>
             <Text style={styles.gymName}>{gym.name}</Text>
             <View style={styles.locationRow}>
               <Text style={styles.countryFlag}>{getCountryFlag(gym.country_code)}</Text>
               <Text style={styles.location}>{gym.city}, {gym.country_name}</Text>
             </View>
-          </Card>
+          </GlassCard>
 
-          <Card style={styles.statusCard}>
+          <GlassCard intensity="medium" style={styles.statusCard}>
             <View style={styles.statusHeader}>
               <Ionicons
                 name={
@@ -241,15 +250,17 @@ export function ClaimGymScreen({ navigation, route }: ClaimGymScreenProps) {
                 </Text>
               </View>
             </View>
-          </Card>
+          </GlassCard>
 
           {existingClaim.status === 'rejected' && (
-            <Button
+            <GradientButton
               title={t('directory.submitNewClaim')}
               onPress={() => {
                 setExistingClaim(null);
                 setSelectedMethod(null);
               }}
+              icon="refresh-outline"
+              fullWidth
               style={styles.retryButton}
             />
           )}
@@ -271,7 +282,7 @@ export function ClaimGymScreen({ navigation, route }: ClaimGymScreenProps) {
 
       <View style={styles.content}>
         {/* Gym Info Card */}
-        <Card style={styles.gymCard}>
+        <GlassCard intensity="light" style={styles.gymCard}>
           <Text style={styles.gymName}>{gym.name}</Text>
           <View style={styles.locationRow}>
             <Text style={styles.countryFlag}>{getCountryFlag(gym.country_code)}</Text>
@@ -280,20 +291,23 @@ export function ClaimGymScreen({ navigation, route }: ClaimGymScreenProps) {
           {gym.address && (
             <Text style={styles.address}>{gym.address}</Text>
           )}
-        </Card>
+        </GlassCard>
 
         {/* Verification Methods */}
-        <Text style={styles.sectionTitle}>{t('directory.verifyOwnership')}</Text>
-        <Text style={styles.sectionSubtitle}>{t('directory.selectVerificationMethod')}</Text>
+        <SectionHeader
+          title={t('directory.verifyOwnership')}
+          subtitle={t('directory.selectVerificationMethod')}
+        />
 
         {/* Email Verification Option */}
         {gym.email && (
-          <TouchableOpacity
+          <GlassCard
+            intensity={selectedMethod === 'email' ? 'accent' : 'light'}
+            onPress={() => handleSelectMethod('email')}
             style={[
               styles.methodCard,
               selectedMethod === 'email' && styles.methodCardSelected,
             ]}
-            onPress={() => handleSelectMethod('email')}
           >
             <View style={styles.methodHeader}>
               <View style={[
@@ -315,17 +329,18 @@ export function ClaimGymScreen({ navigation, route }: ClaimGymScreenProps) {
                 <Ionicons name="checkmark-circle" size={24} color={colors.primary[500]} />
               )}
             </View>
-          </TouchableOpacity>
+          </GlassCard>
         )}
 
         {/* Phone Verification Option */}
         {gym.phone && (
-          <TouchableOpacity
+          <GlassCard
+            intensity={selectedMethod === 'phone' ? 'accent' : 'light'}
+            onPress={() => handleSelectMethod('phone')}
             style={[
               styles.methodCard,
               selectedMethod === 'phone' && styles.methodCardSelected,
             ]}
-            onPress={() => handleSelectMethod('phone')}
           >
             <View style={styles.methodHeader}>
               <View style={[
@@ -347,16 +362,17 @@ export function ClaimGymScreen({ navigation, route }: ClaimGymScreenProps) {
                 <Ionicons name="checkmark-circle" size={24} color={colors.primary[500]} />
               )}
             </View>
-          </TouchableOpacity>
+          </GlassCard>
         )}
 
         {/* Manual Verification Option (always available) */}
-        <TouchableOpacity
+        <GlassCard
+          intensity={selectedMethod === 'manual' ? 'accent' : 'light'}
+          onPress={() => handleSelectMethod('manual')}
           style={[
             styles.methodCard,
             selectedMethod === 'manual' && styles.methodCardSelected,
           ]}
-          onPress={() => handleSelectMethod('manual')}
         >
           <View style={styles.methodHeader}>
             <View style={[
@@ -377,12 +393,12 @@ export function ClaimGymScreen({ navigation, route }: ClaimGymScreenProps) {
               <Ionicons name="checkmark-circle" size={24} color={colors.primary[500]} />
             )}
           </View>
-        </TouchableOpacity>
+        </GlassCard>
 
         {/* Document Upload Section (for manual verification) */}
         {selectedMethod === 'manual' && (
-          <Card style={styles.uploadSection}>
-            <Text style={styles.uploadTitle}>{t('directory.uploadProof')}</Text>
+          <GlassCard intensity="medium" style={styles.uploadSection}>
+            <SectionHeader title={t('directory.uploadProof')} />
             <Text style={styles.uploadDescription}>{t('directory.uploadProofDesc')}</Text>
 
             {proofImage ? (
@@ -400,29 +416,35 @@ export function ClaimGymScreen({ navigation, route }: ClaimGymScreenProps) {
               </View>
             ) : (
               <View style={styles.uploadButtons}>
-                <TouchableOpacity style={styles.uploadButton} onPress={handlePickImage}>
+                <GlassCard
+                  intensity="light"
+                  onPress={handlePickImage}
+                  style={styles.uploadButton}
+                >
                   <Ionicons name="images" size={24} color={colors.primary[500]} />
                   <Text style={styles.uploadButtonText}>{t('directory.chooseFromGallery')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.uploadButton} onPress={handleTakePhoto}>
+                </GlassCard>
+                <GlassCard
+                  intensity="light"
+                  onPress={handleTakePhoto}
+                  style={styles.uploadButton}
+                >
                   <Ionicons name="camera" size={24} color={colors.primary[500]} />
                   <Text style={styles.uploadButtonText}>{t('directory.takePhoto')}</Text>
-                </TouchableOpacity>
+                </GlassCard>
               </View>
             )}
 
             <Text style={styles.uploadHint}>{t('directory.acceptedDocuments')}</Text>
-          </Card>
+          </GlassCard>
         )}
 
         {/* Additional Info */}
         {selectedMethod && (
           <View style={styles.additionalInfoSection}>
-            <Text style={styles.additionalInfoLabel}>{t('directory.additionalInfo')}</Text>
-            <TextInput
-              style={styles.additionalInfoInput}
+            <GlassInput
+              label={t('directory.additionalInfo')}
               placeholder={t('directory.additionalInfoPlaceholder')}
-              placeholderTextColor={colors.neutral[500]}
               multiline
               numberOfLines={3}
               value={additionalInfo}
@@ -433,10 +455,14 @@ export function ClaimGymScreen({ navigation, route }: ClaimGymScreenProps) {
 
         {/* Submit Button */}
         {selectedMethod && (
-          <Button
+          <GradientButton
             title={submitting ? t('common.submitting') : t('directory.submitClaim')}
             onPress={handleSubmitClaim}
             disabled={submitting || (selectedMethod === 'manual' && !proofImage)}
+            loading={submitting}
+            icon="shield-checkmark-outline"
+            size="lg"
+            fullWidth
             style={styles.submitButton}
           />
         )}
@@ -465,11 +491,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing[6],
-    gap: spacing[4],
-  },
-  errorText: {
-    fontSize: typography.fontSize.lg,
-    color: colors.neutral[400],
   },
   header: {
     flexDirection: 'row',
@@ -495,7 +516,6 @@ const styles = StyleSheet.create({
     padding: spacing[4],
   },
   gymCard: {
-    padding: spacing[4],
     marginBottom: spacing[6],
   },
   gymName: {
@@ -521,28 +541,11 @@ const styles = StyleSheet.create({
     color: colors.neutral[500],
     marginTop: spacing[2],
   },
-  sectionTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: '600',
-    color: colors.neutral[50],
-    marginBottom: spacing[1],
-  },
-  sectionSubtitle: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[400],
-    marginBottom: spacing[4],
-  },
   methodCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing[4],
     marginBottom: spacing[3],
-    borderWidth: 2,
-    borderColor: 'transparent',
   },
   methodCardSelected: {
     borderColor: colors.primary[500],
-    backgroundColor: colors.surfaceLight,
   },
   methodHeader: {
     flexDirection: 'row',
@@ -581,15 +584,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   uploadSection: {
-    padding: spacing[4],
     marginTop: spacing[2],
     marginBottom: spacing[4],
-  },
-  uploadTitle: {
-    fontSize: typography.fontSize.base,
-    fontWeight: '600',
-    color: colors.neutral[50],
-    marginBottom: spacing[1],
   },
   uploadDescription: {
     fontSize: typography.fontSize.sm,
@@ -606,9 +602,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing[2],
-    backgroundColor: colors.surfaceLight,
-    padding: spacing[4],
-    borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: colors.neutral[700],
     borderStyle: 'dashed',
@@ -652,21 +645,6 @@ const styles = StyleSheet.create({
   additionalInfoSection: {
     marginBottom: spacing[4],
   },
-  additionalInfoLabel: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: '500',
-    color: colors.neutral[300],
-    marginBottom: spacing[2],
-  },
-  additionalInfoInput: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    padding: spacing[3],
-    color: colors.neutral[50],
-    fontSize: typography.fontSize.base,
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
   submitButton: {
     marginTop: spacing[2],
     marginBottom: spacing[4],
@@ -680,7 +658,6 @@ const styles = StyleSheet.create({
   },
   // Status view styles
   statusCard: {
-    padding: spacing[6],
     alignItems: 'center',
   },
   statusHeader: {

@@ -17,6 +17,13 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { SparringInvite, EventRequest, SparringEvent, Gym, Fighter } from '../../types';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import {
+  GlassCard,
+  GradientButton,
+  BadgeRow,
+  EmptyState,
+  AnimatedListItem,
+} from '../../components';
 
 type SparringInvitesScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -102,6 +109,11 @@ function getDateStr(daysFromNow: number): string {
   d.setDate(d.getDate() + daysFromNow);
   return d.toISOString().split('T')[0];
 }
+
+const tabBadgeItems = [
+  { key: 'received', label: 'Received' },
+  { key: 'sent', label: 'Sent Requests' },
+];
 
 export function SparringInvitesScreen({ navigation }: SparringInvitesScreenProps) {
   const { profile } = useAuth();
@@ -220,37 +232,140 @@ export function SparringInvitesScreen({ navigation }: SparringInvitesScreenProps
 
   const pendingCount = received.filter(i => i.status === 'pending').length;
 
-  const renderReceivedInvite = (invite: SparringInvite) => {
+  const renderReceivedInvite = (invite: SparringInvite, index: number) => {
     const isFromGym = invite.from_type === 'gym';
     const senderName = isFromGym
       ? invite.from_gym?.name || 'Unknown Gym'
       : `${invite.from_fighter?.first_name || ''} ${invite.from_fighter?.last_name || ''}`.trim() || 'Unknown Fighter';
 
     return (
-      <View key={invite.id} style={styles.inviteCard}>
+      <AnimatedListItem key={invite.id} index={index}>
+        <GlassCard style={styles.inviteCard}>
+          <View style={styles.inviteHeader}>
+            <View style={styles.senderIcon}>
+              <Ionicons
+                name={isFromGym ? 'business' : 'person'}
+                size={24}
+                color={colors.primary[500]}
+              />
+            </View>
+            <View style={styles.senderInfo}>
+              <Text style={styles.senderName}>{senderName}</Text>
+              <Text style={styles.inviteTime}>{formatTimeAgo(invite.created_at)}</Text>
+            </View>
+            {invite.status === 'pending' && (
+              <View style={styles.pendingDot} />
+            )}
+          </View>
+
+          {/* Event or Direct Sparring Details */}
+          {invite.invite_type === 'event_invite' && invite.event && (
+            <TouchableOpacity
+              style={styles.eventPreview}
+              onPress={() => navigation.navigate('EventDetail', { eventId: invite.event!.id })}
+            >
+              <Ionicons name="calendar" size={16} color={colors.primary[500]} />
+              <View style={styles.eventPreviewInfo}>
+                <Text style={styles.eventPreviewTitle}>{invite.event.title}</Text>
+                <Text style={styles.eventPreviewMeta}>
+                  {formatDate(invite.event.event_date)} &middot; {invite.event.start_time}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </TouchableOpacity>
+          )}
+
+          {invite.invite_type === 'direct_sparring' && (
+            <View style={styles.sparringDetails}>
+              <View style={styles.sparringDetailRow}>
+                <Ionicons name="calendar-outline" size={16} color={colors.textMuted} />
+                <Text style={styles.sparringDetailText}>
+                  {invite.proposed_date ? formatDate(invite.proposed_date) : 'TBD'}
+                  {invite.proposed_time ? ` at ${invite.proposed_time}` : ''}
+                </Text>
+              </View>
+              {invite.proposed_location && (
+                <View style={styles.sparringDetailRow}>
+                  <Ionicons name="location-outline" size={16} color={colors.textMuted} />
+                  <Text style={styles.sparringDetailText}>{invite.proposed_location}</Text>
+                </View>
+              )}
+              {invite.proposed_intensity && (
+                <View style={styles.sparringDetailRow}>
+                  <Ionicons name="flame-outline" size={16} color={colors.textMuted} />
+                  <Text style={styles.sparringDetailText}>
+                    {invite.proposed_intensity.charAt(0).toUpperCase() + invite.proposed_intensity.slice(1)} intensity
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {invite.message && (
+            <Text style={styles.inviteMessage}>"{invite.message}"</Text>
+          )}
+
+          {/* Action Buttons */}
+          {invite.status === 'pending' ? (
+            <View style={styles.actionButtons}>
+              <GradientButton
+                title="Accept"
+                onPress={() => handleResponse(invite.id, 'accepted')}
+                icon="checkmark"
+                size="sm"
+                disabled={actionLoading === invite.id}
+                loading={actionLoading === invite.id}
+                style={styles.acceptButtonStyle}
+              />
+              <TouchableOpacity
+                style={styles.declineButton}
+                onPress={() => handleResponse(invite.id, 'declined')}
+                disabled={actionLoading === invite.id}
+              >
+                <Ionicons name="close" size={18} color={colors.error} />
+                <Text style={styles.declineText}>Decline</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={[
+              styles.statusBadgeRow,
+              invite.status === 'accepted' ? styles.statusAccepted : styles.statusDeclined,
+            ]}>
+              <Ionicons
+                name={invite.status === 'accepted' ? 'checkmark-circle' : 'close-circle'}
+                size={16}
+                color={invite.status === 'accepted' ? colors.success : colors.error}
+              />
+              <Text style={[
+                styles.statusBadgeText,
+                { color: invite.status === 'accepted' ? colors.success : colors.error },
+              ]}>
+                {invite.status === 'accepted' ? 'Accepted' : 'Declined'}
+              </Text>
+            </View>
+          )}
+        </GlassCard>
+      </AnimatedListItem>
+    );
+  };
+
+  const renderSentInvite = (invite: SparringInvite, index: number) => (
+    <AnimatedListItem key={invite.id} index={index}>
+      <GlassCard style={styles.inviteCard}>
         <View style={styles.inviteHeader}>
           <View style={styles.senderIcon}>
-            <Ionicons
-              name={isFromGym ? 'business' : 'person'}
-              size={24}
-              color={colors.primary[500]}
-            />
+            <Ionicons name="send" size={20} color={colors.primary[500]} />
           </View>
           <View style={styles.senderInfo}>
-            <Text style={styles.senderName}>{senderName}</Text>
+            <Text style={styles.senderName}>
+              {invite.event?.title || 'Direct Sparring Request'}
+            </Text>
             <Text style={styles.inviteTime}>{formatTimeAgo(invite.created_at)}</Text>
           </View>
-          {invite.status === 'pending' && (
-            <View style={styles.pendingDot} />
-          )}
         </View>
 
-        {/* Event or Direct Sparring Details */}
-        {invite.invite_type === 'event_invite' && invite.event && (
-          <TouchableOpacity
-            style={styles.eventPreview}
-            onPress={() => navigation.navigate('EventDetail', { eventId: invite.event!.id })}
-          >
+        {invite.event && (
+          <View style={styles.eventPreview}>
             <Ionicons name="calendar" size={16} color={colors.primary[500]} />
             <View style={styles.eventPreviewInfo}>
               <Text style={styles.eventPreviewTitle}>{invite.event.title}</Text>
@@ -258,144 +373,40 @@ export function SparringInvitesScreen({ navigation }: SparringInvitesScreenProps
                 {formatDate(invite.event.event_date)} &middot; {invite.event.start_time}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-          </TouchableOpacity>
-        )}
-
-        {invite.invite_type === 'direct_sparring' && (
-          <View style={styles.sparringDetails}>
-            <View style={styles.sparringDetailRow}>
-              <Ionicons name="calendar-outline" size={16} color={colors.textMuted} />
-              <Text style={styles.sparringDetailText}>
-                {invite.proposed_date ? formatDate(invite.proposed_date) : 'TBD'}
-                {invite.proposed_time ? ` at ${invite.proposed_time}` : ''}
-              </Text>
-            </View>
-            {invite.proposed_location && (
-              <View style={styles.sparringDetailRow}>
-                <Ionicons name="location-outline" size={16} color={colors.textMuted} />
-                <Text style={styles.sparringDetailText}>{invite.proposed_location}</Text>
-              </View>
-            )}
-            {invite.proposed_intensity && (
-              <View style={styles.sparringDetailRow}>
-                <Ionicons name="flame-outline" size={16} color={colors.textMuted} />
-                <Text style={styles.sparringDetailText}>
-                  {invite.proposed_intensity.charAt(0).toUpperCase() + invite.proposed_intensity.slice(1)} intensity
-                </Text>
-              </View>
-            )}
           </View>
         )}
 
-        {invite.message && (
-          <Text style={styles.inviteMessage}>"{invite.message}"</Text>
-        )}
-
-        {/* Action Buttons */}
-        {invite.status === 'pending' ? (
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={styles.acceptButton}
-              onPress={() => handleResponse(invite.id, 'accepted')}
-              disabled={actionLoading === invite.id}
-            >
-              {actionLoading === invite.id ? (
-                <ActivityIndicator size="small" color={colors.textPrimary} />
-              ) : (
-                <>
-                  <Ionicons name="checkmark" size={18} color={colors.textPrimary} />
-                  <Text style={styles.acceptText}>Accept</Text>
-                </>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.declineButton}
-              onPress={() => handleResponse(invite.id, 'declined')}
-              disabled={actionLoading === invite.id}
-            >
-              <Ionicons name="close" size={18} color={colors.error} />
-              <Text style={styles.declineText}>Decline</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
+        <View style={styles.sentStatusRow}>
           <View style={[
-            styles.statusBadgeRow,
-            invite.status === 'accepted' ? styles.statusAccepted : styles.statusDeclined,
+            styles.sentStatusBadge,
+            invite.status === 'pending' ? styles.sentPending :
+            invite.status === 'accepted' ? styles.sentAccepted :
+            invite.status === 'cancelled' ? styles.sentCancelled :
+            styles.sentDeclined,
           ]}>
-            <Ionicons
-              name={invite.status === 'accepted' ? 'checkmark-circle' : 'close-circle'}
-              size={16}
-              color={invite.status === 'accepted' ? colors.success : colors.error}
-            />
             <Text style={[
-              styles.statusBadgeText,
-              { color: invite.status === 'accepted' ? colors.success : colors.error },
+              styles.sentStatusText,
+              invite.status === 'pending' ? styles.sentPendingText :
+              invite.status === 'accepted' ? styles.sentAcceptedText :
+              invite.status === 'cancelled' ? styles.sentCancelledText :
+              styles.sentDeclinedText,
             ]}>
-              {invite.status === 'accepted' ? 'Accepted' : 'Declined'}
+              {invite.status.charAt(0).toUpperCase() + invite.status.slice(1)}
             </Text>
           </View>
-        )}
-      </View>
-    );
-  };
 
-  const renderSentInvite = (invite: SparringInvite) => (
-    <View key={invite.id} style={styles.inviteCard}>
-      <View style={styles.inviteHeader}>
-        <View style={styles.senderIcon}>
-          <Ionicons name="send" size={20} color={colors.primary[500]} />
+          {invite.status === 'pending' && (
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => handleCancel(invite.id)}
+              disabled={actionLoading === invite.id}
+            >
+              <Text style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+          )}
         </View>
-        <View style={styles.senderInfo}>
-          <Text style={styles.senderName}>
-            {invite.event?.title || 'Direct Sparring Request'}
-          </Text>
-          <Text style={styles.inviteTime}>{formatTimeAgo(invite.created_at)}</Text>
-        </View>
-      </View>
-
-      {invite.event && (
-        <View style={styles.eventPreview}>
-          <Ionicons name="calendar" size={16} color={colors.primary[500]} />
-          <View style={styles.eventPreviewInfo}>
-            <Text style={styles.eventPreviewTitle}>{invite.event.title}</Text>
-            <Text style={styles.eventPreviewMeta}>
-              {formatDate(invite.event.event_date)} &middot; {invite.event.start_time}
-            </Text>
-          </View>
-        </View>
-      )}
-
-      <View style={styles.sentStatusRow}>
-        <View style={[
-          styles.sentStatusBadge,
-          invite.status === 'pending' ? styles.sentPending :
-          invite.status === 'accepted' ? styles.sentAccepted :
-          invite.status === 'cancelled' ? styles.sentCancelled :
-          styles.sentDeclined,
-        ]}>
-          <Text style={[
-            styles.sentStatusText,
-            invite.status === 'pending' ? styles.sentPendingText :
-            invite.status === 'accepted' ? styles.sentAcceptedText :
-            invite.status === 'cancelled' ? styles.sentCancelledText :
-            styles.sentDeclinedText,
-          ]}>
-            {invite.status.charAt(0).toUpperCase() + invite.status.slice(1)}
-          </Text>
-        </View>
-
-        {invite.status === 'pending' && (
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => handleCancel(invite.id)}
-            disabled={actionLoading === invite.id}
-          >
-            <Text style={styles.cancelText}>Cancel</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
+      </GlassCard>
+    </AnimatedListItem>
   );
 
   return (
@@ -413,29 +424,12 @@ export function SparringInvitesScreen({ navigation }: SparringInvitesScreenProps
         </View>
 
         {/* Tab Bar */}
-        <View style={styles.tabBar}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'received' && styles.tabActive]}
-            onPress={() => setActiveTab('received')}
-          >
-            <Text style={[styles.tabText, activeTab === 'received' && styles.tabTextActive]}>
-              Received
-            </Text>
-            {pendingCount > 0 && (
-              <View style={styles.tabBadge}>
-                <Text style={styles.tabBadgeText}>{pendingCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'sent' && styles.tabActive]}
-            onPress={() => setActiveTab('sent')}
-          >
-            <Text style={[styles.tabText, activeTab === 'sent' && styles.tabTextActive]}>
-              Sent Requests
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <BadgeRow
+          items={tabBadgeItems}
+          selected={activeTab}
+          onSelect={(key) => setActiveTab(key as TabType)}
+          style={styles.tabRow}
+        />
 
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -449,27 +443,23 @@ export function SparringInvitesScreen({ navigation }: SparringInvitesScreenProps
           >
             {activeTab === 'received' ? (
               received.length === 0 ? (
-                <View style={styles.emptyState}>
-                  <Ionicons name="mail-open-outline" size={64} color={colors.textMuted} />
-                  <Text style={styles.emptyTitle}>No invites yet</Text>
-                  <Text style={styles.emptySubtitle}>
-                    When gyms or fighters invite you to spar, they'll appear here
-                  </Text>
-                </View>
+                <EmptyState
+                  icon="mail-open-outline"
+                  title="No invites yet"
+                  description="When gyms or fighters invite you to spar, they'll appear here"
+                />
               ) : (
-                received.map(renderReceivedInvite)
+                received.map((invite, index) => renderReceivedInvite(invite, index))
               )
             ) : (
               sent.length === 0 ? (
-                <View style={styles.emptyState}>
-                  <Ionicons name="send-outline" size={64} color={colors.textMuted} />
-                  <Text style={styles.emptyTitle}>No requests sent</Text>
-                  <Text style={styles.emptySubtitle}>
-                    Join events or invite fighters to spar
-                  </Text>
-                </View>
+                <EmptyState
+                  icon="send-outline"
+                  title="No requests sent"
+                  description="Join events or invite fighters to spar"
+                />
               ) : (
-                sent.map(renderSentInvite)
+                sent.map((invite, index) => renderSentInvite(invite, index))
               )
             )}
 
@@ -523,48 +513,8 @@ const styles = StyleSheet.create({
   headerSpacer: { width: 40 },
 
   // Tab Bar
-  tabBar: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing[4],
-    paddingTop: spacing[2],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  tab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  tabRow: {
     paddingVertical: spacing[3],
-    gap: spacing[2],
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  tabActive: {
-    borderBottomColor: colors.primary[500],
-  },
-  tabText: {
-    color: colors.textMuted,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
-  },
-  tabTextActive: {
-    color: colors.primary[500],
-    fontWeight: typography.fontWeight.bold,
-  },
-  tabBadge: {
-    backgroundColor: colors.error,
-    borderRadius: borderRadius.full,
-    minWidth: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing[1],
-  },
-  tabBadgeText: {
-    color: '#fff',
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
   },
 
   container: { flex: 1 },
@@ -572,12 +522,7 @@ const styles = StyleSheet.create({
 
   // Invite Card
   inviteCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
     marginBottom: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   inviteHeader: {
     flexDirection: 'row',
@@ -665,20 +610,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing[3],
   },
-  acceptButton: {
+  acceptButtonStyle: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[2],
-    backgroundColor: colors.primary[500],
-    paddingVertical: spacing[3],
-    borderRadius: borderRadius.lg,
-  },
-  acceptText: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
   },
   declineButton: {
     flex: 1,
@@ -750,26 +683,6 @@ const styles = StyleSheet.create({
     color: colors.error,
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.medium,
-  },
-
-  // Empty State
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[10],
-  },
-  emptyTitle: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    marginTop: spacing[4],
-    marginBottom: spacing[2],
-  },
-  emptySubtitle: {
-    color: colors.textMuted,
-    fontSize: typography.fontSize.base,
-    textAlign: 'center',
-    paddingHorizontal: spacing[6],
   },
 
   bottomPadding: {

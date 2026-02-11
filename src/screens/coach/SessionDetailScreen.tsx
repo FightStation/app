@@ -16,6 +16,14 @@ import { RouteProp } from '@react-navigation/native';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { TrainingSession, TRAINING_FOCUS_LABELS, TrainingFocusArea } from '../../types';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import {
+  GlassCard,
+  GradientButton,
+  SectionHeader,
+  StatCard,
+  PulseIndicator,
+  AnimatedListItem,
+} from '../../components';
 
 type SessionDetailScreenProps = {
   navigation?: NativeStackNavigationProp<any>;
@@ -171,8 +179,11 @@ export function SessionDetailScreen({ navigation, route }: SessionDetailScreenPr
           showsVerticalScrollIndicator={false}
         >
           {/* Session Summary Card */}
-          <View style={styles.summaryCard}>
-            <Text style={styles.dateText}>{formatDate(session.session_date)}</Text>
+          <GlassCard style={styles.summaryCard}>
+            <View style={styles.summaryTopRow}>
+              <Text style={styles.dateText}>{formatDate(session.session_date)}</Text>
+              <PulseIndicator color={colors.success} size="sm" />
+            </View>
             <View style={styles.timeRow}>
               <Ionicons name="time-outline" size={16} color={colors.textMuted} />
               <Text style={styles.timeText}>
@@ -188,35 +199,57 @@ export function SessionDetailScreen({ navigation, route }: SessionDetailScreenPr
                 <View style={styles.stars}>{renderStars(session.rating)}</View>
               </View>
             )}
+          </GlassCard>
+
+          {/* Quick Stats */}
+          <View style={styles.quickStats}>
+            <StatCard
+              icon="time-outline"
+              value={`${session.duration_minutes}m`}
+              label="Duration"
+            />
+            <StatCard
+              icon="barbell-outline"
+              value={session.exercises?.length || 0}
+              label="Exercises"
+            />
+            <StatCard
+              icon="star"
+              value={session.rating || '-'}
+              label="Rating"
+              accentColor={colors.warning}
+            />
           </View>
 
           {/* Fighter Card */}
           {session.fighter && (
-            <TouchableOpacity
-              style={styles.fighterCard}
+            <GlassCard
               onPress={() => navigation?.navigate('FighterProfileView', { fighterId: session.fighter!.id })}
+              style={styles.fighterCard}
             >
-              <View style={styles.fighterAvatarPlaceholder}>
-                <Ionicons name="person" size={28} color={colors.textMuted} />
+              <View style={styles.fighterRow}>
+                <View style={styles.fighterAvatarPlaceholder}>
+                  <Ionicons name="person" size={28} color={colors.textMuted} />
+                </View>
+                <View style={styles.fighterInfo}>
+                  <Text style={styles.fighterName}>
+                    {session.fighter.first_name} {session.fighter.last_name}
+                  </Text>
+                  <Text style={styles.fighterMeta}>
+                    {session.fighter.weight_class?.replace(/_/g, ' ')} &middot; {session.fighter.experience_level}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
               </View>
-              <View style={styles.fighterInfo}>
-                <Text style={styles.fighterName}>
-                  {session.fighter.first_name} {session.fighter.last_name}
-                </Text>
-                <Text style={styles.fighterMeta}>
-                  {session.fighter.weight_class?.replace(/_/g, ' ')} &middot; {session.fighter.experience_level}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
+            </GlassCard>
           )}
 
           {/* Focus Areas */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Training Focus</Text>
-            <View style={styles.focusTags}>
-              {session.focus_areas.map((area) => (
-                <View key={area} style={styles.focusTag}>
+          <SectionHeader title="Training Focus" />
+          <View style={styles.focusTags}>
+            {session.focus_areas.map((area) => (
+              <GlassCard key={area} style={styles.focusTag}>
+                <View style={styles.focusTagContent}>
                   <Ionicons
                     name={(CATEGORY_ICONS[area] || 'fitness') as any}
                     size={16}
@@ -226,44 +259,48 @@ export function SessionDetailScreen({ navigation, route }: SessionDetailScreenPr
                     {TRAINING_FOCUS_LABELS[area as TrainingFocusArea] || area}
                   </Text>
                 </View>
-              ))}
-            </View>
+              </GlassCard>
+            ))}
           </View>
 
           {/* Exercises */}
           {session.exercises && session.exercises.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Exercises ({session.exercises.length})</Text>
+              <SectionHeader title={`Exercises (${session.exercises.length})`} />
               {session.exercises
                 .sort((a, b) => a.order - b.order)
                 .map((exercise, index) => (
-                <View key={exercise.id} style={styles.exerciseCard}>
-                  <View style={styles.exerciseNumber}>
-                    <Text style={styles.exerciseNumberText}>{index + 1}</Text>
-                  </View>
-                  <View style={styles.exerciseInfo}>
-                    <Text style={styles.exerciseName}>{exercise.name}</Text>
-                    <View style={styles.exerciseDetails}>
-                      {exercise.sets && (
-                        <Text style={styles.exerciseDetail}>{exercise.sets} sets</Text>
-                      )}
-                      {exercise.reps && (
-                        <Text style={styles.exerciseDetail}>{exercise.reps} reps</Text>
-                      )}
-                      {exercise.duration_seconds && (
-                        <Text style={styles.exerciseDetail}>
-                          {Math.floor(exercise.duration_seconds / 60)}:{(exercise.duration_seconds % 60).toString().padStart(2, '0')}
-                        </Text>
-                      )}
-                      {exercise.weight_kg && (
-                        <Text style={styles.exerciseDetail}>{exercise.weight_kg}kg</Text>
-                      )}
+                <AnimatedListItem key={exercise.id} index={index}>
+                  <GlassCard style={styles.exerciseCard}>
+                    <View style={styles.exerciseRow}>
+                      <View style={styles.exerciseNumber}>
+                        <Text style={styles.exerciseNumberText}>{index + 1}</Text>
+                      </View>
+                      <View style={styles.exerciseInfo}>
+                        <Text style={styles.exerciseName}>{exercise.name}</Text>
+                        <View style={styles.exerciseDetails}>
+                          {exercise.sets && (
+                            <Text style={styles.exerciseDetail}>{exercise.sets} sets</Text>
+                          )}
+                          {exercise.reps && (
+                            <Text style={styles.exerciseDetail}>{exercise.reps} reps</Text>
+                          )}
+                          {exercise.duration_seconds && (
+                            <Text style={styles.exerciseDetail}>
+                              {Math.floor(exercise.duration_seconds / 60)}:{(exercise.duration_seconds % 60).toString().padStart(2, '0')}
+                            </Text>
+                          )}
+                          {exercise.weight_kg && (
+                            <Text style={styles.exerciseDetail}>{exercise.weight_kg}kg</Text>
+                          )}
+                        </View>
+                        {exercise.notes && (
+                          <Text style={styles.exerciseNotes}>{exercise.notes}</Text>
+                        )}
+                      </View>
                     </View>
-                    {exercise.notes && (
-                      <Text style={styles.exerciseNotes}>{exercise.notes}</Text>
-                    )}
-                  </View>
-                </View>
+                  </GlassCard>
+                </AnimatedListItem>
               ))}
             </View>
           )}
@@ -271,22 +308,22 @@ export function SessionDetailScreen({ navigation, route }: SessionDetailScreenPr
           {/* Coach Notes */}
           {session.notes && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Coach Notes</Text>
-              <View style={styles.notesCard}>
+              <SectionHeader title="Coach Notes" />
+              <GlassCard>
                 <Text style={styles.notesText}>{session.notes}</Text>
-              </View>
+              </GlassCard>
             </View>
           )}
 
           {/* Actions */}
           {session.fighter && (
-            <TouchableOpacity
-              style={styles.viewProgressButton}
+            <GradientButton
+              title="View Fighter Progress"
               onPress={() => navigation?.navigate('StudentProgress', { studentId: session.fighter!.id })}
-            >
-              <Ionicons name="trending-up" size={20} color={colors.primary[500]} />
-              <Text style={styles.viewProgressText}>View Fighter Progress</Text>
-            </TouchableOpacity>
+              icon="trending-up"
+              fullWidth
+              style={styles.progressButton}
+            />
           )}
 
           <View style={styles.bottomPadding} />
@@ -341,18 +378,18 @@ const styles = StyleSheet.create({
 
   // Summary
   summaryCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[5],
-    borderWidth: 1,
-    borderColor: colors.border,
     marginBottom: spacing[4],
+  },
+  summaryTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing[2],
   },
   dateText: {
     color: colors.textPrimary,
     fontSize: typography.fontSize.lg,
     fontWeight: typography.fontWeight.bold,
-    marginBottom: spacing[2],
   },
   timeRow: {
     flexDirection: 'row',
@@ -392,16 +429,20 @@ const styles = StyleSheet.create({
     gap: spacing[1],
   },
 
+  // Quick Stats
+  quickStats: {
+    flexDirection: 'row',
+    gap: spacing[2],
+    marginBottom: spacing[4],
+  },
+
   // Fighter
   fighterCard: {
+    marginBottom: spacing[4],
+  },
+  fighterRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing[4],
     gap: spacing[3],
   },
   fighterAvatarPlaceholder: {
@@ -429,31 +470,21 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: spacing[4],
   },
-  sectionTitle: {
-    color: colors.primary[500],
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-    letterSpacing: 0.5,
-    marginBottom: spacing[3],
-    textTransform: 'uppercase',
-  },
 
   // Focus Tags
   focusTags: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing[2],
+    marginBottom: spacing[4],
   },
   focusTag: {
+    padding: spacing[2],
+  },
+  focusTagContent: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[2],
-    backgroundColor: colors.cardBg,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   focusTagText: {
     color: colors.textPrimary,
@@ -463,14 +494,11 @@ const styles = StyleSheet.create({
 
   // Exercises
   exerciseCard: {
+    marginBottom: spacing[2],
+  },
+  exerciseRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    marginBottom: spacing[2],
-    borderWidth: 1,
-    borderColor: colors.border,
     gap: spacing[3],
   },
   exerciseNumber: {
@@ -510,13 +538,6 @@ const styles = StyleSheet.create({
   },
 
   // Notes
-  notesCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
   notesText: {
     color: colors.textSecondary,
     fontSize: typography.fontSize.base,
@@ -524,21 +545,8 @@ const styles = StyleSheet.create({
   },
 
   // Actions
-  viewProgressButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[2],
-    paddingVertical: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.primary[500],
-    borderRadius: borderRadius.lg,
+  progressButton: {
     marginBottom: spacing[4],
-  },
-  viewProgressText: {
-    color: colors.primary[500],
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
   },
 
   bottomPadding: {

@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   Platform,
   Dimensions,
   Alert,
@@ -14,6 +13,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import {
+  GlassCard,
+  GlassInput,
+  GradientButton,
+  SectionHeader,
+} from '../../components';
 
 type ScheduleSessionScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -103,148 +108,134 @@ export function ScheduleSessionScreen({ navigation }: ScheduleSessionScreenProps
       <View style={styles.webContainer}>
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
           {/* Session Type */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>SESSION TYPE</Text>
-            <View style={styles.typeRow}>
-              {sessionTypes.map((type) => (
-                <TouchableOpacity
-                  key={type.id}
+          <SectionHeader title="Session Type" />
+          <View style={styles.typeRow}>
+            {sessionTypes.map((type) => (
+              <GlassCard
+                key={type.id}
+                intensity={sessionType === type.id ? 'accent' : 'light'}
+                onPress={() => setSessionType(type.id as SessionType)}
+                style={[
+                  styles.typeCard,
+                  sessionType === type.id && styles.typeCardActive,
+                ]}
+              >
+                <Ionicons
+                  name={type.icon as any}
+                  size={24}
+                  color={sessionType === type.id ? colors.primary[500] : colors.textMuted}
+                />
+                <Text
                   style={[
-                    styles.typeCard,
-                    sessionType === type.id && styles.typeCardActive,
+                    styles.typeLabel,
+                    sessionType === type.id && styles.typeLabelActive,
                   ]}
-                  onPress={() => setSessionType(type.id as SessionType)}
                 >
-                  <Ionicons
-                    name={type.icon as any}
-                    size={24}
-                    color={sessionType === type.id ? colors.primary[500] : colors.textMuted}
-                  />
-                  <Text
-                    style={[
-                      styles.typeLabel,
-                      sessionType === type.id && styles.typeLabelActive,
-                    ]}
-                  >
-                    {type.label}
-                  </Text>
-                  <Text style={styles.typeDescription}>{type.description}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+                  {type.label}
+                </Text>
+                <Text style={styles.typeDescription}>{type.description}</Text>
+              </GlassCard>
+            ))}
           </View>
 
           {/* Title */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>SESSION TITLE</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="e.g., Advanced Footwork Clinic"
-              placeholderTextColor={colors.textMuted}
-              value={title}
-              onChangeText={setTitle}
-            />
-          </View>
+          <SectionHeader title="Session Title" />
+          <GlassInput
+            placeholder="e.g., Advanced Footwork Clinic"
+            value={title}
+            onChangeText={setTitle}
+          />
 
           {/* Date Selection */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>SELECT DATE</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {dates.map((d) => (
-                <TouchableOpacity
-                  key={d.date}
+          <SectionHeader title="Select Date" />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dateScroll}>
+            {dates.map((d) => (
+              <TouchableOpacity
+                key={d.date}
+                style={[
+                  styles.dateCard,
+                  selectedDate === d.date && styles.dateCardActive,
+                ]}
+                onPress={() => setSelectedDate(d.date)}
+              >
+                <Text
                   style={[
-                    styles.dateCard,
-                    selectedDate === d.date && styles.dateCardActive,
+                    styles.dateDay,
+                    selectedDate === d.date && styles.dateDayActive,
                   ]}
-                  onPress={() => setSelectedDate(d.date)}
                 >
-                  <Text
-                    style={[
-                      styles.dateDay,
-                      selectedDate === d.date && styles.dateDayActive,
-                    ]}
-                  >
-                    {d.day}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.dateNum,
-                      selectedDate === d.date && styles.dateNumActive,
-                    ]}
-                  >
-                    {d.num}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+                  {d.day}
+                </Text>
+                <Text
+                  style={[
+                    styles.dateNum,
+                    selectedDate === d.date && styles.dateNumActive,
+                  ]}
+                >
+                  {d.num}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
 
           {/* Time Selection */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>SELECT TIME</Text>
-            <View style={styles.timeGrid}>
-              {timeSlots.map((time) => (
-                <TouchableOpacity
-                  key={time}
+          <SectionHeader title="Select Time" />
+          <View style={styles.timeGrid}>
+            {timeSlots.map((time) => (
+              <TouchableOpacity
+                key={time}
+                style={[
+                  styles.timeSlot,
+                  selectedTime === time && styles.timeSlotActive,
+                ]}
+                onPress={() => setSelectedTime(time)}
+              >
+                <Text
                   style={[
-                    styles.timeSlot,
-                    selectedTime === time && styles.timeSlotActive,
+                    styles.timeText,
+                    selectedTime === time && styles.timeTextActive,
                   ]}
-                  onPress={() => setSelectedTime(time)}
                 >
-                  <Text
-                    style={[
-                      styles.timeText,
-                      selectedTime === time && styles.timeTextActive,
-                    ]}
-                  >
-                    {time}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+                  {time}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           {/* Duration */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>DURATION (MINUTES)</Text>
-            <View style={styles.durationRow}>
-              {['30', '45', '60', '90', '120'].map((d) => (
-                <TouchableOpacity
-                  key={d}
+          <SectionHeader title="Duration (minutes)" />
+          <View style={styles.durationRow}>
+            {['30', '45', '60', '90', '120'].map((d) => (
+              <TouchableOpacity
+                key={d}
+                style={[
+                  styles.durationChip,
+                  duration === d && styles.durationChipActive,
+                ]}
+                onPress={() => setDuration(d)}
+              >
+                <Text
                   style={[
-                    styles.durationChip,
-                    duration === d && styles.durationChipActive,
+                    styles.durationText,
+                    duration === d && styles.durationTextActive,
                   ]}
-                  onPress={() => setDuration(d)}
                 >
-                  <Text
-                    style={[
-                      styles.durationText,
-                      duration === d && styles.durationTextActive,
-                    ]}
-                  >
-                    {d}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+                  {d}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           {/* Students (for private/group sessions) */}
           {sessionType !== 'clinic' && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>
-                {sessionType === 'private' ? 'SELECT STUDENT' : 'SELECT STUDENTS'}
-              </Text>
+              <SectionHeader
+                title={sessionType === 'private' ? 'Select Student' : 'Select Students'}
+              />
               {mockStudents.map((student) => (
-                <TouchableOpacity
+                <GlassCard
                   key={student.id}
-                  style={[
-                    styles.studentItem,
-                    selectedStudents.includes(student.id) && styles.studentItemActive,
-                  ]}
+                  intensity={selectedStudents.includes(student.id) ? 'accent' : 'light'}
                   onPress={() => {
                     if (sessionType === 'private') {
                       setSelectedStudents([student.id]);
@@ -252,54 +243,55 @@ export function ScheduleSessionScreen({ navigation }: ScheduleSessionScreenProps
                       toggleStudent(student.id);
                     }
                   }}
+                  style={[
+                    styles.studentItem,
+                    selectedStudents.includes(student.id) && styles.studentItemActive,
+                  ]}
                 >
-                  <View style={styles.studentAvatar}>
-                    <Ionicons name="person" size={20} color={colors.textPrimary} />
+                  <View style={styles.studentRow}>
+                    <View style={styles.studentAvatar}>
+                      <Ionicons name="person" size={20} color={colors.textPrimary} />
+                    </View>
+                    <Text style={styles.studentName}>{student.name}</Text>
+                    {selectedStudents.includes(student.id) && (
+                      <Ionicons name="checkmark-circle" size={24} color={colors.primary[500]} />
+                    )}
                   </View>
-                  <Text style={styles.studentName}>{student.name}</Text>
-                  {selectedStudents.includes(student.id) && (
-                    <Ionicons name="checkmark-circle" size={24} color={colors.primary[500]} />
-                  )}
-                </TouchableOpacity>
+                </GlassCard>
               ))}
             </View>
           )}
 
           {/* Location */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>LOCATION</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="e.g., Elite Boxing Academy, Room 2"
-              placeholderTextColor={colors.textMuted}
-              value={location}
-              onChangeText={setLocation}
-            />
-          </View>
+          <SectionHeader title="Location" />
+          <GlassInput
+            placeholder="e.g., Elite Boxing Academy, Room 2"
+            value={location}
+            onChangeText={setLocation}
+          />
 
           {/* Notes */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>NOTES (OPTIONAL)</Text>
-            <TextInput
-              style={[styles.textInput, styles.textArea]}
-              placeholder="Any additional notes for this session..."
-              placeholderTextColor={colors.textMuted}
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-              numberOfLines={3}
-            />
-          </View>
+          <SectionHeader title="Notes (Optional)" />
+          <GlassInput
+            placeholder="Any additional notes for this session..."
+            value={notes}
+            onChangeText={setNotes}
+            multiline
+            numberOfLines={3}
+          />
 
           <View style={styles.bottomPadding} />
         </ScrollView>
 
         {/* Schedule Button */}
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.scheduleButton} onPress={handleSchedule}>
-            <Ionicons name="calendar-outline" size={20} color={colors.textPrimary} />
-            <Text style={styles.scheduleButtonText}>Schedule Session</Text>
-          </TouchableOpacity>
+          <GradientButton
+            title="Schedule Session"
+            onPress={handleSchedule}
+            icon="calendar-outline"
+            size="lg"
+            fullWidth
+          />
         </View>
       </View>
     </SafeAreaView>
@@ -317,30 +309,18 @@ const styles = StyleSheet.create({
   },
   container: { flex: 1 },
   content: { padding: spacing[4] },
-  section: { marginBottom: spacing[5] },
-  sectionTitle: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.primary[500],
-    letterSpacing: 0.5,
-    marginBottom: spacing[3],
-  },
+  section: { marginBottom: spacing[2] },
   typeRow: {
     flexDirection: 'row',
     gap: spacing[3],
+    marginBottom: spacing[4],
   },
   typeCard: {
     flex: 1,
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[3],
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
   },
   typeCardActive: {
     borderColor: colors.primary[500],
-    backgroundColor: `${colors.primary[500]}10`,
   },
   typeLabel: {
     fontSize: typography.fontSize.sm,
@@ -356,18 +336,8 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: spacing[1],
   },
-  textInput: {
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.lg,
-    padding: spacing[4],
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.base,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  textArea: {
-    minHeight: 100,
-    textAlignVertical: 'top',
+  dateScroll: {
+    marginBottom: spacing[4],
   },
   dateCard: {
     width: 60,
@@ -404,6 +374,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing[2],
+    marginBottom: spacing[4],
   },
   timeSlot: {
     paddingHorizontal: spacing[4],
@@ -428,6 +399,7 @@ const styles = StyleSheet.create({
   durationRow: {
     flexDirection: 'row',
     gap: spacing[2],
+    marginBottom: spacing[4],
   },
   durationChip: {
     flex: 1,
@@ -451,18 +423,14 @@ const styles = StyleSheet.create({
     color: colors.primary[500],
   },
   studentItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.lg,
-    padding: spacing[3],
     marginBottom: spacing[2],
-    borderWidth: 2,
-    borderColor: 'transparent',
   },
   studentItemActive: {
     borderColor: colors.primary[500],
-    backgroundColor: `${colors.primary[500]}10`,
+  },
+  studentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   studentAvatar: {
     width: 40,
@@ -483,20 +451,6 @@ const styles = StyleSheet.create({
     padding: spacing[4],
     borderTopWidth: 1,
     borderTopColor: colors.border,
-  },
-  scheduleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary[500],
-    paddingVertical: spacing[4],
-    borderRadius: borderRadius.lg,
-    gap: spacing[2],
-  },
-  scheduleButtonText: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.bold,
   },
   bottomPadding: { height: spacing[10] },
 });

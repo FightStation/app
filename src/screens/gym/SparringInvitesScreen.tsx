@@ -16,6 +16,13 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import {
+  GlassCard,
+  GradientButton,
+  BadgeRow,
+  EmptyState,
+  AnimatedListItem,
+} from '../../components';
 
 type SparringInvitesScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -103,6 +110,11 @@ const mockSentInvites: FighterRequest[] = [
     requestedAt: '3 days ago',
     status: 'pending',
   },
+];
+
+const tabBadgeItems = [
+  { key: 'incoming', label: 'Incoming' },
+  { key: 'sent', label: 'Sent Invites' },
 ];
 
 export function SparringInvitesScreen({ navigation }: SparringInvitesScreenProps) {
@@ -251,38 +263,12 @@ export function SparringInvitesScreen({ navigation }: SparringInvitesScreenProps
         </View>
 
         {/* Tabs */}
-        <View style={styles.tabsContainer}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'incoming' && styles.tabActive]}
-            onPress={() => setActiveTab('incoming')}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === 'incoming' && styles.tabTextActive,
-              ]}
-            >
-              Incoming
-            </Text>
-            {pendingCount > 0 && activeTab === 'incoming' && (
-              <View style={styles.tabBadge}>
-                <Text style={styles.tabBadgeText}>{pendingCount}</Text>
-              </View>
-            )}
-            {activeTab === 'incoming' && <View style={styles.tabIndicator} />}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'sent' && styles.tabActive]}
-            onPress={() => setActiveTab('sent')}
-          >
-            <Text
-              style={[styles.tabText, activeTab === 'sent' && styles.tabTextActive]}
-            >
-              Sent Invites
-            </Text>
-            {activeTab === 'sent' && <View style={styles.tabIndicator} />}
-          </TouchableOpacity>
-        </View>
+        <BadgeRow
+          items={tabBadgeItems}
+          selected={activeTab}
+          onSelect={(key) => setActiveTab(key as 'incoming' | 'sent')}
+          style={styles.tabRow}
+        />
 
         {/* Requests List */}
         <ScrollView
@@ -291,158 +277,148 @@ export function SparringInvitesScreen({ navigation }: SparringInvitesScreenProps
           showsVerticalScrollIndicator={false}
         >
           {displayRequests.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons
-                name={activeTab === 'incoming' ? 'mail-open-outline' : 'send-outline'}
-                size={64}
-                color={colors.textMuted}
-              />
-              <Text style={styles.emptyTitle}>
-                {activeTab === 'incoming'
-                  ? 'No Incoming Requests'
-                  : 'No Sent Invites'}
-              </Text>
-              <Text style={styles.emptySubtitle}>
-                {activeTab === 'incoming'
+            <EmptyState
+              icon={activeTab === 'incoming' ? 'mail-open-outline' : 'send-outline'}
+              title={activeTab === 'incoming' ? 'No Incoming Requests' : 'No Sent Invites'}
+              description={
+                activeTab === 'incoming'
                   ? 'Fighter requests to join your events will appear here'
-                  : 'Invites you send to fighters will appear here'}
-              </Text>
-            </View>
+                  : 'Invites you send to fighters will appear here'
+              }
+            />
           ) : (
-            displayRequests.map((request) => (
-              <View key={request.id} style={styles.requestCard}>
-                {/* Fighter Info */}
-                <View style={styles.fighterHeader}>
-                  <View style={styles.avatarContainer}>
-                    {request.fighterAvatar ? (
-                      <Image
-                        source={{ uri: request.fighterAvatar }}
-                        style={styles.avatar}
-                      />
-                    ) : (
-                      <View style={styles.avatarPlaceholder}>
-                        <Ionicons name="person" size={24} color={colors.textMuted} />
-                      </View>
-                    )}
-                  </View>
-                  <View style={styles.fighterInfo}>
-                    <View style={styles.fighterNameRow}>
-                      <Text style={styles.fighterName}>{request.fighterName}</Text>
-                      {request.status === 'approved' && (
-                        <View style={styles.approvedBadge}>
-                          <Ionicons
-                            name="checkmark-circle"
-                            size={16}
-                            color={colors.success}
-                          />
-                          <Text style={styles.approvedText}>APPROVED</Text>
-                        </View>
-                      )}
-                      {request.status === 'rejected' && (
-                        <View style={styles.rejectedBadge}>
-                          <Ionicons
-                            name="close-circle"
-                            size={16}
-                            color={colors.error}
-                          />
-                          <Text style={styles.rejectedText}>REJECTED</Text>
+            displayRequests.map((request, index) => (
+              <AnimatedListItem key={request.id} index={index}>
+                <GlassCard style={styles.requestCard}>
+                  {/* Fighter Info */}
+                  <View style={styles.fighterHeader}>
+                    <View style={styles.avatarContainer}>
+                      {request.fighterAvatar ? (
+                        <Image
+                          source={{ uri: request.fighterAvatar }}
+                          style={styles.avatar}
+                        />
+                      ) : (
+                        <View style={styles.avatarPlaceholder}>
+                          <Ionicons name="person" size={24} color={colors.textMuted} />
                         </View>
                       )}
                     </View>
-                    {request.fighterNickname && (
-                      <Text style={styles.fighterNickname}>
-                        "{request.fighterNickname}"
-                      </Text>
-                    )}
-                    <View style={styles.fighterMetaRow}>
-                      <View style={styles.metaItem}>
-                        <Ionicons
-                          name="trophy-outline"
-                          size={14}
-                          color={colors.textMuted}
-                        />
-                        <Text style={styles.metaText}>{request.record}</Text>
+                    <View style={styles.fighterInfo}>
+                      <View style={styles.fighterNameRow}>
+                        <Text style={styles.fighterName}>{request.fighterName}</Text>
+                        {request.status === 'approved' && (
+                          <View style={styles.approvedBadge}>
+                            <Ionicons
+                              name="checkmark-circle"
+                              size={16}
+                              color={colors.success}
+                            />
+                            <Text style={styles.approvedText}>APPROVED</Text>
+                          </View>
+                        )}
+                        {request.status === 'rejected' && (
+                          <View style={styles.rejectedBadge}>
+                            <Ionicons
+                              name="close-circle"
+                              size={16}
+                              color={colors.error}
+                            />
+                            <Text style={styles.rejectedText}>REJECTED</Text>
+                          </View>
+                        )}
                       </View>
-                      <View style={styles.metaItem}>
-                        <Ionicons
-                          name="scale-outline"
-                          size={14}
-                          color={colors.textMuted}
-                        />
-                        <Text style={styles.metaText}>{request.weightClass}</Text>
-                      </View>
-                      <View style={styles.metaItem}>
-                        <Ionicons
-                          name="star-outline"
-                          size={14}
-                          color={colors.textMuted}
-                        />
-                        <Text style={styles.metaText}>{request.experience}</Text>
+                      {request.fighterNickname && (
+                        <Text style={styles.fighterNickname}>
+                          "{request.fighterNickname}"
+                        </Text>
+                      )}
+                      <View style={styles.fighterMetaRow}>
+                        <View style={styles.metaItem}>
+                          <Ionicons
+                            name="trophy-outline"
+                            size={14}
+                            color={colors.textMuted}
+                          />
+                          <Text style={styles.metaText}>{request.record}</Text>
+                        </View>
+                        <View style={styles.metaItem}>
+                          <Ionicons
+                            name="scale-outline"
+                            size={14}
+                            color={colors.textMuted}
+                          />
+                          <Text style={styles.metaText}>{request.weightClass}</Text>
+                        </View>
+                        <View style={styles.metaItem}>
+                          <Ionicons
+                            name="star-outline"
+                            size={14}
+                            color={colors.textMuted}
+                          />
+                          <Text style={styles.metaText}>{request.experience}</Text>
+                        </View>
                       </View>
                     </View>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.profileButton}
-                    onPress={() => handleViewFighterProfile(request.id)}
-                  >
-                    <Ionicons
-                      name="chevron-forward"
-                      size={20}
-                      color={colors.textMuted}
-                    />
-                  </TouchableOpacity>
-                </View>
-
-                {/* Event Info */}
-                <View style={styles.eventInfo}>
-                  <View style={styles.eventInfoHeader}>
-                    <Ionicons
-                      name="calendar-outline"
-                      size={16}
-                      color={colors.primary[500]}
-                    />
-                    <Text style={styles.eventInfoLabel}>REQUESTING TO JOIN</Text>
-                  </View>
-                  <Text style={styles.eventTitle}>{request.eventTitle}</Text>
-                  <View style={styles.eventMeta}>
-                    <Text style={styles.eventMetaText}>
-                      {request.eventDate} • {request.eventTime}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Request Time */}
-                <View style={styles.requestTime}>
-                  <Ionicons name="time-outline" size={14} color={colors.textMuted} />
-                  <Text style={styles.requestTimeText}>
-                    Requested {request.requestedAt}
-                  </Text>
-                </View>
-
-                {/* Actions */}
-                {request.status === 'pending' && (
-                  <View style={styles.actions}>
                     <TouchableOpacity
-                      style={styles.rejectButton}
-                      onPress={() => handleReject(request.id)}
-                    >
-                      <Ionicons name="close" size={18} color={colors.error} />
-                      <Text style={styles.rejectButtonText}>Reject</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.approveButton}
-                      onPress={() => handleApprove(request.id)}
+                      style={styles.profileButton}
+                      onPress={() => handleViewFighterProfile(request.id)}
                     >
                       <Ionicons
-                        name="checkmark"
-                        size={18}
-                        color={colors.textPrimary}
+                        name="chevron-forward"
+                        size={20}
+                        color={colors.textMuted}
                       />
-                      <Text style={styles.approveButtonText}>Approve</Text>
                     </TouchableOpacity>
                   </View>
-                )}
-              </View>
+
+                  {/* Event Info */}
+                  <View style={styles.eventInfo}>
+                    <View style={styles.eventInfoHeader}>
+                      <Ionicons
+                        name="calendar-outline"
+                        size={16}
+                        color={colors.primary[500]}
+                      />
+                      <Text style={styles.eventInfoLabel}>REQUESTING TO JOIN</Text>
+                    </View>
+                    <Text style={styles.eventTitle}>{request.eventTitle}</Text>
+                    <View style={styles.eventMeta}>
+                      <Text style={styles.eventMetaText}>
+                        {request.eventDate} • {request.eventTime}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Request Time */}
+                  <View style={styles.requestTime}>
+                    <Ionicons name="time-outline" size={14} color={colors.textMuted} />
+                    <Text style={styles.requestTimeText}>
+                      Requested {request.requestedAt}
+                    </Text>
+                  </View>
+
+                  {/* Actions */}
+                  {request.status === 'pending' && (
+                    <View style={styles.actions}>
+                      <TouchableOpacity
+                        style={styles.rejectButton}
+                        onPress={() => handleReject(request.id)}
+                      >
+                        <Ionicons name="close" size={18} color={colors.error} />
+                        <Text style={styles.rejectButtonText}>Reject</Text>
+                      </TouchableOpacity>
+                      <GradientButton
+                        title="Approve"
+                        onPress={() => handleApprove(request.id)}
+                        icon="checkmark"
+                        size="sm"
+                        style={styles.approveButtonStyle}
+                      />
+                    </View>
+                  )}
+                </GlassCard>
+              </AnimatedListItem>
             ))
           )}
 
@@ -506,51 +482,8 @@ const styles = StyleSheet.create({
   headerRight: {
     width: 40,
   },
-  tabsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing[4],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  tab: {
-    flex: 1,
+  tabRow: {
     paddingVertical: spacing[3],
-    alignItems: 'center',
-    position: 'relative',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing[1],
-  },
-  tabActive: {},
-  tabText: {
-    color: colors.textMuted,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
-  },
-  tabTextActive: {
-    color: colors.textPrimary,
-    fontWeight: typography.fontWeight.bold,
-  },
-  tabBadge: {
-    backgroundColor: colors.primary[500],
-    borderRadius: borderRadius.full,
-    width: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabBadgeText: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-  },
-  tabIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: colors.primary[500],
   },
   container: {
     flex: 1,
@@ -560,11 +493,6 @@ const styles = StyleSheet.create({
   },
   // Request Card
   requestCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
     marginBottom: spacing[4],
   },
   fighterHeader: {
@@ -729,41 +657,10 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.semibold,
   },
-  approveButton: {
+  approveButtonStyle: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary[500],
-    paddingVertical: spacing[2.5],
-    borderRadius: borderRadius.lg,
-    gap: spacing[1],
-  },
-  approveButtonText: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.bold,
   },
   // Empty State
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[10],
-  },
-  emptyTitle: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    marginTop: spacing[4],
-    marginBottom: spacing[2],
-  },
-  emptySubtitle: {
-    color: colors.textMuted,
-    fontSize: typography.fontSize.base,
-    textAlign: 'center',
-    paddingHorizontal: spacing[8],
-  },
   bottomPadding: {
     height: spacing[10],
   },

@@ -22,6 +22,14 @@ import {
   TrainingFocusArea,
 } from '../../types';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import {
+  GlassCard,
+  SectionHeader,
+  StatCard,
+  EmptyState,
+  ProgressRing,
+  AnimatedListItem,
+} from '../../components';
 
 type StudentProgressScreenProps = {
   navigation?: NativeStackNavigationProp<any>;
@@ -185,152 +193,160 @@ export function StudentProgressScreen({ navigation, route }: StudentProgressScre
           showsVerticalScrollIndicator={false}
         >
           {/* Student Profile Card */}
-          <View style={styles.profileCard}>
-            <View style={styles.avatarPlaceholder}>
-              <Ionicons name="person" size={36} color={colors.textMuted} />
-            </View>
-            <Text style={styles.studentName}>{student.first_name} {student.last_name}</Text>
-            <View style={styles.profileMeta}>
-              <View style={styles.metaBadge}>
-                <Text style={styles.metaBadgeText}>
-                  {student.weight_class?.replace(/_/g, ' ')}
-                </Text>
+          <GlassCard style={styles.profileCard}>
+            <View style={styles.profileContent}>
+              <View style={styles.avatarPlaceholder}>
+                <Ionicons name="person" size={36} color={colors.textMuted} />
               </View>
-              <View style={styles.metaBadge}>
-                <Text style={styles.metaBadgeText}>{student.experience_level}</Text>
-              </View>
-              {student.record && (
+              <Text style={styles.studentName}>{student.first_name} {student.last_name}</Text>
+              <View style={styles.profileMeta}>
                 <View style={styles.metaBadge}>
-                  <Text style={styles.metaBadgeText}>{student.record}</Text>
+                  <Text style={styles.metaBadgeText}>
+                    {student.weight_class?.replace(/_/g, ' ')}
+                  </Text>
                 </View>
-              )}
+                <View style={styles.metaBadge}>
+                  <Text style={styles.metaBadgeText}>{student.experience_level}</Text>
+                </View>
+                {student.record && (
+                  <View style={styles.metaBadge}>
+                    <Text style={styles.metaBadgeText}>{student.record}</Text>
+                  </View>
+                )}
+              </View>
             </View>
-          </View>
+          </GlassCard>
 
           {/* Quick Metrics */}
           <View style={styles.metricsGrid}>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>{metrics.total_sessions}</Text>
-              <Text style={styles.metricLabel}>Sessions</Text>
-            </View>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>{metrics.total_hours}h</Text>
-              <Text style={styles.metricLabel}>Trained</Text>
-            </View>
-            <View style={styles.metricCard}>
-              <Text style={[styles.metricValue, { color: getScoreColor(metrics.improvement_score) }]}>
-                {metrics.improvement_score}
-              </Text>
-              <Text style={styles.metricLabel}>Score</Text>
-            </View>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>{metrics.streak_days}</Text>
-              <Text style={styles.metricLabel}>Streak</Text>
-            </View>
+            <StatCard
+              icon="calendar-outline"
+              value={metrics.total_sessions}
+              label="Sessions"
+            />
+            <StatCard
+              icon="time-outline"
+              value={`${metrics.total_hours}h`}
+              label="Trained"
+            />
+            <StatCard
+              icon="trending-up"
+              value={metrics.improvement_score}
+              label="Score"
+              accentColor={getScoreColor(metrics.improvement_score)}
+            />
+            <StatCard
+              icon="flame"
+              value={metrics.streak_days}
+              label="Streak"
+              accentColor={colors.warning}
+            />
           </View>
 
-          {/* This Month Stats */}
-          <View style={styles.monthCard}>
-            <View style={styles.monthHeader}>
-              <Ionicons name="calendar" size={20} color={colors.primary[500]} />
-              <Text style={styles.monthTitle}>This Month</Text>
-            </View>
-            <View style={styles.monthStats}>
-              <View style={styles.monthStat}>
-                <Text style={styles.monthStatValue}>{metrics.sessions_this_month}</Text>
-                <Text style={styles.monthStatLabel}>sessions</Text>
+          {/* Improvement Score Ring */}
+          <GlassCard style={styles.scoreCard}>
+            <View style={styles.scoreContent}>
+              <ProgressRing
+                progress={metrics.improvement_score}
+                size={80}
+                strokeWidth={6}
+                color={getScoreColor(metrics.improvement_score)}
+              />
+              <View style={styles.scoreInfo}>
+                <Text style={styles.scoreTitle}>Improvement Score</Text>
+                <Text style={styles.scoreSubtitle}>
+                  {metrics.sessions_this_month} sessions this month
+                </Text>
+                <Text style={styles.scoreSubtitle}>
+                  {metrics.avg_session_rating?.toFixed(1)} avg rating
+                </Text>
               </View>
-              <View style={styles.monthDivider} />
-              <View style={styles.monthStat}>
-                <Text style={styles.monthStatValue}>{metrics.avg_session_rating?.toFixed(1)}</Text>
-                <Text style={styles.monthStatLabel}>avg rating</Text>
-              </View>
             </View>
-          </View>
+          </GlassCard>
 
           {/* Improvement Trends */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Improvement Trends</Text>
+          <SectionHeader title="Improvement Trends" />
 
-            {metrics.improving_areas.length > 0 && (
-              <View style={styles.trendSection}>
-                <View style={styles.trendHeader}>
-                  <Ionicons name="trending-up" size={18} color={colors.success} />
-                  <Text style={[styles.trendLabel, { color: colors.success }]}>Improving</Text>
-                </View>
-                <View style={styles.trendTags}>
-                  {metrics.improving_areas.map((area) => (
-                    <View key={area} style={[styles.trendTag, styles.trendTagPositive]}>
-                      <Text style={styles.trendTagTextPositive}>
-                        {TRAINING_FOCUS_LABELS[area as TrainingFocusArea] || area}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
+          {metrics.improving_areas.length > 0 && (
+            <View style={styles.trendSection}>
+              <View style={styles.trendHeader}>
+                <Ionicons name="trending-up" size={18} color={colors.success} />
+                <Text style={[styles.trendLabel, { color: colors.success }]}>Improving</Text>
               </View>
-            )}
+              <View style={styles.trendTags}>
+                {metrics.improving_areas.map((area) => (
+                  <View key={area} style={[styles.trendTag, styles.trendTagPositive]}>
+                    <Text style={styles.trendTagTextPositive}>
+                      {TRAINING_FOCUS_LABELS[area as TrainingFocusArea] || area}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
 
-            {metrics.needs_work_areas.length > 0 && (
-              <View style={styles.trendSection}>
-                <View style={styles.trendHeader}>
-                  <Ionicons name="alert-circle" size={18} color={colors.warning} />
-                  <Text style={[styles.trendLabel, { color: colors.warning }]}>Needs Work</Text>
-                </View>
-                <View style={styles.trendTags}>
-                  {metrics.needs_work_areas.map((area) => (
-                    <View key={area} style={[styles.trendTag, styles.trendTagWarning]}>
-                      <Text style={styles.trendTagTextWarning}>
-                        {TRAINING_FOCUS_LABELS[area as TrainingFocusArea] || area}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
+          {metrics.needs_work_areas.length > 0 && (
+            <View style={styles.trendSection}>
+              <View style={styles.trendHeader}>
+                <Ionicons name="alert-circle" size={18} color={colors.warning} />
+                <Text style={[styles.trendLabel, { color: colors.warning }]}>Needs Work</Text>
               </View>
-            )}
-          </View>
+              <View style={styles.trendTags}>
+                {metrics.needs_work_areas.map((area) => (
+                  <View key={area} style={[styles.trendTag, styles.trendTagWarning]}>
+                    <Text style={styles.trendTagTextWarning}>
+                      {TRAINING_FOCUS_LABELS[area as TrainingFocusArea] || area}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
 
           {/* Session History */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Recent Sessions</Text>
+          <SectionHeader title="Recent Sessions" />
 
-            {sessions.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="calendar-outline" size={48} color={colors.textMuted} />
-                <Text style={styles.emptyText}>No sessions recorded yet</Text>
-              </View>
-            ) : (
-              sessions.map((session) => (
-                <TouchableOpacity
-                  key={session.id}
-                  style={styles.sessionCard}
+          {sessions.length === 0 ? (
+            <EmptyState
+              icon="calendar-outline"
+              title="No sessions recorded"
+              description="Training sessions with this student will appear here."
+            />
+          ) : (
+            sessions.map((session, index) => (
+              <AnimatedListItem key={session.id} index={index}>
+                <GlassCard
                   onPress={() => navigation?.navigate('SessionDetail', { sessionId: session.id })}
+                  style={styles.sessionCard}
                 >
-                  <View style={styles.sessionLeft}>
-                    <Text style={styles.sessionDate}>{formatDate(session.session_date)}</Text>
-                    <Text style={styles.sessionDuration}>{session.duration_minutes} min</Text>
-                    <View style={styles.sessionFocusTags}>
-                      {session.focus_areas.slice(0, 2).map((area) => (
-                        <View key={area} style={styles.sessionFocusTag}>
-                          <Text style={styles.sessionFocusTagText}>
-                            {TRAINING_FOCUS_LABELS[area as TrainingFocusArea] || area}
-                          </Text>
+                  <View style={styles.sessionRow}>
+                    <View style={styles.sessionLeft}>
+                      <Text style={styles.sessionDate}>{formatDate(session.session_date)}</Text>
+                      <Text style={styles.sessionDuration}>{session.duration_minutes} min</Text>
+                      <View style={styles.sessionFocusTags}>
+                        {session.focus_areas.slice(0, 2).map((area) => (
+                          <View key={area} style={styles.sessionFocusTag}>
+                            <Text style={styles.sessionFocusTagText}>
+                              {TRAINING_FOCUS_LABELS[area as TrainingFocusArea] || area}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                    <View style={styles.sessionRight}>
+                      {session.rating != null && (
+                        <View style={styles.sessionRating}>
+                          <Ionicons name="star" size={14} color={colors.warning} />
+                          <Text style={styles.sessionRatingText}>{session.rating}</Text>
                         </View>
-                      ))}
+                      )}
+                      <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
                     </View>
                   </View>
-                  <View style={styles.sessionRight}>
-                    {session.rating != null && (
-                      <View style={styles.sessionRating}>
-                        <Ionicons name="star" size={14} color={colors.warning} />
-                        <Text style={styles.sessionRatingText}>{session.rating}</Text>
-                      </View>
-                    )}
-                    <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-                  </View>
-                </TouchableOpacity>
-              ))
-            )}
-          </View>
+                </GlassCard>
+              </AnimatedListItem>
+            ))
+          )}
 
           <View style={styles.bottomPadding} />
         </ScrollView>
@@ -384,12 +400,9 @@ const styles = StyleSheet.create({
 
   // Profile
   profileCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[5],
-    borderWidth: 1,
-    borderColor: colors.border,
     marginBottom: spacing[4],
+  },
+  profileContent: {
     alignItems: 'center',
   },
   avatarPlaceholder: {
@@ -430,82 +443,29 @@ const styles = StyleSheet.create({
     gap: spacing[2],
     marginBottom: spacing[4],
   },
-  metricCard: {
-    flex: 1,
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-  },
-  metricValue: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    marginBottom: spacing[1],
-  },
-  metricLabel: {
-    color: colors.textMuted,
-    fontSize: typography.fontSize.xs,
-  },
 
-  // Month
-  monthCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
+  // Score Card
+  scoreCard: {
     marginBottom: spacing[4],
   },
-  monthHeader: {
+  scoreContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[2],
-    marginBottom: spacing[3],
+    gap: spacing[4],
   },
-  monthTitle: {
+  scoreInfo: {
+    flex: 1,
+  },
+  scoreTitle: {
     color: colors.textPrimary,
     fontSize: typography.fontSize.base,
     fontWeight: typography.fontWeight.semibold,
+    marginBottom: spacing[2],
   },
-  monthStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  monthStat: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  monthStatValue: {
-    color: colors.primary[500],
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: typography.fontWeight.bold,
-    marginBottom: spacing[1],
-  },
-  monthStatLabel: {
+  scoreSubtitle: {
     color: colors.textMuted,
     fontSize: typography.fontSize.sm,
-  },
-  monthDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: colors.border,
-    marginHorizontal: spacing[4],
-  },
-
-  // Sections
-  section: {
-    marginBottom: spacing[4],
-  },
-  sectionTitle: {
-    color: colors.primary[500],
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-    letterSpacing: 0.5,
-    marginBottom: spacing[3],
-    textTransform: 'uppercase',
+    marginBottom: spacing[1],
   },
 
   // Trends
@@ -551,15 +511,12 @@ const styles = StyleSheet.create({
 
   // Sessions
   sessionCard: {
+    marginBottom: spacing[2],
+  },
+  sessionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    marginBottom: spacing[2],
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   sessionLeft: { flex: 1 },
   sessionDate: {
@@ -601,17 +558,6 @@ const styles = StyleSheet.create({
     color: colors.warning,
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.bold,
-  },
-
-  // Empty
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: spacing[8],
-  },
-  emptyText: {
-    color: colors.textMuted,
-    fontSize: typography.fontSize.base,
-    marginTop: spacing[3],
   },
 
   bottomPadding: {

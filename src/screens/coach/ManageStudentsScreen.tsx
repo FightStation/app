@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   Platform,
   Dimensions,
 } from 'react-native';
@@ -13,6 +12,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import {
+  GlassCard,
+  GlassInput,
+  SectionHeader,
+  StatCard,
+  EmptyState,
+  BadgeRow,
+  AnimatedListItem,
+  ProgressRing,
+} from '../../components';
 
 type ManageStudentsScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -83,11 +92,16 @@ const levelColors: Record<string, string> = {
   Advanced: colors.primary[500],
 };
 
+const levelBadgeItems = [
+  { key: 'All', label: 'All' },
+  { key: 'Beginner', label: 'Beginner' },
+  { key: 'Intermediate', label: 'Intermediate' },
+  { key: 'Advanced', label: 'Advanced' },
+];
+
 export function ManageStudentsScreen({ navigation }: ManageStudentsScreenProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<StudentLevel>('All');
-
-  const levels: StudentLevel[] = ['All', 'Beginner', 'Intermediate', 'Advanced'];
 
   const filteredStudents = mockStudents.filter((student) => {
     const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -112,136 +126,119 @@ export function ManageStudentsScreen({ navigation }: ManageStudentsScreenProps) 
 
         {/* Search */}
         <View style={styles.searchContainer}>
-          <View style={styles.searchBox}>
-            <Ionicons name="search" size={20} color={colors.textMuted} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search students..."
-              placeholderTextColor={colors.textMuted}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
+          <GlassInput
+            placeholder="Search students..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            leftIcon={<Ionicons name="search" size={20} color={colors.textMuted} />}
+            rightIcon={
+              searchQuery.length > 0 ? (
                 <Ionicons name="close-circle" size={20} color={colors.textMuted} />
-              </TouchableOpacity>
-            )}
-          </View>
+              ) : undefined
+            }
+            onRightIconPress={searchQuery.length > 0 ? () => setSearchQuery('') : undefined}
+            containerStyle={styles.searchInputContainer}
+          />
         </View>
 
         {/* Level Filter */}
-        <View style={styles.filterContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {levels.map((level) => (
-              <TouchableOpacity
-                key={level}
-                style={[
-                  styles.filterChip,
-                  selectedLevel === level && styles.filterChipActive,
-                ]}
-                onPress={() => setSelectedLevel(level)}
-              >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    selectedLevel === level && styles.filterChipTextActive,
-                  ]}
-                >
-                  {level}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+        <BadgeRow
+          items={levelBadgeItems}
+          selected={selectedLevel}
+          onSelect={(key) => setSelectedLevel(key as StudentLevel)}
+          style={styles.filterRow}
+        />
 
         {/* Stats Summary */}
         <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{mockStudents.length}</Text>
-            <Text style={styles.statLabel}>Total</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>
-              {mockStudents.filter((s) => s.level === 'Advanced').length}
-            </Text>
-            <Text style={styles.statLabel}>Advanced</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>
-              {mockStudents.filter((s) => s.level === 'Intermediate').length}
-            </Text>
-            <Text style={styles.statLabel}>Intermediate</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>
-              {mockStudents.filter((s) => s.level === 'Beginner').length}
-            </Text>
-            <Text style={styles.statLabel}>Beginner</Text>
-          </View>
+          <StatCard
+            icon="people"
+            value={mockStudents.length}
+            label="Total"
+          />
+          <StatCard
+            icon="trophy"
+            value={mockStudents.filter((s) => s.level === 'Advanced').length}
+            label="Advanced"
+            accentColor={colors.primary[500]}
+          />
+          <StatCard
+            icon="trending-up"
+            value={mockStudents.filter((s) => s.level === 'Intermediate').length}
+            label="Intermediate"
+            accentColor={colors.warning}
+          />
+          <StatCard
+            icon="leaf"
+            value={mockStudents.filter((s) => s.level === 'Beginner').length}
+            label="Beginner"
+            accentColor={colors.success}
+          />
         </View>
 
         {/* Students List */}
         <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
           {filteredStudents.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="people-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyText}>No students found</Text>
-            </View>
+            <EmptyState
+              icon="people-outline"
+              title="No students found"
+              description="Try adjusting your search or filter to find students."
+            />
           ) : (
-            filteredStudents.map((student) => (
-              <TouchableOpacity
-                key={student.id}
-                style={styles.studentCard}
-                onPress={() => handleStudentPress(student.id)}
-              >
-                <View style={styles.studentAvatar}>
-                  <Ionicons name="person" size={28} color={colors.textPrimary} />
-                </View>
-                <View style={styles.studentInfo}>
-                  <View style={styles.studentHeader}>
-                    <Text style={styles.studentName}>{student.name}</Text>
-                    <View
-                      style={[
-                        styles.levelBadge,
-                        { backgroundColor: `${levelColors[student.level]}20` },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.levelText,
-                          { color: levelColors[student.level] },
-                        ]}
-                      >
-                        {student.level}
-                      </Text>
+            filteredStudents.map((student, index) => (
+              <AnimatedListItem key={student.id} index={index}>
+                <GlassCard
+                  onPress={() => handleStudentPress(student.id)}
+                  style={styles.studentCard}
+                >
+                  <View style={styles.studentRow}>
+                    <View style={styles.studentAvatar}>
+                      <Ionicons name="person" size={28} color={colors.textPrimary} />
                     </View>
-                  </View>
-                  <View style={styles.studentMeta}>
-                    <Text style={styles.disciplineText}>{student.discipline}</Text>
-                    <Text style={styles.dotSeparator}>•</Text>
-                    <Text style={styles.sessionCount}>{student.sessions} sessions</Text>
-                  </View>
-                  <View style={styles.progressContainer}>
-                    <View style={styles.progressBar}>
-                      <View
-                        style={[
-                          styles.progressFill,
-                          {
-                            width: `${student.progress}%`,
-                            backgroundColor: levelColors[student.level],
-                          },
-                        ]}
-                      />
+                    <View style={styles.studentInfo}>
+                      <View style={styles.studentHeader}>
+                        <Text style={styles.studentName}>{student.name}</Text>
+                        <View
+                          style={[
+                            styles.levelBadge,
+                            { backgroundColor: `${levelColors[student.level]}20` },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.levelText,
+                              { color: levelColors[student.level] },
+                            ]}
+                          >
+                            {student.level}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.studentMeta}>
+                        <Text style={styles.disciplineText}>{student.discipline}</Text>
+                        <Text style={styles.dotSeparator}>•</Text>
+                        <Text style={styles.sessionCount}>{student.sessions} sessions</Text>
+                      </View>
+                      <View style={styles.progressContainer}>
+                        <View style={styles.progressBar}>
+                          <View
+                            style={[
+                              styles.progressFill,
+                              {
+                                width: `${student.progress}%`,
+                                backgroundColor: levelColors[student.level],
+                              },
+                            ]}
+                          />
+                        </View>
+                        <Text style={styles.progressText}>{student.progress}%</Text>
+                      </View>
+                      <Text style={styles.lastSession}>Last session: {student.lastSession}</Text>
                     </View>
-                    <Text style={styles.progressText}>{student.progress}%</Text>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
                   </View>
-                  <Text style={styles.lastSession}>Last session: {student.lastSession}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-              </TouchableOpacity>
+                </GlassCard>
+              </AnimatedListItem>
             ))
           )}
           <View style={styles.bottomPadding} />
@@ -284,87 +281,28 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     paddingHorizontal: spacing[4],
+    paddingTop: spacing[3],
+  },
+  searchInputContainer: {
+    marginBottom: 0,
+  },
+  filterRow: {
     paddingVertical: spacing[3],
-  },
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.lg,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    gap: spacing[2],
-  },
-  searchInput: {
-    flex: 1,
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.base,
-  },
-  filterContainer: {
-    paddingHorizontal: spacing[4],
-    paddingBottom: spacing[3],
-  },
-  filterChip: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.surfaceLight,
-    marginRight: spacing[2],
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  filterChipActive: {
-    backgroundColor: `${colors.primary[500]}20`,
-    borderColor: colors.primary[500],
-  },
-  filterChipText: {
-    color: colors.textSecondary,
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-  },
-  filterChipTextActive: {
-    color: colors.primary[500],
   },
   statsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingVertical: spacing[3],
-    marginHorizontal: spacing[4],
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-  },
-  statLabel: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-    marginTop: spacing[1],
-  },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: colors.border,
+    gap: spacing[2],
+    paddingHorizontal: spacing[4],
+    marginBottom: spacing[3],
   },
   list: { flex: 1 },
   listContent: { padding: spacing[4] },
   studentCard: {
+    marginBottom: spacing[3],
+  },
+  studentRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    marginBottom: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   studentAvatar: {
     width: 56,
@@ -439,17 +377,6 @@ const styles = StyleSheet.create({
   lastSession: {
     color: colors.textMuted,
     fontSize: typography.fontSize.xs,
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[10],
-  },
-  emptyText: {
-    color: colors.textMuted,
-    fontSize: typography.fontSize.base,
-    marginTop: spacing[3],
   },
   bottomPadding: { height: spacing[10] },
 });
