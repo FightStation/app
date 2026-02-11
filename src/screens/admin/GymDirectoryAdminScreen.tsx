@@ -24,6 +24,15 @@ import {
 } from '../../services/gymDirectory';
 import { GymClaimRequest, DirectoryGym, ClaimStatus, ClaimVerificationMethod, COMBAT_SPORT_LABELS, CombatSport } from '../../types';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import {
+  GlassCard,
+  GradientButton,
+  SectionHeader,
+  StatCard,
+  EmptyState,
+  BadgeRow,
+  AnimatedListItem,
+} from '../../components';
 
 type GymDirectoryAdminScreenProps = {
   navigation?: NativeStackNavigationProp<any>;
@@ -78,8 +87,8 @@ export function GymDirectoryAdminScreen({ navigation }: GymDirectoryAdminScreenP
     setRefreshing(false);
   };
 
-  const handleTabChange = (tab: TabType) => {
-    setActiveTab(tab);
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab as TabType);
   };
 
   const handleApprove = async (claim: ClaimWithGym) => {
@@ -198,6 +207,11 @@ export function GymDirectoryAdminScreen({ navigation }: GymDirectoryAdminScreenP
     return sports.map(s => COMBAT_SPORT_LABELS[s] || s).join(', ');
   };
 
+  const tabItems = [
+    { key: 'pending', label: `Pending (${stats.pending})` },
+    { key: 'all', label: `All (${stats.total})` },
+  ];
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -227,58 +241,50 @@ export function GymDirectoryAdminScreen({ navigation }: GymDirectoryAdminScreenP
         </View>
 
         {error && (
-          <View style={styles.errorBanner}>
+          <GlassCard style={styles.errorBanner} intensity="dark">
             <Ionicons name="warning" size={20} color={colors.error} />
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity onPress={handleRefresh}>
               <Text style={styles.retryText}>Retry</Text>
             </TouchableOpacity>
-          </View>
+          </GlassCard>
         )}
 
         {/* Stats Cards */}
         <View style={styles.statsContainer}>
-          <View style={[styles.statCard, { backgroundColor: colors.warning + '20' }]}>
-            <Text style={[styles.statNumber, { color: colors.warning }]}>{stats.pending}</Text>
-            <Text style={styles.statLabel}>Pending</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: colors.success + '20' }]}>
-            <Text style={[styles.statNumber, { color: colors.success }]}>{stats.approved}</Text>
-            <Text style={styles.statLabel}>Approved</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: colors.error + '20' }]}>
-            <Text style={[styles.statNumber, { color: colors.error }]}>{stats.rejected}</Text>
-            <Text style={styles.statLabel}>Rejected</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: colors.primary[500] + '20' }]}>
-            <Text style={[styles.statNumber, { color: colors.primary[500] }]}>{stats.total}</Text>
-            <Text style={styles.statLabel}>Total</Text>
-          </View>
+          <StatCard
+            icon="time"
+            value={stats.pending}
+            label="Pending"
+            accentColor={colors.warning}
+          />
+          <StatCard
+            icon="checkmark-circle"
+            value={stats.approved}
+            label="Approved"
+            accentColor={colors.success}
+          />
+          <StatCard
+            icon="close-circle"
+            value={stats.rejected}
+            label="Rejected"
+            accentColor={colors.error}
+          />
+          <StatCard
+            icon="list"
+            value={stats.total}
+            label="Total"
+            accentColor={colors.primary[500]}
+          />
         </View>
 
         {/* Tab Bar */}
-        <View style={styles.tabBar}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'pending' && styles.tabActive]}
-            onPress={() => handleTabChange('pending')}
-          >
-            <Text style={[styles.tabText, activeTab === 'pending' && styles.tabTextActive]}>
-              Pending Claims
-            </Text>
-            {stats.pending > 0 && (
-              <View style={styles.tabBadge}>
-                <Text style={styles.tabBadgeText}>{stats.pending}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'all' && styles.tabActive]}
-            onPress={() => handleTabChange('all')}
-          >
-            <Text style={[styles.tabText, activeTab === 'all' && styles.tabTextActive]}>
-              All Claims
-            </Text>
-          </TouchableOpacity>
+        <View style={styles.tabBarContainer}>
+          <BadgeRow
+            items={tabItems}
+            selected={activeTab}
+            onSelect={handleTabChange}
+          />
         </View>
 
         {/* Claims List */}
@@ -295,97 +301,95 @@ export function GymDirectoryAdminScreen({ navigation }: GymDirectoryAdminScreenP
           }
         >
           {claims.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="checkmark-circle-outline" size={64} color={colors.textMuted} />
-              <Text style={styles.emptyTitle}>
-                {activeTab === 'pending' ? 'No Pending Claims' : 'No Claims Found'}
-              </Text>
-              <Text style={styles.emptySubtitle}>
-                {activeTab === 'pending'
-                  ? 'All gym claims have been processed'
-                  : 'No claim requests have been submitted yet'}
-              </Text>
-            </View>
+            <EmptyState
+              icon="checkmark-circle-outline"
+              title={activeTab === 'pending' ? 'No Pending Claims' : 'No Claims Found'}
+              description={activeTab === 'pending'
+                ? 'All gym claims have been processed'
+                : 'No claim requests have been submitted yet'}
+            />
           ) : (
-            claims.map((claim) => (
-              <View key={claim.id} style={styles.claimCard}>
-                {/* Gym Info */}
-                <View style={styles.gymInfo}>
-                  <View style={styles.gymIconContainer}>
-                    <Ionicons name="business" size={24} color={colors.primary[500]} />
-                  </View>
-                  <View style={styles.gymDetails}>
-                    <Text style={styles.gymName}>{claim.gym.name}</Text>
-                    <Text style={styles.gymLocation}>
-                      {claim.gym.city}, {claim.gym.country_name}
-                    </Text>
-                    {claim.gym.sports.length > 0 && (
-                      <Text style={styles.gymSports}>{formatSports(claim.gym.sports)}</Text>
-                    )}
-                  </View>
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(claim.status) + '20' }]}>
-                    <Text style={[styles.statusText, { color: getStatusColor(claim.status) }]}>
-                      {getStatusLabel(claim.status)}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Claim Details */}
-                <View style={styles.claimDetails}>
-                  <View style={styles.detailRow}>
-                    <Ionicons
-                      name={getVerificationIcon(claim.verification_method)}
-                      size={16}
-                      color={colors.textMuted}
-                    />
-                    <Text style={styles.detailText}>{getVerificationLabel(claim.verification_method)}</Text>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <Ionicons name="time" size={16} color={colors.textMuted} />
-                    <Text style={styles.detailText}>Submitted {formatDate(claim.created_at)}</Text>
-                  </View>
-                  {claim.proof_document_url && (
-                    <View style={styles.detailRow}>
-                      <Ionicons name="document-attach" size={16} color={colors.primary[500]} />
-                      <Text style={[styles.detailText, { color: colors.primary[500] }]}>
-                        Proof document attached
+            claims.map((claim, index) => (
+              <AnimatedListItem key={claim.id} index={index}>
+                <GlassCard style={styles.claimCard}>
+                  {/* Gym Info */}
+                  <View style={styles.gymInfo}>
+                    <View style={styles.gymIconContainer}>
+                      <Ionicons name="business" size={24} color={colors.primary[500]} />
+                    </View>
+                    <View style={styles.gymDetails}>
+                      <Text style={styles.gymName}>{claim.gym.name}</Text>
+                      <Text style={styles.gymLocation}>
+                        {claim.gym.city}, {claim.gym.country_name}
+                      </Text>
+                      {claim.gym.sports.length > 0 && (
+                        <Text style={styles.gymSports}>{formatSports(claim.gym.sports)}</Text>
+                      )}
+                    </View>
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(claim.status) + '20' }]}>
+                      <Text style={[styles.statusText, { color: getStatusColor(claim.status) }]}>
+                        {getStatusLabel(claim.status)}
                       </Text>
                     </View>
-                  )}
-                  {claim.rejected_reason && (
-                    <View style={styles.rejectionReason}>
-                      <Text style={styles.rejectionLabel}>Rejection Reason:</Text>
-                      <Text style={styles.rejectionText}>{claim.rejected_reason}</Text>
-                    </View>
-                  )}
-                </View>
+                  </View>
 
-                {/* Actions (only for pending claims) */}
-                {claim.status === 'pending' && (
-                  <View style={styles.actionButtons}>
-                    {processingId === claim.id ? (
-                      <ActivityIndicator size="small" color={colors.primary[500]} />
-                    ) : (
-                      <>
-                        <TouchableOpacity
-                          style={styles.approveButton}
-                          onPress={() => handleApprove(claim)}
-                        >
-                          <Ionicons name="checkmark" size={18} color="#FFFFFF" />
-                          <Text style={styles.approveButtonText}>Approve</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.rejectButton}
-                          onPress={() => handleRejectStart(claim)}
-                        >
-                          <Ionicons name="close" size={18} color={colors.error} />
-                          <Text style={styles.rejectButtonText}>Reject</Text>
-                        </TouchableOpacity>
-                      </>
+                  {/* Claim Details */}
+                  <View style={styles.claimDetails}>
+                    <View style={styles.detailRow}>
+                      <Ionicons
+                        name={getVerificationIcon(claim.verification_method)}
+                        size={16}
+                        color={colors.textMuted}
+                      />
+                      <Text style={styles.detailText}>{getVerificationLabel(claim.verification_method)}</Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Ionicons name="time" size={16} color={colors.textMuted} />
+                      <Text style={styles.detailText}>Submitted {formatDate(claim.created_at)}</Text>
+                    </View>
+                    {claim.proof_document_url && (
+                      <View style={styles.detailRow}>
+                        <Ionicons name="document-attach" size={16} color={colors.primary[500]} />
+                        <Text style={[styles.detailText, { color: colors.primary[500] }]}>
+                          Proof document attached
+                        </Text>
+                      </View>
+                    )}
+                    {claim.rejected_reason && (
+                      <View style={styles.rejectionReason}>
+                        <Text style={styles.rejectionLabel}>Rejection Reason:</Text>
+                        <Text style={styles.rejectionText}>{claim.rejected_reason}</Text>
+                      </View>
                     )}
                   </View>
-                )}
-              </View>
+
+                  {/* Actions (only for pending claims) */}
+                  {claim.status === 'pending' && (
+                    <View style={styles.actionButtons}>
+                      {processingId === claim.id ? (
+                        <ActivityIndicator size="small" color={colors.primary[500]} />
+                      ) : (
+                        <>
+                          <GradientButton
+                            title="Approve"
+                            icon="checkmark"
+                            onPress={() => handleApprove(claim)}
+                            size="sm"
+                            style={styles.approveButton}
+                          />
+                          <TouchableOpacity
+                            style={styles.rejectButton}
+                            onPress={() => handleRejectStart(claim)}
+                          >
+                            <Ionicons name="close" size={18} color={colors.error} />
+                            <Text style={styles.rejectButtonText}>Reject</Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
+                    </View>
+                  )}
+                </GlassCard>
+              </AnimatedListItem>
             ))
           )}
 
@@ -395,7 +399,7 @@ export function GymDirectoryAdminScreen({ navigation }: GymDirectoryAdminScreenP
         {/* Reject Modal */}
         {rejectModalId && (
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
+            <GlassCard intensity="dark" style={styles.modalContent}>
               <Text style={styles.modalTitle}>Reject Claim</Text>
               <Text style={styles.modalSubtitle}>
                 Please provide a reason for rejecting this claim. This will be visible to the claimant.
@@ -429,7 +433,7 @@ export function GymDirectoryAdminScreen({ navigation }: GymDirectoryAdminScreenP
                   )}
                 </TouchableOpacity>
               </View>
-            </View>
+            </GlassCard>
           </View>
         )}
       </View>
@@ -489,11 +493,7 @@ const styles = StyleSheet.create({
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.error + '20',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
     marginHorizontal: spacing[4],
-    borderRadius: borderRadius.lg,
     gap: spacing[2],
   },
   errorText: {
@@ -509,64 +509,12 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: 'row',
     paddingHorizontal: spacing[4],
-    marginBottom: spacing[4],
+    marginBottom: spacing[3],
     gap: spacing[2],
   },
-  statCard: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[3],
-    borderRadius: borderRadius.lg,
-  },
-  statNumber: {
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: typography.fontWeight.bold,
-  },
-  statLabel: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-    marginTop: spacing[1],
-  },
-  tabBar: {
-    flexDirection: 'row',
+  tabBarContainer: {
     paddingHorizontal: spacing[4],
-    marginBottom: spacing[4],
-    gap: spacing[2],
-  },
-  tab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[3],
-    backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.lg,
-    gap: spacing[2],
-  },
-  tabActive: {
-    backgroundColor: colors.primary[500],
-  },
-  tabText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.textSecondary,
-  },
-  tabTextActive: {
-    color: '#FFFFFF',
-  },
-  tabBadge: {
-    backgroundColor: colors.error,
-    paddingHorizontal: spacing[2],
-    paddingVertical: 2,
-    borderRadius: borderRadius.full,
-    minWidth: 20,
-    alignItems: 'center',
-  },
-  tabBadgeText: {
-    color: '#FFFFFF',
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
+    marginBottom: spacing[3],
   },
   scrollView: {
     flex: 1,
@@ -574,28 +522,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: spacing[4],
   },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[10],
-  },
-  emptyTitle: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginTop: spacing[4],
-  },
-  emptySubtitle: {
-    fontSize: typography.fontSize.base,
-    color: colors.textMuted,
-    marginTop: spacing[2],
-    textAlign: 'center',
-    paddingHorizontal: spacing[4],
-  },
   claimCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing[4],
     marginBottom: spacing[3],
   },
   gymInfo: {
@@ -677,18 +604,6 @@ const styles = StyleSheet.create({
   },
   approveButton: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.success,
-    paddingVertical: spacing[3],
-    borderRadius: borderRadius.lg,
-    gap: spacing[2],
-  },
-  approveButtonText: {
-    color: '#FFFFFF',
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
   },
   rejectButton: {
     flex: 1,
@@ -717,9 +632,6 @@ const styles = StyleSheet.create({
     padding: spacing[4],
   },
   modalContent: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing[5],
     width: '100%',
     maxWidth: 400,
   },

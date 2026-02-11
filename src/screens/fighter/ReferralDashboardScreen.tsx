@@ -12,7 +12,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useReferral } from '../../context/ReferralContext';
-import { TierBreakdownCard } from '../../components';
+import {
+  TierBreakdownCard,
+  GlassCard,
+  GradientButton,
+  SectionHeader,
+  StatCard,
+  EmptyState,
+  AnimatedListItem,
+} from '../../components';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 
 type ReferralDashboardScreenProps = {
@@ -79,66 +87,62 @@ export function ReferralDashboardScreen({ navigation }: ReferralDashboardScreenP
           showsVerticalScrollIndicator={false}
         >
           {/* Referral Code Card */}
-          <View style={styles.codeCard}>
-            <View style={styles.codeHeader}>
-              <Ionicons name="gift" size={28} color={colors.primary[500]} />
-              <Text style={styles.codeTitle}>Your Referral Code</Text>
-            </View>
-            <Text style={styles.codeSubtitle}>
-              Share with friends to earn rewards
-            </Text>
+          <AnimatedListItem index={0}>
+            <GlassCard intensity="accent" accentColor={colors.primary[500]} style={styles.codeCard}>
+              <View style={styles.codeHeader}>
+                <Ionicons name="gift" size={28} color={colors.primary[500]} />
+                <Text style={styles.codeTitle}>Your Referral Code</Text>
+              </View>
+              <Text style={styles.codeSubtitle}>
+                Share with friends to earn rewards
+              </Text>
 
-            <View style={styles.codeBox}>
-              <Text style={styles.code}>{referralCode?.code}</Text>
-              <TouchableOpacity
-                style={styles.copyButton}
-                onPress={copyReferralCode}
-              >
-                <Ionicons name="copy-outline" size={20} color={colors.primary[500]} />
-              </TouchableOpacity>
-            </View>
+              <View style={styles.codeBox}>
+                <Text style={styles.code}>{referralCode?.code}</Text>
+                <TouchableOpacity
+                  style={styles.copyButton}
+                  onPress={copyReferralCode}
+                >
+                  <Ionicons name="copy-outline" size={20} color={colors.primary[500]} />
+                </TouchableOpacity>
+              </View>
 
-            <TouchableOpacity
-              style={styles.shareButton}
-              onPress={shareReferralCode}
-            >
-              <Ionicons name="share-social" size={20} color={colors.textPrimary} />
-              <Text style={styles.shareButtonText}>Share with Friends</Text>
-            </TouchableOpacity>
-          </View>
+              <GradientButton
+                title="Share with Friends"
+                icon="share-social"
+                onPress={shareReferralCode}
+              />
+            </GlassCard>
+          </AnimatedListItem>
 
           {/* Stats Grid */}
           <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <View style={styles.statIcon}>
-                <Ionicons name="people" size={24} color={colors.primary[500]} />
-              </View>
-              <Text style={styles.statValue}>{affiliateStats?.totalReferrals || 0}</Text>
-              <Text style={styles.statLabel}>Total Invites</Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <View style={styles.statIcon}>
-                <Ionicons name="checkmark-circle" size={24} color={colors.success} />
-              </View>
-              <Text style={styles.statValue}>{affiliateStats?.completedReferrals || 0}</Text>
-              <Text style={styles.statLabel}>Joined</Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <View style={styles.statIcon}>
-                <Ionicons name="time" size={24} color={colors.warning} />
-              </View>
-              <Text style={styles.statValue}>{affiliateStats?.pendingReferrals || 0}</Text>
-              <Text style={styles.statLabel}>Pending</Text>
-            </View>
+            <StatCard
+              icon="people"
+              value={affiliateStats?.totalReferrals || 0}
+              label="Total Invites"
+              accentColor={colors.primary[500]}
+            />
+            <StatCard
+              icon="checkmark-circle"
+              value={affiliateStats?.completedReferrals || 0}
+              label="Joined"
+              accentColor={colors.success}
+            />
+            <StatCard
+              icon="time"
+              value={affiliateStats?.pendingReferrals || 0}
+              label="Pending"
+              accentColor={colors.warning}
+            />
           </View>
 
           {/* Multi-Tier Earnings Breakdown */}
           <TierBreakdownCard breakdown={tierBreakdown} loading={tierLoading} />
 
           {/* Future Earnings Preview */}
-          <View style={styles.earningsPreview}>
+          <AnimatedListItem index={1}>
+          <GlassCard style={styles.earningsPreview}>
             <View style={styles.earningsHeader}>
               <Ionicons name="trending-up" size={20} color={colors.primary[500]} />
               <Text style={styles.earningsTitle}>Future Earnings</Text>
@@ -181,23 +185,23 @@ export function ReferralDashboardScreen({ navigation }: ReferralDashboardScreenP
                 Based on {affiliateStats?.completedReferrals || 0} active referrals
               </Text>
             </View>
-          </View>
+          </GlassCard>
+          </AnimatedListItem>
 
           {/* Referrals List */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>YOUR REFERRALS</Text>
+            <SectionHeader title="Your Referrals" />
 
             {referrals.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="people-outline" size={64} color={colors.textMuted} />
-                <Text style={styles.emptyTitle}>No referrals yet</Text>
-                <Text style={styles.emptySubtitle}>
-                  Share your referral code to start earning
-                </Text>
-              </View>
+              <EmptyState
+                icon="people-outline"
+                title="No referrals yet"
+                description="Share your referral code to start earning"
+              />
             ) : (
-              referrals.map((referral) => (
-                <View key={referral.id} style={styles.referralCard}>
+              referrals.map((referral, index) => (
+                <AnimatedListItem key={referral.id} index={index}>
+                <GlassCard style={styles.referralCard} noPadding>
                   <View style={styles.referralIcon}>
                     <Ionicons
                       name={referral.referredUser?.role === 'gym' ? 'business' : 'person'}
@@ -240,13 +244,14 @@ export function ReferralDashboardScreen({ navigation }: ReferralDashboardScreenP
                       {referral.status === 'completed' ? 'Joined' : 'Pending'}
                     </Text>
                   </View>
-                </View>
+                </GlassCard>
+                </AnimatedListItem>
               ))
             )}
           </View>
 
           {/* How It Works */}
-          <View style={styles.howItWorks}>
+          <GlassCard style={styles.howItWorks}>
             <Text style={styles.howTitle}>How It Works</Text>
             <View style={styles.step}>
               <View style={styles.stepNumber}>
@@ -272,7 +277,7 @@ export function ReferralDashboardScreen({ navigation }: ReferralDashboardScreenP
                 When paid features launch, you'll earn commissions automatically
               </Text>
             </View>
-          </View>
+          </GlassCard>
 
           <View style={styles.bottomPadding} />
         </ScrollView>

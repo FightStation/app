@@ -17,6 +17,14 @@ import { getClaimStats } from '../../services/gymDirectory';
 import { getCommissionRates } from '../../services/affiliate';
 import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import {
+  GlassCard,
+  GradientButton,
+  SectionHeader,
+  StatCard,
+  AnimatedListItem,
+  PulseIndicator,
+} from '../../components';
 
 type AdminDashboardScreenProps = {
   navigation?: NativeStackNavigationProp<any>;
@@ -145,13 +153,13 @@ export function AdminDashboardScreen({ navigation }: AdminDashboardScreenProps) 
         </View>
 
         {error && (
-          <View style={styles.errorBanner}>
+          <GlassCard style={styles.errorBanner} intensity="dark">
             <Ionicons name="warning" size={20} color={colors.error} />
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity onPress={handleRefresh}>
               <Text style={styles.retryText}>Retry</Text>
             </TouchableOpacity>
-          </View>
+          </GlassCard>
         )}
 
         <ScrollView
@@ -167,143 +175,137 @@ export function AdminDashboardScreen({ navigation }: AdminDashboardScreenProps) 
           }
         >
           {/* Quick Actions */}
-          <Text style={styles.sectionTitle}>QUICK ACTIONS</Text>
+          <SectionHeader title="Quick Actions" />
           <View style={styles.quickActionsGrid}>
-            <TouchableOpacity
-              style={styles.quickActionCard}
-              onPress={() => navigation?.navigate('GymDirectoryAdmin')}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: colors.warning + '20' }]}>
-                <Ionicons name="business" size={24} color={colors.warning} />
-              </View>
-              <Text style={styles.quickActionTitle}>Gym Claims</Text>
-              {stats && stats.pendingClaims > 0 && (
-                <View style={styles.quickActionBadge}>
-                  <Text style={styles.quickActionBadgeText}>{stats.pendingClaims} pending</Text>
+            <AnimatedListItem index={0}>
+              <GlassCard
+                style={styles.quickActionCard}
+                onPress={() => navigation?.navigate('GymDirectoryAdmin')}
+              >
+                <View style={[styles.quickActionIcon, { backgroundColor: colors.warning + '20' }]}>
+                  <Ionicons name="business" size={24} color={colors.warning} />
                 </View>
-              )}
-            </TouchableOpacity>
+                <Text style={styles.quickActionTitle}>Gym Claims</Text>
+                {stats && stats.pendingClaims > 0 && (
+                  <View style={styles.quickActionBadge}>
+                    <PulseIndicator color={colors.warning} size={8} />
+                    <Text style={styles.quickActionBadgeText}>{stats.pendingClaims} pending</Text>
+                  </View>
+                )}
+              </GlassCard>
+            </AnimatedListItem>
 
-            <TouchableOpacity
-              style={styles.quickActionCard}
-              onPress={() => navigation?.navigate('CommissionRates')}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: colors.success + '20' }]}>
-                <Ionicons name="cash" size={24} color={colors.success} />
-              </View>
-              <Text style={styles.quickActionTitle}>Commission Rates</Text>
-              {stats && (
-                <View style={[styles.quickActionBadge, { backgroundColor: colors.success + '20' }]}>
-                  <Text style={[styles.quickActionBadgeText, { color: colors.success }]}>
-                    {stats.commissionRates} rates
-                  </Text>
+            <AnimatedListItem index={1}>
+              <GlassCard
+                style={styles.quickActionCard}
+                onPress={() => navigation?.navigate('CommissionRates')}
+              >
+                <View style={[styles.quickActionIcon, { backgroundColor: colors.success + '20' }]}>
+                  <Ionicons name="cash" size={24} color={colors.success} />
                 </View>
-              )}
-            </TouchableOpacity>
+                <Text style={styles.quickActionTitle}>Commission Rates</Text>
+                {stats && (
+                  <View style={[styles.quickActionBadge, { backgroundColor: colors.success + '20' }]}>
+                    <Text style={[styles.quickActionBadgeText, { color: colors.success }]}>
+                      {stats.commissionRates} rates
+                    </Text>
+                  </View>
+                )}
+              </GlassCard>
+            </AnimatedListItem>
           </View>
 
           {/* Platform Stats */}
-          <Text style={styles.sectionTitle}>PLATFORM OVERVIEW</Text>
+          <SectionHeader title="Platform Overview" />
           <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <View style={[styles.statIconContainer, { backgroundColor: colors.primary[500] + '20' }]}>
-                <Ionicons name="business" size={22} color={colors.primary[500]} />
-              </View>
-              <View style={styles.statInfo}>
-                <Text style={styles.statNumber}>{stats?.totalGyms || 0}</Text>
-                <Text style={styles.statLabel}>Gyms</Text>
-              </View>
-            </View>
-
-            <View style={styles.statCard}>
-              <View style={[styles.statIconContainer, { backgroundColor: colors.info + '20' }]}>
-                <Ionicons name="fitness" size={22} color={colors.info || colors.primary[500]} />
-              </View>
-              <View style={styles.statInfo}>
-                <Text style={styles.statNumber}>{stats?.totalFighters || 0}</Text>
-                <Text style={styles.statLabel}>Fighters</Text>
-              </View>
-            </View>
-
-            <View style={styles.statCard}>
-              <View style={[styles.statIconContainer, { backgroundColor: colors.warning + '20' }]}>
-                <Ionicons name="school" size={22} color={colors.warning} />
-              </View>
-              <View style={styles.statInfo}>
-                <Text style={styles.statNumber}>{stats?.totalCoaches || 0}</Text>
-                <Text style={styles.statLabel}>Coaches</Text>
-              </View>
-            </View>
-
-            <View style={styles.statCard}>
-              <View style={[styles.statIconContainer, { backgroundColor: colors.success + '20' }]}>
-                <Ionicons name="calendar" size={22} color={colors.success} />
-              </View>
-              <View style={styles.statInfo}>
-                <Text style={styles.statNumber}>{stats?.totalEvents || 0}</Text>
-                <Text style={styles.statLabel}>Total Events</Text>
-              </View>
-            </View>
+            <StatCard
+              icon="business"
+              value={stats?.totalGyms || 0}
+              label="Gyms"
+              accentColor={colors.primary[500]}
+            />
+            <StatCard
+              icon="fitness"
+              value={stats?.totalFighters || 0}
+              label="Fighters"
+              accentColor={colors.info}
+            />
+            <StatCard
+              icon="school"
+              value={stats?.totalCoaches || 0}
+              label="Coaches"
+              accentColor={colors.warning}
+            />
+            <StatCard
+              icon="calendar"
+              value={stats?.totalEvents || 0}
+              label="Total Events"
+              accentColor={colors.success}
+            />
           </View>
 
           {/* Gym Directory Stats */}
-          <Text style={styles.sectionTitle}>GYM DIRECTORY</Text>
-          <View style={styles.directoryStatsCard}>
-            <View style={styles.directoryStatRow}>
-              <View style={styles.directoryStatItem}>
-                <View style={[styles.directoryStatDot, { backgroundColor: colors.warning }]} />
-                <Text style={styles.directoryStatLabel}>Pending Claims</Text>
+          <SectionHeader title="Gym Directory" />
+          <AnimatedListItem index={0}>
+            <GlassCard style={styles.directoryStatsCard}>
+              <View style={styles.directoryStatRow}>
+                <View style={styles.directoryStatItem}>
+                  <View style={[styles.directoryStatDot, { backgroundColor: colors.warning }]} />
+                  <Text style={styles.directoryStatLabel}>Pending Claims</Text>
+                </View>
+                <Text style={styles.directoryStatValue}>{stats?.pendingClaims || 0}</Text>
               </View>
-              <Text style={styles.directoryStatValue}>{stats?.pendingClaims || 0}</Text>
-            </View>
-            <View style={styles.directoryStatRow}>
-              <View style={styles.directoryStatItem}>
-                <View style={[styles.directoryStatDot, { backgroundColor: colors.success }]} />
-                <Text style={styles.directoryStatLabel}>Approved Claims</Text>
+              <View style={styles.directoryStatRow}>
+                <View style={styles.directoryStatItem}>
+                  <View style={[styles.directoryStatDot, { backgroundColor: colors.success }]} />
+                  <Text style={styles.directoryStatLabel}>Approved Claims</Text>
+                </View>
+                <Text style={styles.directoryStatValue}>{stats?.approvedClaims || 0}</Text>
               </View>
-              <Text style={styles.directoryStatValue}>{stats?.approvedClaims || 0}</Text>
-            </View>
-            <View style={styles.directoryStatRow}>
-              <View style={styles.directoryStatItem}>
-                <View style={[styles.directoryStatDot, { backgroundColor: colors.primary[500] }]} />
-                <Text style={styles.directoryStatLabel}>Active Events</Text>
+              <View style={styles.directoryStatRow}>
+                <View style={styles.directoryStatItem}>
+                  <View style={[styles.directoryStatDot, { backgroundColor: colors.primary[500] }]} />
+                  <Text style={styles.directoryStatLabel}>Active Events</Text>
+                </View>
+                <Text style={styles.directoryStatValue}>{stats?.activeEvents || 0}</Text>
               </View>
-              <Text style={styles.directoryStatValue}>{stats?.activeEvents || 0}</Text>
-            </View>
-          </View>
+            </GlassCard>
+          </AnimatedListItem>
 
           {/* System Info */}
-          <Text style={styles.sectionTitle}>SYSTEM STATUS</Text>
-          <View style={styles.systemInfoCard}>
-            <View style={styles.systemInfoRow}>
-              <Text style={styles.systemInfoLabel}>Supabase</Text>
-              <View style={[
-                styles.systemStatusBadge,
-                { backgroundColor: isSupabaseConfigured ? colors.success + '20' : colors.warning + '20' }
-              ]}>
+          <SectionHeader title="System Status" />
+          <AnimatedListItem index={0}>
+            <GlassCard style={styles.systemInfoCard}>
+              <View style={styles.systemInfoRow}>
+                <Text style={styles.systemInfoLabel}>Supabase</Text>
                 <View style={[
-                  styles.systemStatusDot,
-                  { backgroundColor: isSupabaseConfigured ? colors.success : colors.warning }
-                ]} />
-                <Text style={[
-                  styles.systemStatusText,
-                  { color: isSupabaseConfigured ? colors.success : colors.warning }
+                  styles.systemStatusBadge,
+                  { backgroundColor: isSupabaseConfigured ? colors.success + '20' : colors.warning + '20' }
                 ]}>
-                  {isSupabaseConfigured ? 'Connected' : 'Demo Mode'}
+                  <PulseIndicator
+                    color={isSupabaseConfigured ? colors.success : colors.warning}
+                    size={6}
+                  />
+                  <Text style={[
+                    styles.systemStatusText,
+                    { color: isSupabaseConfigured ? colors.success : colors.warning }
+                  ]}>
+                    {isSupabaseConfigured ? 'Connected' : 'Demo Mode'}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.systemInfoRow}>
+                <Text style={styles.systemInfoLabel}>Commission Rates</Text>
+                <Text style={styles.systemInfoValue}>
+                  {stats?.commissionRates || 0} configured
                 </Text>
               </View>
-            </View>
-            <View style={styles.systemInfoRow}>
-              <Text style={styles.systemInfoLabel}>Commission Rates</Text>
-              <Text style={styles.systemInfoValue}>
-                {stats?.commissionRates || 0} configured
-              </Text>
-            </View>
-            <View style={styles.systemInfoRow}>
-              <Text style={styles.systemInfoLabel}>Platform</Text>
-              <Text style={styles.systemInfoValue}>{Platform.OS}</Text>
-            </View>
-          </View>
+              <View style={styles.systemInfoRow}>
+                <Text style={styles.systemInfoLabel}>Platform</Text>
+                <Text style={styles.systemInfoValue}>{Platform.OS}</Text>
+              </View>
+            </GlassCard>
+          </AnimatedListItem>
 
           <View style={styles.bottomPadding} />
         </ScrollView>
@@ -364,11 +366,7 @@ const styles = StyleSheet.create({
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.error + '20',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
     marginHorizontal: spacing[4],
-    borderRadius: borderRadius.lg,
     gap: spacing[2],
   },
   errorText: {
@@ -387,23 +385,12 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: spacing[4],
   },
-  sectionTitle: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.primary[500],
-    letterSpacing: 1,
-    marginBottom: spacing[3],
-    marginTop: spacing[4],
-  },
   quickActionsGrid: {
     flexDirection: 'row',
     gap: spacing[3],
   },
   quickActionCard: {
     flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing[4],
     alignItems: 'center',
   },
   quickActionIcon: {
@@ -422,10 +409,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing[2],
   },
   quickActionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.warning + '20',
     paddingHorizontal: spacing[2],
     paddingVertical: spacing[1],
     borderRadius: borderRadius.full,
+    gap: spacing[1],
   },
   quickActionBadgeText: {
     fontSize: typography.fontSize.xs,
@@ -437,39 +427,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing[3],
   },
-  statCard: {
-    width: '47%',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing[4],
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[3],
-  },
-  statIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: borderRadius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statInfo: {
-    flex: 1,
-  },
-  statNumber: {
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-  },
-  statLabel: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
   directoryStatsCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing[4],
     gap: spacing[3],
   },
   directoryStatRow: {
@@ -497,9 +455,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   systemInfoCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing[4],
     gap: spacing[3],
   },
   systemInfoRow: {
@@ -523,11 +478,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[1],
     borderRadius: borderRadius.full,
     gap: spacing[2],
-  },
-  systemStatusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
   },
   systemStatusText: {
     fontSize: typography.fontSize.sm,

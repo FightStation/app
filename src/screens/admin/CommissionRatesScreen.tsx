@@ -17,6 +17,13 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getCommissionRates, updateCommissionRate } from '../../services/affiliate';
 import { CommissionRate, ReferrerType } from '../../types';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import {
+  GlassCard,
+  SectionHeader,
+  EmptyState,
+  AnimatedListItem,
+  ProgressRing,
+} from '../../components';
 
 type CommissionRatesScreenProps = {
   navigation?: NativeStackNavigationProp<any>;
@@ -152,13 +159,13 @@ export function CommissionRatesScreen({ navigation }: CommissionRatesScreenProps
         </View>
 
         {error && (
-          <View style={styles.errorBanner}>
+          <GlassCard style={styles.errorBanner} intensity="dark">
             <Ionicons name="warning" size={20} color={colors.error} />
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity onPress={loadRates}>
               <Text style={styles.retryText}>Retry</Text>
             </TouchableOpacity>
-          </View>
+          </GlassCard>
         )}
 
         <ScrollView
@@ -167,102 +174,108 @@ export function CommissionRatesScreen({ navigation }: CommissionRatesScreenProps
           showsVerticalScrollIndicator={false}
         >
           {/* Info Card */}
-          <View style={styles.infoCard}>
-            <Ionicons name="information-circle" size={24} color={colors.primary[500]} />
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoTitle}>Commission Structure</Text>
-              <Text style={styles.infoDescription}>
-                Tier 1 rates apply to direct referrals. Tier 2 rates apply to sub-referrals
-                and are calculated from the platform fee pool.
-              </Text>
-            </View>
-          </View>
-
-          {/* Rate Groups */}
-          {Object.entries(groupedRates).map(([type, typeRates]) => (
-            <View key={type} style={styles.rateGroup}>
-              <View style={styles.groupHeader}>
-                <Ionicons
-                  name={getReferrerTypeIcon(type as ReferrerType)}
-                  size={22}
-                  color={colors.primary[500]}
-                />
-                <Text style={styles.groupTitle}>
-                  {getReferrerTypeLabel(type as ReferrerType)}
+          <AnimatedListItem index={0}>
+            <GlassCard intensity="accent" accentColor={colors.primary[500]} style={styles.infoCard}>
+              <Ionicons name="information-circle" size={24} color={colors.primary[500]} />
+              <View style={styles.infoTextContainer}>
+                <Text style={styles.infoTitle}>Commission Structure</Text>
+                <Text style={styles.infoDescription}>
+                  Tier 1 rates apply to direct referrals. Tier 2 rates apply to sub-referrals
+                  and are calculated from the platform fee pool.
                 </Text>
               </View>
+            </GlassCard>
+          </AnimatedListItem>
 
-              {typeRates.sort((a, b) => a.tier_level - b.tier_level).map((rate) => (
-                <View key={rate.rate_key} style={styles.rateCard}>
-                  <View style={styles.rateInfo}>
-                    <View style={styles.tierBadge}>
-                      <Text style={styles.tierText}>Tier {rate.tier_level}</Text>
-                    </View>
-                    <View style={styles.rateDetails}>
-                      <Text style={styles.rateName}>{rate.display_name}</Text>
-                      <Text style={styles.rateType}>
-                        {formatTransactionType(rate.transaction_type)}
-                      </Text>
-                    </View>
-                  </View>
+          {/* Rate Groups */}
+          {Object.entries(groupedRates).map(([type, typeRates], groupIndex) => (
+            <View key={type} style={styles.rateGroup}>
+              <SectionHeader
+                title={getReferrerTypeLabel(type as ReferrerType)}
+              />
 
-                  {editingRate === rate.rate_key ? (
-                    <View style={styles.editContainer}>
-                      <View style={styles.editInputWrapper}>
-                        <TextInput
-                          style={styles.editInput}
-                          value={editValue}
-                          onChangeText={setEditValue}
-                          keyboardType="decimal-pad"
-                          placeholder="0"
-                          placeholderTextColor={colors.textMuted}
-                          autoFocus
-                        />
-                        <Text style={styles.percentSymbol}>%</Text>
+              {typeRates.sort((a, b) => a.tier_level - b.tier_level).map((rate, rateIndex) => (
+                <AnimatedListItem key={rate.rate_key} index={rateIndex}>
+                  <GlassCard style={styles.rateCard}>
+                    <View style={styles.rateCardContent}>
+                      <View style={styles.rateInfo}>
+                        <View style={styles.tierBadgeRow}>
+                          <View style={styles.tierBadge}>
+                            <Text style={styles.tierText}>Tier {rate.tier_level}</Text>
+                          </View>
+                          <ProgressRing
+                            progress={rate.rate_percentage}
+                            size={40}
+                            strokeWidth={3}
+                            color={colors.primary[500]}
+                            showLabel={false}
+                          />
+                        </View>
+                        <View style={styles.rateDetails}>
+                          <Text style={styles.rateName}>{rate.display_name}</Text>
+                          <Text style={styles.rateType}>
+                            {formatTransactionType(rate.transaction_type)}
+                          </Text>
+                        </View>
                       </View>
-                      <View style={styles.editActions}>
-                        {saving === rate.rate_key ? (
-                          <ActivityIndicator size="small" color={colors.primary[500]} />
-                        ) : (
-                          <>
-                            <TouchableOpacity
-                              style={styles.saveButton}
-                              onPress={() => handleEditSave(rate)}
-                            >
-                              <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={styles.cancelButton}
-                              onPress={handleEditCancel}
-                            >
-                              <Ionicons name="close" size={20} color={colors.textMuted} />
-                            </TouchableOpacity>
-                          </>
-                        )}
-                      </View>
+
+                      {editingRate === rate.rate_key ? (
+                        <View style={styles.editContainer}>
+                          <View style={styles.editInputWrapper}>
+                            <TextInput
+                              style={styles.editInput}
+                              value={editValue}
+                              onChangeText={setEditValue}
+                              keyboardType="decimal-pad"
+                              placeholder="0"
+                              placeholderTextColor={colors.textMuted}
+                              autoFocus
+                            />
+                            <Text style={styles.percentSymbol}>%</Text>
+                          </View>
+                          <View style={styles.editActions}>
+                            {saving === rate.rate_key ? (
+                              <ActivityIndicator size="small" color={colors.primary[500]} />
+                            ) : (
+                              <>
+                                <TouchableOpacity
+                                  style={styles.saveButton}
+                                  onPress={() => handleEditSave(rate)}
+                                >
+                                  <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  style={styles.cancelButton}
+                                  onPress={handleEditCancel}
+                                >
+                                  <Ionicons name="close" size={20} color={colors.textMuted} />
+                                </TouchableOpacity>
+                              </>
+                            )}
+                          </View>
+                        </View>
+                      ) : (
+                        <TouchableOpacity
+                          style={styles.rateValue}
+                          onPress={() => handleEditStart(rate)}
+                        >
+                          <Text style={styles.ratePercentage}>{rate.rate_percentage}%</Text>
+                          <Ionicons name="pencil" size={16} color={colors.textMuted} />
+                        </TouchableOpacity>
+                      )}
                     </View>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.rateValue}
-                      onPress={() => handleEditStart(rate)}
-                    >
-                      <Text style={styles.ratePercentage}>{rate.rate_percentage}%</Text>
-                      <Ionicons name="pencil" size={16} color={colors.textMuted} />
-                    </TouchableOpacity>
-                  )}
-                </View>
+                  </GlassCard>
+                </AnimatedListItem>
               ))}
             </View>
           ))}
 
           {rates.length === 0 && !loading && (
-            <View style={styles.emptyState}>
-              <Ionicons name="pricetag-outline" size={64} color={colors.textMuted} />
-              <Text style={styles.emptyTitle}>No Commission Rates</Text>
-              <Text style={styles.emptySubtitle}>
-                Commission rates haven't been configured yet.
-              </Text>
-            </View>
+            <EmptyState
+              icon="pricetag-outline"
+              title="No Commission Rates"
+              description="Commission rates haven't been configured yet."
+            />
           )}
 
           <View style={styles.bottomPadding} />
@@ -324,11 +337,7 @@ const styles = StyleSheet.create({
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.error + '20',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
     marginHorizontal: spacing[4],
-    borderRadius: borderRadius.lg,
     gap: spacing[2],
   },
   errorText: {
@@ -349,11 +358,8 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: colors.primary[500] + '10',
-    borderRadius: borderRadius.lg,
-    padding: spacing[4],
-    marginBottom: spacing[4],
     gap: spacing[3],
+    marginBottom: spacing[4],
   },
   infoTextContainer: {
     flex: 1,
@@ -370,33 +376,25 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   rateGroup: {
-    marginBottom: spacing[6],
-  },
-  groupHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-    marginBottom: spacing[3],
-  },
-  groupTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    marginBottom: spacing[4],
   },
   rateCard: {
+    marginBottom: spacing[2],
+  },
+  rateCardContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing[4],
-    marginBottom: spacing[2],
   },
   rateInfo: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[3],
+  },
+  tierBadgeRow: {
+    alignItems: 'center',
+    gap: spacing[1],
   },
   tierBadge: {
     backgroundColor: colors.primary[500] + '20',
@@ -483,23 +481,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceLight,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[10],
-  },
-  emptyTitle: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginTop: spacing[4],
-  },
-  emptySubtitle: {
-    fontSize: typography.fontSize.base,
-    color: colors.textMuted,
-    marginTop: spacing[2],
-    textAlign: 'center',
   },
   bottomPadding: {
     height: spacing[10],

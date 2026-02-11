@@ -12,6 +12,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useReferral } from '../../context/ReferralContext';
+import {
+  GlassCard,
+  GradientButton,
+  SectionHeader,
+  StatCard,
+  EmptyState,
+  AnimatedListItem,
+} from '../../components';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 
 type GymReferralDashboardScreenProps = {
@@ -76,78 +84,75 @@ export function GymReferralDashboardScreen({ navigation }: GymReferralDashboardS
           showsVerticalScrollIndicator={false}
         >
           {/* Gym-Specific Hero */}
-          <View style={styles.heroCard}>
-            <Ionicons name="trophy" size={48} color={colors.primary[500]} />
-            <Text style={styles.heroTitle}>Grow Your Community</Text>
-            <Text style={styles.heroSubtitle}>
-              Invite your fighters to join the platform and earn commissions when they purchase merchandise or premium features
-            </Text>
-          </View>
+          <AnimatedListItem index={0}>
+            <GlassCard intensity="accent" accentColor={colors.primary[500]} style={styles.heroCard}>
+              <Ionicons name="trophy" size={48} color={colors.primary[500]} />
+              <Text style={styles.heroTitle}>Grow Your Community</Text>
+              <Text style={styles.heroSubtitle}>
+                Invite your fighters to join the platform and earn commissions when they purchase merchandise or premium features
+              </Text>
+            </GlassCard>
+          </AnimatedListItem>
 
           {/* Referral Code Card */}
-          <View style={styles.codeCard}>
-            <View style={styles.codeHeader}>
-              <Ionicons name="qr-code" size={28} color={colors.primary[500]} />
-              <Text style={styles.codeTitle}>Your Gym Referral Code</Text>
-            </View>
+          <AnimatedListItem index={1}>
+            <GlassCard style={styles.codeCard}>
+              <View style={styles.codeHeader}>
+                <Ionicons name="qr-code" size={28} color={colors.primary[500]} />
+                <Text style={styles.codeTitle}>Your Gym Referral Code</Text>
+              </View>
 
-            <View style={styles.codeBox}>
-              <Text style={styles.code}>{referralCode?.code}</Text>
-              <TouchableOpacity
-                style={styles.copyButton}
-                onPress={copyReferralCode}
-              >
-                <Ionicons name="copy-outline" size={20} color={colors.primary[500]} />
-              </TouchableOpacity>
-            </View>
+              <View style={styles.codeBox}>
+                <Text style={styles.code}>{referralCode?.code}</Text>
+                <TouchableOpacity
+                  style={styles.copyButton}
+                  onPress={copyReferralCode}
+                >
+                  <Ionicons name="copy-outline" size={20} color={colors.primary[500]} />
+                </TouchableOpacity>
+              </View>
 
-            <TouchableOpacity
-              style={styles.shareButton}
-              onPress={shareReferralCode}
-            >
-              <Ionicons name="share-social" size={20} color={colors.textPrimary} />
-              <Text style={styles.shareButtonText}>Share with Your Fighters</Text>
-            </TouchableOpacity>
-          </View>
+              <GradientButton
+                title="Share with Your Fighters"
+                icon="share-social"
+                onPress={shareReferralCode}
+              />
+            </GlassCard>
+          </AnimatedListItem>
 
           {/* Stats Grid */}
           <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <View style={styles.statIconLarge}>
-                <Ionicons name="people" size={28} color={colors.primary[500]} />
-              </View>
-              <Text style={styles.statValue}>{affiliateStats?.totalReferrals || 0}</Text>
-              <Text style={styles.statLabel}>Total Invites</Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <View style={styles.statIconLarge}>
-                <Ionicons name="body" size={28} color={colors.info} />
-              </View>
-              <Text style={styles.statValue}>{affiliateStats?.fighterReferrals || 0}</Text>
-              <Text style={styles.statLabel}>Fighters</Text>
-            </View>
+            <StatCard
+              icon="people"
+              value={affiliateStats?.totalReferrals || 0}
+              label="Total Invites"
+              accentColor={colors.primary[500]}
+            />
+            <StatCard
+              icon="body"
+              value={affiliateStats?.fighterReferrals || 0}
+              label="Fighters"
+              accentColor={colors.info}
+            />
           </View>
 
           <View style={styles.statsRow}>
-            <View style={styles.statCardSmall}>
-              <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-              <View>
-                <Text style={styles.statValueSmall}>{affiliateStats?.completedReferrals || 0}</Text>
-                <Text style={styles.statLabelSmall}>Active</Text>
-              </View>
-            </View>
-            <View style={styles.statCardSmall}>
-              <Ionicons name="time" size={20} color={colors.warning} />
-              <View>
-                <Text style={styles.statValueSmall}>{affiliateStats?.pendingReferrals || 0}</Text>
-                <Text style={styles.statLabelSmall}>Pending</Text>
-              </View>
-            </View>
+            <StatCard
+              icon="checkmark-circle"
+              value={affiliateStats?.completedReferrals || 0}
+              label="Active"
+              accentColor={colors.success}
+            />
+            <StatCard
+              icon="time"
+              value={affiliateStats?.pendingReferrals || 0}
+              label="Pending"
+              accentColor={colors.warning}
+            />
           </View>
 
           {/* Future Earnings for Gyms */}
-          <View style={styles.earningsPreview}>
+          <GlassCard style={styles.earningsPreview}>
             <View style={styles.earningsHeader}>
               <Ionicons name="cash" size={24} color={colors.primary[500]} />
               <Text style={styles.earningsTitle}>Future Revenue Stream</Text>
@@ -193,23 +198,22 @@ export function GymReferralDashboardScreen({ navigation }: GymReferralDashboardS
                 Total: ${Math.round((affiliateStats?.completedReferrals || 0) * 12 * (affiliateStats?.completedReferrals || 0))} - ${Math.round((affiliateStats?.completedReferrals || 0) * 25 * (affiliateStats?.completedReferrals || 0))}/mo
               </Text>
             </View>
-          </View>
+          </GlassCard>
 
           {/* Referred Fighters List */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>YOUR FIGHTERS ON PLATFORM</Text>
+            <SectionHeader title="Your Fighters on Platform" />
 
             {referrals.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="people-outline" size={64} color={colors.textMuted} />
-                <Text style={styles.emptyTitle}>No referrals yet</Text>
-                <Text style={styles.emptySubtitle}>
-                  Start inviting your fighters to join
-                </Text>
-              </View>
+              <EmptyState
+                icon="people-outline"
+                title="No referrals yet"
+                description="Start inviting your fighters to join"
+              />
             ) : (
-              referrals.map((referral) => (
-                <View key={referral.id} style={styles.referralCard}>
+              referrals.map((referral, index) => (
+                <AnimatedListItem key={referral.id} index={index}>
+                <GlassCard style={styles.referralCard} noPadding>
                   <View style={styles.referralIcon}>
                     <Ionicons
                       name={referral.referredUser?.role === 'gym' ? 'business' : 'body'}
@@ -252,13 +256,14 @@ export function GymReferralDashboardScreen({ navigation }: GymReferralDashboardS
                       {referral.status === 'completed' ? 'Active' : 'Invited'}
                     </Text>
                   </View>
-                </View>
+                </GlassCard>
+                </AnimatedListItem>
               ))
             )}
           </View>
 
           {/* Tips for Gyms */}
-          <View style={styles.tipsCard}>
+          <GlassCard style={styles.tipsCard}>
             <View style={styles.tipsHeader}>
               <Ionicons name="bulb" size={24} color={colors.primary[500]} />
               <Text style={styles.tipsTitle}>Maximizing Your Earnings</Text>
@@ -287,7 +292,7 @@ export function GymReferralDashboardScreen({ navigation }: GymReferralDashboardS
                 Encourage active fighters first - they'll bring friends
               </Text>
             </View>
-          </View>
+          </GlassCard>
 
           <View style={styles.bottomPadding} />
         </ScrollView>

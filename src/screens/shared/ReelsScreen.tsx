@@ -16,6 +16,7 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Post, Fighter, Gym, Coach } from '../../types';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import { GlassCard, GradientButton, EmptyState } from '../../components';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -252,28 +253,30 @@ export function ReelsScreen({ navigation }: any) {
 
         {/* Bottom Info */}
         <View style={[styles.bottomInfo, { paddingBottom: insets.bottom + 20 }]}>
-          {/* Author */}
-          <TouchableOpacity
-            style={styles.authorRow}
-            onPress={() => navigateToProfile(author.type, author.id)}
-          >
-            <Text style={styles.authorName}>@{author.name.replace(/\s+/g, '_').toLowerCase()}</Text>
-          </TouchableOpacity>
+          <GlassCard intensity="dark" noPadding style={styles.bottomInfoCard}>
+            {/* Author */}
+            <TouchableOpacity
+              style={styles.authorRow}
+              onPress={() => navigateToProfile(author.type, author.id)}
+            >
+              <Text style={styles.authorName}>@{author.name.replace(/\s+/g, '_').toLowerCase()}</Text>
+            </TouchableOpacity>
 
-          {/* Caption */}
-          {reel.content && (
-            <Text style={styles.caption} numberOfLines={2}>
-              {reel.content}
-            </Text>
-          )}
+            {/* Caption */}
+            {reel.content && (
+              <Text style={styles.caption} numberOfLines={2}>
+                {reel.content}
+              </Text>
+            )}
 
-          {/* Music/Sound */}
-          <View style={styles.soundRow}>
-            <Ionicons name="musical-notes" size={14} color={colors.textPrimary} />
-            <Text style={styles.soundText} numberOfLines={1}>
-              Original audio - {author.name}
-            </Text>
-          </View>
+            {/* Music/Sound */}
+            <View style={styles.soundRow}>
+              <Ionicons name="musical-notes" size={14} color={colors.textPrimary} />
+              <Text style={styles.soundText} numberOfLines={1}>
+                Original audio - {author.name}
+              </Text>
+            </View>
+          </GlassCard>
         </View>
       </View>
     );
@@ -319,18 +322,13 @@ export function ReelsScreen({ navigation }: any) {
       <SafeAreaView style={styles.emptyContainer}>
         {renderHeader()}
         <View style={styles.emptyContent}>
-          <Ionicons name="videocam-outline" size={80} color={colors.textMuted} />
-          <Text style={styles.emptyTitle}>No reels yet</Text>
-          <Text style={styles.emptySubtitle}>
-            Be the first to share a training reel!
-          </Text>
-          <TouchableOpacity
-            style={styles.createReelButton}
-            onPress={() => navigation.navigate('CreatePost', { postType: 'reel' })}
-          >
-            <Ionicons name="add" size={24} color={colors.textPrimary} />
-            <Text style={styles.createReelText}>Create Reel</Text>
-          </TouchableOpacity>
+          <EmptyState
+            icon="videocam-outline"
+            title="No reels yet"
+            description="Be the first to share a training reel!"
+            actionLabel="Create Reel"
+            onAction={() => navigation.navigate('CreatePost', { postType: 'reel' })}
+          />
         </View>
       </SafeAreaView>
     );
@@ -526,6 +524,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 80,
     paddingHorizontal: spacing[4],
+  },
+  bottomInfoCard: {
+    padding: spacing[3],
+    borderRadius: borderRadius.lg,
   },
   authorRow: {
     flexDirection: 'row',

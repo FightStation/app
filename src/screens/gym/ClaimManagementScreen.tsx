@@ -14,7 +14,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { Card, Button } from '../../components';
+import {
+  GlassCard,
+  GradientButton,
+  StatCard,
+  BadgeRow,
+  EmptyState,
+  AnimatedListItem,
+} from '../../components';
 import {
   getAllPendingClaims,
   getAllClaimRequests,
@@ -175,133 +182,104 @@ export function ClaimManagementScreen({ navigation }: ClaimManagementScreenProps
     });
   };
 
-  const renderClaimCard = (claim: ClaimWithGym) => {
+  const tabItems = [
+    { key: 'pending', label: `${t('admin.pending')} (${stats.pending})` },
+    { key: 'approved', label: `${t('admin.approved')} (${stats.approved})` },
+    { key: 'rejected', label: `${t('admin.rejected')} (${stats.rejected})` },
+    { key: 'all', label: `${t('admin.all')} (${stats.total})` },
+  ];
+
+  const renderClaimCard = (claim: ClaimWithGym, index: number) => {
     const isProcessing = processingId === claim.id;
     const statusStyle = getStatusBadgeStyle(claim.status);
 
     return (
-      <Card key={claim.id} style={styles.claimCard}>
-        {/* Header with gym info */}
-        <View style={styles.cardHeader}>
-          <View style={styles.gymInfo}>
-            <Text style={styles.gymName}>{claim.gym.name}</Text>
-            <View style={styles.locationRow}>
-              <Text style={styles.countryFlag}>{getCountryFlag(claim.gym.country_code)}</Text>
-              <Text style={styles.location}>
-                {claim.gym.city}, {claim.gym.country_name}
+      <AnimatedListItem key={claim.id} index={index}>
+        <GlassCard style={styles.claimCard}>
+          {/* Header with gym info */}
+          <View style={styles.cardHeader}>
+            <View style={styles.gymInfo}>
+              <Text style={styles.gymName}>{claim.gym.name}</Text>
+              <View style={styles.locationRow}>
+                <Text style={styles.countryFlag}>{getCountryFlag(claim.gym.country_code)}</Text>
+                <Text style={styles.location}>
+                  {claim.gym.city}, {claim.gym.country_name}
+                </Text>
+              </View>
+            </View>
+            <View style={[styles.statusBadge, { backgroundColor: statusStyle.backgroundColor }]}>
+              <Text style={[styles.statusText, { color: statusStyle.color }]}>
+                {claim.status.toUpperCase()}
               </Text>
             </View>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: statusStyle.backgroundColor }]}>
-            <Text style={[styles.statusText, { color: statusStyle.color }]}>
-              {claim.status.toUpperCase()}
-            </Text>
-          </View>
-        </View>
 
-        {/* Sports */}
-        <View style={styles.sportsRow}>
-          {claim.gym.sports.map((sport) => (
-            <View key={sport} style={styles.sportBadge}>
-              <Text style={styles.sportText}>{COMBAT_SPORT_LABELS[sport] || sport}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Claim details */}
-        <View style={styles.detailsSection}>
-          <View style={styles.detailRow}>
-            <Ionicons name="shield-checkmark-outline" size={16} color={colors.neutral[500]} />
-            <Text style={styles.detailLabel}>{t('directory.verificationMethod')}:</Text>
-            <Text style={styles.detailValue}>
-              {getVerificationMethodLabel(claim.verification_method)}
-            </Text>
+          {/* Sports */}
+          <View style={styles.sportsRow}>
+            {claim.gym.sports.map((sport) => (
+              <View key={sport} style={styles.sportBadge}>
+                <Text style={styles.sportText}>{COMBAT_SPORT_LABELS[sport] || sport}</Text>
+              </View>
+            ))}
           </View>
 
-          <View style={styles.detailRow}>
-            <Ionicons name="calendar-outline" size={16} color={colors.neutral[500]} />
-            <Text style={styles.detailLabel}>{t('directory.submittedOn')}:</Text>
-            <Text style={styles.detailValue}>{formatDate(claim.created_at)}</Text>
-          </View>
-
-          {claim.proof_document_url && (
+          {/* Claim details */}
+          <View style={styles.detailsSection}>
             <View style={styles.detailRow}>
-              <Ionicons name="document-attach-outline" size={16} color={colors.neutral[500]} />
-              <Text style={styles.detailLabel}>{t('admin.proofDocument')}:</Text>
-              <TouchableOpacity>
-                <Text style={[styles.detailValue, styles.linkText]}>{t('admin.viewDocument')}</Text>
+              <Ionicons name="shield-checkmark-outline" size={16} color={colors.neutral[500]} />
+              <Text style={styles.detailLabel}>{t('directory.verificationMethod')}:</Text>
+              <Text style={styles.detailValue}>
+                {getVerificationMethodLabel(claim.verification_method)}
+              </Text>
+            </View>
+
+            <View style={styles.detailRow}>
+              <Ionicons name="calendar-outline" size={16} color={colors.neutral[500]} />
+              <Text style={styles.detailLabel}>{t('directory.submittedOn')}:</Text>
+              <Text style={styles.detailValue}>{formatDate(claim.created_at)}</Text>
+            </View>
+
+            {claim.proof_document_url && (
+              <View style={styles.detailRow}>
+                <Ionicons name="document-attach-outline" size={16} color={colors.neutral[500]} />
+                <Text style={styles.detailLabel}>{t('admin.proofDocument')}:</Text>
+                <TouchableOpacity>
+                  <Text style={[styles.detailValue, styles.linkText]}>{t('admin.viewDocument')}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {claim.rejected_reason && (
+              <View style={styles.reasonBox}>
+                <Text style={styles.reasonLabel}>{t('admin.rejectionReason')}:</Text>
+                <Text style={styles.reasonText}>{claim.rejected_reason}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Action buttons (only for pending claims) */}
+          {claim.status === 'pending' && (
+            <View style={styles.actionButtons}>
+              <GradientButton
+                title={isProcessing ? t('common.processing') : t('common.approve')}
+                onPress={() => handleApprove(claim.id, claim.gym.name)}
+                disabled={isProcessing}
+                style={styles.approveButton}
+                size="sm"
+              />
+              <TouchableOpacity
+                style={styles.rejectButton}
+                onPress={() => handleRejectPress(claim.id)}
+                disabled={isProcessing}
+              >
+                <Text style={styles.rejectButtonText}>{t('common.reject')}</Text>
               </TouchableOpacity>
             </View>
           )}
-
-          {claim.rejected_reason && (
-            <View style={styles.reasonBox}>
-              <Text style={styles.reasonLabel}>{t('admin.rejectionReason')}:</Text>
-              <Text style={styles.reasonText}>{claim.rejected_reason}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Action buttons (only for pending claims) */}
-        {claim.status === 'pending' && (
-          <View style={styles.actionButtons}>
-            <Button
-              title={isProcessing ? t('common.processing') : t('common.approve')}
-              onPress={() => handleApprove(claim.id, claim.gym.name)}
-              disabled={isProcessing}
-              style={styles.approveButton}
-            />
-            <TouchableOpacity
-              style={styles.rejectButton}
-              onPress={() => handleRejectPress(claim.id)}
-              disabled={isProcessing}
-            >
-              <Text style={styles.rejectButtonText}>{t('common.reject')}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </Card>
+        </GlassCard>
+      </AnimatedListItem>
     );
   };
-
-  const renderTabs = () => (
-    <View style={styles.tabsContainer}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'pending' && styles.activeTab]}
-          onPress={() => setActiveTab('pending')}
-        >
-          <Text style={[styles.tabText, activeTab === 'pending' && styles.activeTabText]}>
-            {t('admin.pending')} ({stats.pending})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'approved' && styles.activeTab]}
-          onPress={() => setActiveTab('approved')}
-        >
-          <Text style={[styles.tabText, activeTab === 'approved' && styles.activeTabText]}>
-            {t('admin.approved')} ({stats.approved})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'rejected' && styles.activeTab]}
-          onPress={() => setActiveTab('rejected')}
-        >
-          <Text style={[styles.tabText, activeTab === 'rejected' && styles.activeTabText]}>
-            {t('admin.rejected')} ({stats.rejected})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'all' && styles.activeTab]}
-          onPress={() => setActiveTab('all')}
-        >
-          <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
-            {t('admin.all')} ({stats.total})
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
-  );
 
   const renderRejectModal = () => (
     <Modal
@@ -311,7 +289,7 @@ export function ClaimManagementScreen({ navigation }: ClaimManagementScreenProps
       onRequestClose={() => setShowRejectModal(false)}
     >
       <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+        <GlassCard intensity="dark" style={styles.modalContent}>
           <Text style={styles.modalTitle}>{t('admin.rejectClaim')}</Text>
           <Text style={styles.modalSubtitle}>{t('admin.rejectClaimSubtitle')}</Text>
 
@@ -332,13 +310,15 @@ export function ClaimManagementScreen({ navigation }: ClaimManagementScreenProps
             >
               <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
-            <Button
+            <GradientButton
               title={t('common.reject')}
               onPress={handleRejectConfirm}
               style={styles.modalRejectButton}
+              size="sm"
+              gradient={[colors.error, '#CC0000'] as readonly [string, string]}
             />
           </View>
-        </View>
+        </GlassCard>
       </View>
     </Modal>
   );
@@ -356,22 +336,34 @@ export function ClaimManagementScreen({ navigation }: ClaimManagementScreenProps
 
       {/* Stats Cards */}
       <View style={styles.statsContainer}>
-        <View style={[styles.statCard, { backgroundColor: colors.primary[500] + '20' }]}>
-          <Text style={[styles.statNumber, { color: colors.primary[500] }]}>{stats.pending}</Text>
-          <Text style={styles.statLabel}>{t('admin.pending')}</Text>
-        </View>
-        <View style={[styles.statCard, { backgroundColor: colors.success + '20' }]}>
-          <Text style={[styles.statNumber, { color: colors.success }]}>{stats.approved}</Text>
-          <Text style={styles.statLabel}>{t('admin.approved')}</Text>
-        </View>
-        <View style={[styles.statCard, { backgroundColor: colors.error + '20' }]}>
-          <Text style={[styles.statNumber, { color: colors.error }]}>{stats.rejected}</Text>
-          <Text style={styles.statLabel}>{t('admin.rejected')}</Text>
-        </View>
+        <StatCard
+          icon="time"
+          value={stats.pending}
+          label={t('admin.pending')}
+          accentColor={colors.primary[500]}
+        />
+        <StatCard
+          icon="checkmark-circle"
+          value={stats.approved}
+          label={t('admin.approved')}
+          accentColor={colors.success}
+        />
+        <StatCard
+          icon="close-circle"
+          value={stats.rejected}
+          label={t('admin.rejected')}
+          accentColor={colors.error}
+        />
       </View>
 
       {/* Tabs */}
-      {renderTabs()}
+      <View style={styles.tabsContainer}>
+        <BadgeRow
+          items={tabItems}
+          selected={activeTab}
+          onSelect={(key) => setActiveTab(key as FilterTab)}
+        />
+      </View>
 
       {/* Claims List */}
       {loading ? (
@@ -387,13 +379,13 @@ export function ClaimManagementScreen({ navigation }: ClaimManagementScreenProps
           }
         >
           {claims.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="checkmark-done-circle-outline" size={64} color={colors.neutral[600]} />
-              <Text style={styles.emptyTitle}>{t('admin.noClaimsTitle')}</Text>
-              <Text style={styles.emptySubtitle}>{t('admin.noClaimsSubtitle')}</Text>
-            </View>
+            <EmptyState
+              icon="checkmark-done-circle-outline"
+              title={t('admin.noClaimsTitle')}
+              description={t('admin.noClaimsSubtitle')}
+            />
           ) : (
-            claims.map(renderClaimCard)
+            claims.map((claim, index) => renderClaimCard(claim, index))
           )}
         </ScrollView>
       )}
@@ -434,41 +426,11 @@ const styles = StyleSheet.create({
     padding: spacing[4],
     gap: spacing[3],
   },
-  statCard: {
-    flex: 1,
-    padding: spacing[3],
-    borderRadius: borderRadius.lg,
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: 'bold',
-  },
-  statLabel: {
-    fontSize: typography.fontSize.xs,
-    color: colors.neutral[400],
-    marginTop: spacing[1],
-  },
   tabsContainer: {
+    paddingHorizontal: spacing[4],
     borderBottomWidth: 1,
     borderBottomColor: colors.neutral[800],
-  },
-  tab: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    marginHorizontal: spacing[1],
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: colors.primary[500],
-  },
-  tabText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[500],
-    fontWeight: '500',
-  },
-  activeTabText: {
-    color: colors.primary[500],
+    paddingBottom: spacing[3],
   },
   loadingContainer: {
     flex: 1,
@@ -483,7 +445,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing[8],
   },
   claimCard: {
-    padding: spacing[4],
     marginBottom: spacing[4],
   },
   cardHeader: {
@@ -605,22 +566,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.base,
     fontWeight: '600',
   },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: spacing[12],
-  },
-  emptyTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: '600',
-    color: colors.neutral[300],
-    marginTop: spacing[4],
-  },
-  emptySubtitle: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[500],
-    marginTop: spacing[2],
-    textAlign: 'center',
-  },
   // Modal styles
   modalOverlay: {
     flex: 1,
@@ -630,9 +575,6 @@ const styles = StyleSheet.create({
     padding: spacing[4],
   },
   modalContent: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing[6],
     width: '100%',
     maxWidth: 400,
   },
@@ -677,6 +619,5 @@ const styles = StyleSheet.create({
   },
   modalRejectButton: {
     flex: 1,
-    backgroundColor: colors.error,
   },
 });

@@ -12,7 +12,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useReferral } from '../../context/ReferralContext';
-import { TierBreakdownCard } from '../../components';
+import {
+  TierBreakdownCard,
+  GlassCard,
+  GradientButton,
+  SectionHeader,
+  StatCard,
+  EmptyState,
+  AnimatedListItem,
+} from '../../components';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 
 type CoachReferralDashboardScreenProps = {
@@ -78,76 +86,73 @@ export function CoachReferralDashboardScreen({ navigation }: CoachReferralDashbo
           showsVerticalScrollIndicator={false}
         >
           {/* Hero Card */}
-          <View style={styles.heroCard}>
-            <View style={styles.heroIconRow}>
-              <View style={styles.heroIconBg}>
-                <Ionicons name="people" size={32} color={colors.primary[500]} />
+          <AnimatedListItem index={0}>
+            <GlassCard intensity="accent" accentColor={colors.primary[500]} style={styles.heroCard}>
+              <View style={styles.heroIconRow}>
+                <View style={styles.heroIconBg}>
+                  <Ionicons name="people" size={32} color={colors.primary[500]} />
+                </View>
               </View>
-            </View>
-            <Text style={styles.heroTitle}>Grow Your Network</Text>
-            <Text style={styles.heroSubtitle}>
-              Refer students, fellow coaches, and gyms. Earn commissions when they join and train.
-            </Text>
-          </View>
+              <Text style={styles.heroTitle}>Grow Your Network</Text>
+              <Text style={styles.heroSubtitle}>
+                Refer students, fellow coaches, and gyms. Earn commissions when they join and train.
+              </Text>
+            </GlassCard>
+          </AnimatedListItem>
 
           {/* Referral Code Card */}
-          <View style={styles.codeCard}>
-            <View style={styles.codeHeader}>
-              <Ionicons name="gift" size={24} color={colors.primary[500]} />
-              <Text style={styles.codeTitle}>Your Referral Code</Text>
-            </View>
+          <AnimatedListItem index={1}>
+            <GlassCard style={styles.codeCard}>
+              <View style={styles.codeHeader}>
+                <Ionicons name="gift" size={24} color={colors.primary[500]} />
+                <Text style={styles.codeTitle}>Your Referral Code</Text>
+              </View>
 
-            <View style={styles.codeBox}>
-              <Text style={styles.code}>{referralCode?.code}</Text>
-              <TouchableOpacity
-                style={styles.copyButton}
-                onPress={copyReferralCode}
-              >
-                <Ionicons name="copy-outline" size={20} color={colors.primary[500]} />
-              </TouchableOpacity>
-            </View>
+              <View style={styles.codeBox}>
+                <Text style={styles.code}>{referralCode?.code}</Text>
+                <TouchableOpacity
+                  style={styles.copyButton}
+                  onPress={copyReferralCode}
+                >
+                  <Ionicons name="copy-outline" size={20} color={colors.primary[500]} />
+                </TouchableOpacity>
+              </View>
 
-            <TouchableOpacity
-              style={styles.shareButton}
-              onPress={shareReferralCode}
-            >
-              <Ionicons name="share-social" size={20} color={colors.textPrimary} />
-              <Text style={styles.shareButtonText}>Share Code</Text>
-            </TouchableOpacity>
-          </View>
+              <GradientButton
+                title="Share Code"
+                icon="share-social"
+                onPress={shareReferralCode}
+              />
+            </GlassCard>
+          </AnimatedListItem>
 
           {/* Stats Grid */}
           <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <View style={styles.statIcon}>
-                <Ionicons name="people" size={24} color={colors.primary[500]} />
-              </View>
-              <Text style={styles.statValue}>{affiliateStats?.totalReferrals || 0}</Text>
-              <Text style={styles.statLabel}>Total Referrals</Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <View style={styles.statIcon}>
-                <Ionicons name="checkmark-circle" size={24} color={colors.success} />
-              </View>
-              <Text style={styles.statValue}>{affiliateStats?.completedReferrals || 0}</Text>
-              <Text style={styles.statLabel}>Joined</Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <View style={styles.statIcon}>
-                <Ionicons name="time" size={24} color={colors.warning} />
-              </View>
-              <Text style={styles.statValue}>{affiliateStats?.pendingReferrals || 0}</Text>
-              <Text style={styles.statLabel}>Pending</Text>
-            </View>
+            <StatCard
+              icon="people"
+              value={affiliateStats?.totalReferrals || 0}
+              label="Total Referrals"
+              accentColor={colors.primary[500]}
+            />
+            <StatCard
+              icon="checkmark-circle"
+              value={affiliateStats?.completedReferrals || 0}
+              label="Joined"
+              accentColor={colors.success}
+            />
+            <StatCard
+              icon="time"
+              value={affiliateStats?.pendingReferrals || 0}
+              label="Pending"
+              accentColor={colors.warning}
+            />
           </View>
 
           {/* Tier Breakdown */}
           <TierBreakdownCard breakdown={tierBreakdown} loading={tierLoading} />
 
           {/* Coach-Specific Earnings Preview */}
-          <View style={styles.earningsPreview}>
+          <GlassCard style={styles.earningsPreview}>
             <View style={styles.earningsHeader}>
               <Ionicons name="trending-up" size={20} color={colors.primary[500]} />
               <Text style={styles.earningsTitle}>Coach Earnings</Text>
@@ -175,23 +180,22 @@ export function CoachReferralDashboardScreen({ navigation }: CoachReferralDashbo
                 </Text>
               </View>
             </View>
-          </View>
+          </GlassCard>
 
           {/* Referrals List */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>YOUR REFERRALS</Text>
+            <SectionHeader title="Your Referrals" />
 
             {referrals.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="people-outline" size={64} color={colors.textMuted} />
-                <Text style={styles.emptyTitle}>No referrals yet</Text>
-                <Text style={styles.emptySubtitle}>
-                  Share your code with students and fellow coaches
-                </Text>
-              </View>
+              <EmptyState
+                icon="people-outline"
+                title="No referrals yet"
+                description="Share your code with students and fellow coaches"
+              />
             ) : (
-              referrals.map((referral) => (
-                <View key={referral.id} style={styles.referralCard}>
+              referrals.map((referral, index) => (
+                <AnimatedListItem key={referral.id} index={index}>
+                <GlassCard style={styles.referralCard} noPadding>
                   <View style={styles.referralIcon}>
                     <Ionicons
                       name={referral.referredUser?.role === 'gym' ? 'business' : 'person'}
@@ -234,13 +238,14 @@ export function CoachReferralDashboardScreen({ navigation }: CoachReferralDashbo
                       {referral.status === 'completed' ? 'Joined' : 'Pending'}
                     </Text>
                   </View>
-                </View>
+                </GlassCard>
+                </AnimatedListItem>
               ))
             )}
           </View>
 
           {/* Tips for Coaches */}
-          <View style={styles.tipsCard}>
+          <GlassCard style={styles.tipsCard}>
             <Text style={styles.tipsTitle}>Tips for Coaches</Text>
             <View style={styles.tip}>
               <Ionicons name="bulb" size={20} color={colors.warning} />
@@ -260,7 +265,7 @@ export function CoachReferralDashboardScreen({ navigation }: CoachReferralDashbo
                 Encourage students to refer their training partners
               </Text>
             </View>
-          </View>
+          </GlassCard>
 
           <View style={styles.bottomPadding} />
         </ScrollView>
