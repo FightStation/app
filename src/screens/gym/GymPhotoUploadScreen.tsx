@@ -14,7 +14,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import { Button } from '../../components';
+import { GlassCard, GradientButton, SectionHeader } from '../../components';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { pickImage as selectImage, takePicture, uploadGymPhoto, deleteImage } from '../../lib/storage';
 
@@ -189,33 +189,29 @@ export function GymPhotoUploadScreen({ navigation }: GymPhotoUploadScreenProps) 
 
         {/* Upload Options */}
         <View style={styles.uploadOptions}>
-          <TouchableOpacity
-            style={styles.uploadButton}
-            onPress={pickImage}
-            disabled={uploading}
-          >
-            <View style={styles.uploadIconContainer}>
-              <Ionicons name="images" size={32} color={colors.primary[500]} />
+          <GlassCard onPress={pickImage} style={styles.uploadButton}>
+            <View style={styles.uploadButtonContent}>
+              <View style={styles.uploadIconContainer}>
+                <Ionicons name="images" size={32} color={colors.primary[500]} />
+              </View>
+              <Text style={styles.uploadButtonText}>Choose from Gallery</Text>
             </View>
-            <Text style={styles.uploadButtonText}>Choose from Gallery</Text>
-          </TouchableOpacity>
+          </GlassCard>
 
-          <TouchableOpacity
-            style={styles.uploadButton}
-            onPress={takePhoto}
-            disabled={uploading}
-          >
-            <View style={styles.uploadIconContainer}>
-              <Ionicons name="camera" size={32} color={colors.primary[500]} />
+          <GlassCard onPress={takePhoto} style={styles.uploadButton}>
+            <View style={styles.uploadButtonContent}>
+              <View style={styles.uploadIconContainer}>
+                <Ionicons name="camera" size={32} color={colors.primary[500]} />
+              </View>
+              <Text style={styles.uploadButtonText}>Take Photo</Text>
             </View>
-            <Text style={styles.uploadButtonText}>Take Photo</Text>
-          </TouchableOpacity>
+          </GlassCard>
         </View>
 
         {/* Current Photos */}
         {photos.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Your Photos ({photos.length})</Text>
+            <SectionHeader title={`Your Photos (${photos.length})`} />
             <View style={styles.photosGrid}>
               {photos.map((photo, index) => (
                 <View key={index} style={styles.photoContainer}>
@@ -234,13 +230,7 @@ export function GymPhotoUploadScreen({ navigation }: GymPhotoUploadScreenProps) 
 
         {/* Stock Images */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Or Choose Stock Photos</Text>
-            <Ionicons name="sparkles" size={16} color={colors.warning} />
-          </View>
-          <Text style={styles.sectionSubtitle}>
-            Professional boxing gym images you can use
-          </Text>
+          <SectionHeader title="Or Choose Stock Photos" subtitle="Professional boxing gym images you can use" />
 
           <View style={styles.photosGrid}>
             {STOCK_IMAGES.map((imageUrl, index) => (
@@ -260,13 +250,15 @@ export function GymPhotoUploadScreen({ navigation }: GymPhotoUploadScreenProps) 
         </View>
 
         {/* Info Box */}
-        <View style={styles.infoBox}>
-          <Ionicons name="information-circle" size={20} color={colors.primary[500]} />
-          <Text style={styles.infoText}>
-            Photos help fighters get to know your gym. Add images of your equipment,
-            training areas, and atmosphere.
-          </Text>
-        </View>
+        <GlassCard intensity="accent">
+          <View style={styles.infoBoxContent}>
+            <Ionicons name="information-circle" size={20} color={colors.primary[500]} />
+            <Text style={styles.infoText}>
+              Photos help fighters get to know your gym. Add images of your equipment,
+              training areas, and atmosphere.
+            </Text>
+          </View>
+        </GlassCard>
       </ScrollView>
     </SafeAreaView>
   );
@@ -319,12 +311,9 @@ const styles = StyleSheet.create({
   },
   uploadButton: {
     flex: 1,
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
+  },
+  uploadButtonContent: {
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   uploadIconContainer: {
     width: 64,
@@ -344,22 +333,7 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: spacing[6],
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-    marginBottom: spacing[2],
-  },
-  sectionTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-  },
-  sectionSubtitle: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing[4],
-  },
+  // sectionHeader styles removed - using SectionHeader component
   photosGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -395,14 +369,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  infoBox: {
+  infoBoxContent: {
     flexDirection: 'row',
-    backgroundColor: `${colors.primary[500]}10`,
-    borderRadius: borderRadius.lg,
-    padding: spacing[4],
     gap: spacing[3],
-    borderWidth: 1,
-    borderColor: `${colors.primary[500]}30`,
   },
   infoText: {
     flex: 1,

@@ -13,7 +13,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import { Button, Input } from '../../components';
+import { GlassCard, GlassInput, GradientButton, SectionHeader, EmptyState, AnimatedListItem } from '../../components';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { isDesktop } from '../../lib/responsive';
 
@@ -207,7 +207,7 @@ export function AdminManagementScreen({ navigation }: AdminManagementScreenProps
   };
 
   const renderInviteForm = () => (
-    <View style={styles.inviteForm}>
+    <GlassCard style={styles.inviteForm}>
       <View style={styles.formHeader}>
         <Text style={styles.formTitle}>Invite New Admin</Text>
         <TouchableOpacity onPress={() => setShowInviteForm(false)}>
@@ -215,7 +215,7 @@ export function AdminManagementScreen({ navigation }: AdminManagementScreenProps
         </TouchableOpacity>
       </View>
 
-      <Input
+      <GlassInput
         label="Email Address"
         placeholder="admin@example.com"
         value={inviteEmail}
@@ -292,89 +292,97 @@ export function AdminManagementScreen({ navigation }: AdminManagementScreenProps
         </View>
       </TouchableOpacity>
 
-      <Button
+      <GradientButton
         title="Send Invitation"
         onPress={handleInviteAdmin}
         loading={loading}
+        fullWidth
+        icon="send"
         style={styles.sendButton}
       />
-    </View>
+    </GlassCard>
   );
 
-  const renderAdminCard = (admin: Admin) => (
-    <View key={admin.id} style={styles.adminCard}>
-      <View style={styles.adminAvatar}>
-        <Ionicons
-          name={admin.role === 'owner' ? 'shield' : 'person'}
-          size={24}
-          color={
-            admin.role === 'owner' ? colors.warning : colors.primary[500]
-          }
-        />
-      </View>
+  const renderAdminCard = (admin: Admin, index: number) => (
+    <AnimatedListItem key={admin.id} index={index}>
+      <GlassCard
+        accentColor={admin.role === 'owner' ? colors.warning : undefined}
+        style={styles.adminCardWrapper}
+      >
+        <View style={styles.adminCardRow}>
+          <View style={styles.adminAvatar}>
+            <Ionicons
+              name={admin.role === 'owner' ? 'shield' : 'person'}
+              size={24}
+              color={
+                admin.role === 'owner' ? colors.warning : colors.primary[500]
+              }
+            />
+          </View>
 
-      <View style={styles.adminInfo}>
-        <View style={styles.adminHeader}>
-          <Text style={styles.adminName}>{admin.name}</Text>
-          {admin.status === 'pending' && (
-            <View style={styles.pendingBadge}>
-              <Text style={styles.pendingBadgeText}>PENDING</Text>
+          <View style={styles.adminInfo}>
+            <View style={styles.adminHeader}>
+              <Text style={styles.adminName}>{admin.name}</Text>
+              {admin.status === 'pending' && (
+                <View style={styles.pendingBadge}>
+                  <Text style={styles.pendingBadgeText}>PENDING</Text>
+                </View>
+              )}
             </View>
+            <Text style={styles.adminEmail}>{admin.email}</Text>
+
+            <View style={styles.permissionsList}>
+              {admin.permissions.canPostEvents && (
+                <View style={styles.permissionTag}>
+                  <Ionicons
+                    name="calendar"
+                    size={12}
+                    color={colors.textSecondary}
+                  />
+                  <Text style={styles.permissionTagText}>Events</Text>
+                </View>
+              )}
+              {admin.permissions.canEditGym && (
+                <View style={styles.permissionTag}>
+                  <Ionicons name="create" size={12} color={colors.textSecondary} />
+                  <Text style={styles.permissionTagText}>Edit Gym</Text>
+                </View>
+              )}
+              {admin.permissions.canManageAdmins && (
+                <View style={styles.permissionTag}>
+                  <Ionicons name="people" size={12} color={colors.textSecondary} />
+                  <Text style={styles.permissionTagText}>Admins</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {admin.role !== 'owner' && (
+            <TouchableOpacity
+              style={styles.removeButton}
+              onPress={() => handleRemoveAdmin(admin)}
+            >
+              <Ionicons name="trash-outline" size={20} color={colors.error} />
+            </TouchableOpacity>
           )}
         </View>
-        <Text style={styles.adminEmail}>{admin.email}</Text>
-
-        <View style={styles.permissionsList}>
-          {admin.permissions.canPostEvents && (
-            <View style={styles.permissionTag}>
-              <Ionicons
-                name="calendar"
-                size={12}
-                color={colors.textSecondary}
-              />
-              <Text style={styles.permissionTagText}>Events</Text>
-            </View>
-          )}
-          {admin.permissions.canEditGym && (
-            <View style={styles.permissionTag}>
-              <Ionicons name="create" size={12} color={colors.textSecondary} />
-              <Text style={styles.permissionTagText}>Edit Gym</Text>
-            </View>
-          )}
-          {admin.permissions.canManageAdmins && (
-            <View style={styles.permissionTag}>
-              <Ionicons name="people" size={12} color={colors.textSecondary} />
-              <Text style={styles.permissionTagText}>Admins</Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {admin.role !== 'owner' && (
-        <TouchableOpacity
-          style={styles.removeButton}
-          onPress={() => handleRemoveAdmin(admin)}
-        >
-          <Ionicons name="trash-outline" size={20} color={colors.error} />
-        </TouchableOpacity>
-      )}
-    </View>
+      </GlassCard>
+    </AnimatedListItem>
   );
 
   const renderContent = () => (
     <>
       {/* Invite Button */}
       {!showInviteForm && (
-        <TouchableOpacity
-          style={styles.inviteButton}
-          onPress={() => setShowInviteForm(true)}
-        >
-          <View style={styles.inviteIconContainer}>
-            <Ionicons name="person-add" size={24} color={colors.primary[500]} />
+        <GlassCard onPress={() => setShowInviteForm(true)} style={styles.inviteButton}>
+          <View style={styles.inviteButtonRow}>
+            <View style={styles.inviteIconContainer}>
+              <Ionicons name="person-add" size={24} color={colors.primary[500]} />
+            </View>
+            <Text style={styles.inviteButtonText}>Invite New Admin</Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </View>
-          <Text style={styles.inviteButtonText}>Invite New Admin</Text>
-          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-        </TouchableOpacity>
+        </GlassCard>
       )}
 
       {/* Invite Form */}
@@ -382,33 +390,33 @@ export function AdminManagementScreen({ navigation }: AdminManagementScreenProps
 
       {/* Admins List */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          Team Members ({admins.filter((a) => a.status === 'active').length})
-        </Text>
+        <SectionHeader
+          title={`Team Members (${admins.filter((a) => a.status === 'active').length})`}
+        />
 
-        {admins.map(renderAdminCard)}
+        {admins.map((admin, index) => renderAdminCard(admin, index))}
 
         {admins.length === 0 && (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyIconContainer}>
-              <Ionicons name="people-outline" size={48} color={colors.primary[500]} />
-            </View>
-            <Text style={styles.emptyStateText}>No admins yet</Text>
-            <Text style={styles.emptyStateSubtext}>
-              Invite team members to help manage your gym
-            </Text>
-          </View>
+          <EmptyState
+            icon="people-outline"
+            title="No admins yet"
+            description="Invite team members to help manage your gym"
+            actionLabel="Invite Admin"
+            onAction={() => setShowInviteForm(true)}
+          />
         )}
       </View>
 
       {/* Info Box */}
-      <View style={styles.infoBox}>
-        <Ionicons name="information-circle" size={20} color={colors.primary[500]} />
-        <Text style={styles.infoText}>
-          Admins will receive an email invitation. They can accept and start helping
-          manage your gym based on their permissions.
-        </Text>
-      </View>
+      <GlassCard intensity="accent">
+        <View style={styles.infoBoxContent}>
+          <Ionicons name="information-circle" size={20} color={colors.primary[500]} />
+          <Text style={styles.infoText}>
+            Admins will receive an email invitation. They can accept and start helping
+            manage your gym based on their permissions.
+          </Text>
+        </View>
+      </GlassCard>
     </>
   );
 
@@ -584,14 +592,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing[6],
   },
   inviteButton: {
+    marginBottom: spacing[6],
+  },
+  inviteButtonRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.cardBg,
-    padding: spacing[4],
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing[6],
     gap: spacing[3],
   },
   inviteIconContainer: {
@@ -679,15 +684,12 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginBottom: spacing[4],
   },
-  adminCard: {
+  adminCardWrapper: {
+    marginBottom: spacing[3],
+  },
+  adminCardRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing[3],
     gap: spacing[3],
   },
   adminAvatar: {
@@ -774,14 +776,9 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: spacing[1],
   },
-  infoBox: {
+  infoBoxContent: {
     flexDirection: 'row',
-    backgroundColor: `${colors.primary[500]}10`,
-    borderRadius: borderRadius.lg,
-    padding: spacing[4],
     gap: spacing[3],
-    borderWidth: 1,
-    borderColor: `${colors.primary[500]}30`,
   },
   infoText: {
     flex: 1,

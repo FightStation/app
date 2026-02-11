@@ -16,7 +16,7 @@ import { supabase } from '../../lib/supabase';
 import { Gym, SUPPORTED_COUNTRIES } from '../../types';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { isDesktop } from '../../lib/responsive';
-import { Button, Input, ProfileCompletenessCard } from '../../components';
+import { GlassCard, GlassInput, GradientButton, SectionHeader, ProfileCompletenessCard } from '../../components';
 import { calculateGymCompleteness } from '../../utils/profileCompleteness';
 
 type GymSettingsScreenProps = {
@@ -158,14 +158,14 @@ export function GymSettingsScreen({ navigation }: GymSettingsScreenProps) {
 
   const renderProfileSection = () => (
     <View style={styles.sectionContent}>
-      <Input
+      <GlassInput
         label="Gym Name"
         placeholder="Enter your gym name"
         value={name}
         onChangeText={setName}
       />
 
-      <Input
+      <GlassInput
         label="Description"
         placeholder="Describe your gym, training style, and what makes you unique..."
         value={description}
@@ -189,14 +189,14 @@ export function GymSettingsScreen({ navigation }: GymSettingsScreenProps) {
         ))}
       </View>
 
-      <Input
+      <GlassInput
         label="City"
         placeholder="Enter city"
         value={city}
         onChangeText={setCity}
       />
 
-      <Input
+      <GlassInput
         label="Full Address"
         placeholder="Enter full street address"
         value={address}
@@ -207,7 +207,7 @@ export function GymSettingsScreen({ navigation }: GymSettingsScreenProps) {
 
   const renderContactSection = () => (
     <View style={styles.sectionContent}>
-      <Input
+      <GlassInput
         label="Contact Email"
         placeholder="gym@example.com"
         value={contactEmail}
@@ -216,7 +216,7 @@ export function GymSettingsScreen({ navigation }: GymSettingsScreenProps) {
         autoCapitalize="none"
       />
 
-      <Input
+      <GlassInput
         label="Phone Number"
         placeholder="+1 234 567 8900"
         value={contactPhone}
@@ -224,7 +224,7 @@ export function GymSettingsScreen({ navigation }: GymSettingsScreenProps) {
         keyboardType="phone-pad"
       />
 
-      <Input
+      <GlassInput
         label="Website"
         placeholder="https://yourgym.com"
         value={website}
@@ -270,68 +270,66 @@ export function GymSettingsScreen({ navigation }: GymSettingsScreenProps) {
 
   const renderAccountSection = () => (
     <View style={styles.sectionContent}>
-      <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => navigation.navigate('GymPhotoUpload')}
-      >
-        <View style={styles.menuItemIcon}>
-          <Ionicons name="images" size={22} color={colors.primary[500]} />
+      <GlassCard onPress={() => navigation.navigate('GymPhotoUpload')}>
+        <View style={styles.menuItemRow}>
+          <View style={styles.menuItemIcon}>
+            <Ionicons name="images" size={22} color={colors.primary[500]} />
+          </View>
+          <View style={styles.menuItemContent}>
+            <Text style={styles.menuItemTitle}>Gym Photos</Text>
+            <Text style={styles.menuItemSubtitle}>{gym?.photos?.length || 0} photos uploaded</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </View>
-        <View style={styles.menuItemContent}>
-          <Text style={styles.menuItemTitle}>Gym Photos</Text>
-          <Text style={styles.menuItemSubtitle}>{gym?.photos?.length || 0} photos uploaded</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-      </TouchableOpacity>
+      </GlassCard>
 
-      <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => navigation.navigate('AdminManagement')}
-      >
-        <View style={styles.menuItemIcon}>
-          <Ionicons name="shield" size={22} color={colors.primary[500]} />
+      <GlassCard onPress={() => navigation.navigate('AdminManagement')}>
+        <View style={styles.menuItemRow}>
+          <View style={styles.menuItemIcon}>
+            <Ionicons name="shield" size={22} color={colors.primary[500]} />
+          </View>
+          <View style={styles.menuItemContent}>
+            <Text style={styles.menuItemTitle}>Manage Admins</Text>
+            <Text style={styles.menuItemSubtitle}>Add or remove gym administrators</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </View>
-        <View style={styles.menuItemContent}>
-          <Text style={styles.menuItemTitle}>Manage Admins</Text>
-          <Text style={styles.menuItemSubtitle}>Add or remove gym administrators</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-      </TouchableOpacity>
+      </GlassCard>
 
-      <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => navigation.navigate('GymReferralDashboard')}
-      >
-        <View style={styles.menuItemIcon}>
-          <Ionicons name="people" size={22} color={colors.primary[500]} />
+      <GlassCard onPress={() => navigation.navigate('GymReferralDashboard')}>
+        <View style={styles.menuItemRow}>
+          <View style={styles.menuItemIcon}>
+            <Ionicons name="people" size={22} color={colors.primary[500]} />
+          </View>
+          <View style={styles.menuItemContent}>
+            <Text style={styles.menuItemTitle}>Referral Program</Text>
+            <Text style={styles.menuItemSubtitle}>Invite fighters and earn rewards</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </View>
-        <View style={styles.menuItemContent}>
-          <Text style={styles.menuItemTitle}>Referral Program</Text>
-          <Text style={styles.menuItemSubtitle}>Invite fighters and earn rewards</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-      </TouchableOpacity>
+      </GlassCard>
 
-      <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => navigation.navigate('AdminDashboard')}
-      >
-        <View style={[styles.menuItemIcon, { backgroundColor: `${colors.warning}15` }]}>
-          <Ionicons name="shield-checkmark" size={22} color={colors.warning} />
+      <GlassCard onPress={() => navigation.navigate('AdminDashboard')} accentColor={colors.warning}>
+        <View style={styles.menuItemRow}>
+          <View style={[styles.menuItemIcon, { backgroundColor: `${colors.warning}15` }]}>
+            <Ionicons name="shield-checkmark" size={22} color={colors.warning} />
+          </View>
+          <View style={styles.menuItemContent}>
+            <Text style={styles.menuItemTitle}>Admin Dashboard</Text>
+            <Text style={styles.menuItemSubtitle}>System management and analytics</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </View>
-        <View style={styles.menuItemContent}>
-          <Text style={styles.menuItemTitle}>Admin Dashboard</Text>
-          <Text style={styles.menuItemSubtitle}>System management and analytics</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-      </TouchableOpacity>
+      </GlassCard>
 
       <View style={styles.divider} />
 
-      <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-        <Ionicons name="log-out-outline" size={22} color={colors.error} />
-        <Text style={styles.signOutText}>Sign Out</Text>
-      </TouchableOpacity>
+      <GlassCard onPress={handleSignOut} accentColor={colors.error}>
+        <View style={styles.signOutRow}>
+          <Ionicons name="log-out-outline" size={22} color={colors.error} />
+          <Text style={styles.signOutText}>Sign Out</Text>
+        </View>
+      </GlassCard>
     </View>
   );
 
@@ -391,10 +389,8 @@ export function GymSettingsScreen({ navigation }: GymSettingsScreenProps) {
             {/* Main Content */}
             <View style={styles.mainContent}>
               <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={styles.card}>
-                  <Text style={styles.cardTitle}>
-                    {sections.find(s => s.key === activeSection)?.label}
-                  </Text>
+                <GlassCard style={styles.card}>
+                  <SectionHeader title={sections.find(s => s.key === activeSection)?.label || ''} />
 
                   {error ? (
                     <View style={styles.errorContainer}>
@@ -416,15 +412,16 @@ export function GymSettingsScreen({ navigation }: GymSettingsScreenProps) {
                   {activeSection === 'account' && renderAccountSection()}
 
                   {activeSection !== 'account' && (
-                    <Button
+                    <GradientButton
                       title="Save Changes"
                       onPress={handleSave}
                       loading={loading}
                       size="lg"
+                      fullWidth
                       style={styles.saveButton}
                     />
                   )}
-                </View>
+                </GlassCard>
               </ScrollView>
             </View>
           </View>
@@ -496,11 +493,12 @@ export function GymSettingsScreen({ navigation }: GymSettingsScreenProps) {
         {activeSection === 'account' && renderAccountSection()}
 
         {activeSection !== 'account' && (
-          <Button
+          <GradientButton
             title="Save Changes"
             onPress={handleSave}
             loading={loading}
             size="lg"
+            fullWidth
             style={styles.saveButton}
           />
         )}
@@ -725,13 +723,9 @@ const styles = StyleSheet.create({
     color: colors.primary[500],
     fontWeight: '600',
   },
-  menuItem: {
+  menuItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    padding: spacing[4],
-    borderRadius: borderRadius.lg,
-    marginBottom: spacing[3],
   },
   menuItemIcon: {
     width: 44,
@@ -760,15 +754,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
     marginVertical: spacing[4],
   },
-  signOutButton: {
+  signOutRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing[2],
-    padding: spacing[4],
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: colors.error,
   },
   signOutText: {
     fontSize: typography.fontSize.base,

@@ -13,7 +13,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import { Button, Input } from '../../components';
+import { GlassCard, GlassInput, GradientButton, SectionHeader, EmptyState, AnimatedListItem } from '../../components';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { isDesktop } from '../../lib/responsive';
 
@@ -284,7 +284,7 @@ export function TrainingScheduleScreen({
   const sessionsByDay = groupSessionsByDay();
 
   const renderAddForm = () => (
-    <View style={styles.addForm}>
+    <GlassCard style={styles.addForm}>
       <View style={styles.formHeader}>
         <Text style={styles.formTitle}>New Training Session</Text>
         <TouchableOpacity onPress={() => setShowAddForm(false)}>
@@ -292,14 +292,14 @@ export function TrainingScheduleScreen({
         </TouchableOpacity>
       </View>
 
-      <Input
+      <GlassInput
         label="Session Name"
         placeholder="e.g., Morning Conditioning"
         value={formData.name}
         onChangeText={(text) => setFormData({ ...formData, name: text })}
       />
 
-      <Input
+      <GlassInput
         label="Description"
         placeholder="Brief description of the session..."
         value={formData.description}
@@ -335,7 +335,7 @@ export function TrainingScheduleScreen({
 
       <View style={styles.timeRow}>
         <View style={styles.timeField}>
-          <Input
+          <GlassInput
             label="Start Time"
             placeholder="09:00"
             value={formData.startTime}
@@ -345,7 +345,7 @@ export function TrainingScheduleScreen({
           />
         </View>
         <View style={styles.timeField}>
-          <Input
+          <GlassInput
             label="End Time"
             placeholder="10:30"
             value={formData.endTime}
@@ -356,7 +356,7 @@ export function TrainingScheduleScreen({
         </View>
       </View>
 
-      <Input
+      <GlassInput
         label="Coach Name"
         placeholder="Coach or instructor name"
         value={formData.coachName}
@@ -393,7 +393,7 @@ export function TrainingScheduleScreen({
         ))}
       </View>
 
-      <Input
+      <GlassInput
         label="Max Participants (Optional)"
         placeholder="Leave empty for unlimited"
         value={formData.maxParticipants}
@@ -403,71 +403,74 @@ export function TrainingScheduleScreen({
         keyboardType="number-pad"
       />
 
-      <Button
+      <GradientButton
         title="Add Session"
         onPress={handleAddSession}
         loading={loading}
+        fullWidth
         style={styles.addButton}
       />
-    </View>
+    </GlassCard>
   );
 
-  const renderSessionCard = (session: TrainingSession) => (
-    <View key={session.id} style={styles.sessionCard}>
-      <View style={styles.sessionHeader}>
-        <View style={styles.sessionMainInfo}>
-          <Text style={styles.sessionName}>{session.name}</Text>
-          <View
-            style={[
-              styles.levelBadge,
-              { backgroundColor: `${getLevelColor(session.level)}20` },
-            ]}
-          >
-            <Text
+  const renderSessionCard = (session: TrainingSession, index: number) => (
+    <AnimatedListItem key={session.id} index={index}>
+      <GlassCard accentColor={getLevelColor(session.level)} style={styles.sessionCard}>
+        <View style={styles.sessionHeader}>
+          <View style={styles.sessionMainInfo}>
+            <Text style={styles.sessionName}>{session.name}</Text>
+            <View
               style={[
-                styles.levelBadgeText,
-                { color: getLevelColor(session.level) },
+                styles.levelBadge,
+                { backgroundColor: `${getLevelColor(session.level)}20` },
               ]}
             >
-              {session.level}
-            </Text>
+              <Text
+                style={[
+                  styles.levelBadgeText,
+                  { color: getLevelColor(session.level) },
+                ]}
+              >
+                {session.level}
+              </Text>
+            </View>
           </View>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => handleDeleteSession(session)}
+          >
+            <Ionicons name="trash-outline" size={20} color={colors.error} />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => handleDeleteSession(session)}
-        >
-          <Ionicons name="trash-outline" size={20} color={colors.error} />
-        </TouchableOpacity>
-      </View>
 
-      {session.description && (
-        <Text style={styles.sessionDescription}>
-          {session.description}
-        </Text>
-      )}
-
-      <View style={styles.sessionMeta}>
-        <View style={styles.metaItem}>
-          <Ionicons name="time" size={16} color={colors.textMuted} />
-          <Text style={styles.metaText}>
-            {session.startTime} - {session.endTime}
+        {session.description && (
+          <Text style={styles.sessionDescription}>
+            {session.description}
           </Text>
-        </View>
-        <View style={styles.metaItem}>
-          <Ionicons name="person" size={16} color={colors.textMuted} />
-          <Text style={styles.metaText}>{session.coachName}</Text>
-        </View>
-        {session.maxParticipants && (
+        )}
+
+        <View style={styles.sessionMeta}>
           <View style={styles.metaItem}>
-            <Ionicons name="people" size={16} color={colors.textMuted} />
+            <Ionicons name="time" size={16} color={colors.textMuted} />
             <Text style={styles.metaText}>
-              Max {session.maxParticipants}
+              {session.startTime} - {session.endTime}
             </Text>
           </View>
-        )}
-      </View>
-    </View>
+          <View style={styles.metaItem}>
+            <Ionicons name="person" size={16} color={colors.textMuted} />
+            <Text style={styles.metaText}>{session.coachName}</Text>
+          </View>
+          {session.maxParticipants && (
+            <View style={styles.metaItem}>
+              <Ionicons name="people" size={16} color={colors.textMuted} />
+              <Text style={styles.metaText}>
+                Max {session.maxParticipants}
+              </Text>
+            </View>
+          )}
+        </View>
+      </GlassCard>
+    </AnimatedListItem>
   );
 
   const renderScheduleContent = () => (
@@ -479,32 +482,32 @@ export function TrainingScheduleScreen({
 
         return (
           <View key={dayIndex} style={styles.daySection}>
-            <Text style={styles.dayTitle}>{day}</Text>
-            {daySessions.map(renderSessionCard)}
+            <SectionHeader title={day} />
+            {daySessions.map((session, idx) => renderSessionCard(session, idx))}
           </View>
         );
       })}
 
       {sessions.length === 0 && !showAddForm && (
-        <View style={styles.emptyState}>
-          <View style={styles.emptyIconContainer}>
-            <Ionicons name="calendar-outline" size={48} color={colors.primary[500]} />
-          </View>
-          <Text style={styles.emptyStateText}>No training sessions yet</Text>
-          <Text style={styles.emptyStateSubtext}>
-            Tap the + button to add your first session
-          </Text>
-        </View>
+        <EmptyState
+          icon="calendar-outline"
+          title="No training sessions yet"
+          description="Tap the + button to add your first session"
+          actionLabel="Add Session"
+          onAction={() => setShowAddForm(true)}
+        />
       )}
 
       {/* Info Box */}
-      <View style={styles.infoBox}>
-        <Ionicons name="information-circle" size={20} color={colors.primary[500]} />
-        <Text style={styles.infoText}>
-          Set up your recurring training schedule. Fighters can view these times
-          and plan their training accordingly.
-        </Text>
-      </View>
+      <GlassCard intensity="accent" style={styles.infoBox}>
+        <View style={styles.infoBoxContent}>
+          <Ionicons name="information-circle" size={20} color={colors.primary[500]} />
+          <Text style={styles.infoText}>
+            Set up your recurring training schedule. Fighters can view these times
+            and plan their training accordingly.
+          </Text>
+        </View>
+      </GlassCard>
     </>
   );
 
@@ -797,11 +800,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing[3],
   },
   sessionCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
     marginBottom: spacing[3],
   },
   sessionHeader: {
@@ -880,14 +878,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   infoBox: {
-    flexDirection: 'row',
-    backgroundColor: `${colors.primary[500]}10`,
-    borderRadius: borderRadius.lg,
-    padding: spacing[4],
-    gap: spacing[3],
-    borderWidth: 1,
-    borderColor: `${colors.primary[500]}30`,
     marginTop: spacing[4],
+  },
+  infoBoxContent: {
+    flexDirection: 'row',
+    gap: spacing[3],
   },
   infoText: {
     flex: 1,

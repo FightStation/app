@@ -21,6 +21,7 @@ import {
   AttendeeWithDetails,
 } from '../../services/events';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import { GlassCard, GradientButton, StatCard, EmptyState, AnimatedListItem } from '../../components';
 
 type EventCheckInScreenProps = NativeStackScreenProps<{
   EventCheckIn: { eventId: string; eventTitle?: string };
@@ -108,68 +109,80 @@ export function EventCheckInScreen({ navigation, route }: EventCheckInScreenProp
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const renderAttendee = (attendee: AttendeeWithDetails) => {
+  const renderAttendee = (attendee: AttendeeWithDetails, index: number) => {
     const isLoading = actionLoading === attendee.fighter_id;
 
     return (
-      <View key={attendee.fighter_id} style={styles.attendeeCard}>
-        <View style={styles.attendeeInfo}>
-          <View style={styles.avatarPlaceholder}>
-            <Ionicons name="person" size={20} color={colors.textMuted} />
-          </View>
-          <View style={styles.attendeeText}>
-            <Text style={styles.attendeeName}>{attendee.fighter_name}</Text>
-            {attendee.weight_class && (
-              <Text style={styles.attendeeWeight}>
-                {attendee.weight_class.replace(/_/g, ' ')}
-              </Text>
-            )}
-          </View>
-        </View>
+      <AnimatedListItem key={attendee.fighter_id} index={index}>
+        <GlassCard
+          accentColor={
+            attendee.no_show
+              ? colors.error
+              : attendee.checked_in_at
+              ? colors.success
+              : undefined
+          }
+          style={styles.attendeeCardWrapper}
+        >
+          <View style={styles.attendeeCardRow}>
+            <View style={styles.attendeeInfo}>
+              <View style={styles.avatarPlaceholder}>
+                <Ionicons name="person" size={20} color={colors.textMuted} />
+              </View>
+              <View style={styles.attendeeText}>
+                <Text style={styles.attendeeName}>{attendee.fighter_name}</Text>
+                {attendee.weight_class && (
+                  <Text style={styles.attendeeWeight}>
+                    {attendee.weight_class.replace(/_/g, ' ')}
+                  </Text>
+                )}
+              </View>
+            </View>
 
-        <View style={styles.attendeeActions}>
-          {isLoading ? (
-            <ActivityIndicator size="small" color={colors.primary[500]} />
-          ) : attendee.no_show ? (
-            <View style={styles.noShowBadge}>
-              <Text style={styles.noShowText}>No-Show</Text>
-            </View>
-          ) : attendee.checked_in_at ? (
-            <View style={styles.checkedInActions}>
-              <Text style={styles.checkInTime}>
-                {formatTime(attendee.checked_in_at)}
-              </Text>
-              {!attendee.checked_out_at && (
-                <TouchableOpacity
-                  style={styles.checkOutButton}
-                  onPress={() => handleCheckOut(attendee.fighter_id)}
-                >
-                  <Text style={styles.checkOutText}>Check Out</Text>
-                </TouchableOpacity>
+            <View style={styles.attendeeActions}>
+              {isLoading ? (
+                <ActivityIndicator size="small" color={colors.primary[500]} />
+              ) : attendee.no_show ? (
+                <View style={styles.noShowBadge}>
+                  <Text style={styles.noShowText}>No-Show</Text>
+                </View>
+              ) : attendee.checked_in_at ? (
+                <View style={styles.checkedInActions}>
+                  <Text style={styles.checkInTime}>
+                    {formatTime(attendee.checked_in_at)}
+                  </Text>
+                  {!attendee.checked_out_at && (
+                    <TouchableOpacity
+                      style={styles.checkOutButton}
+                      onPress={() => handleCheckOut(attendee.fighter_id)}
+                    >
+                      <Text style={styles.checkOutText}>Check Out</Text>
+                    </TouchableOpacity>
+                  )}
+                  {attendee.checked_out_at && (
+                    <Text style={styles.checkedOutLabel}>Left</Text>
+                  )}
+                </View>
+              ) : (
+                <View style={styles.notCheckedInActions}>
+                  <GradientButton
+                    title="Check In"
+                    onPress={() => handleCheckIn(attendee.fighter_id)}
+                    size="sm"
+                    icon="checkmark-circle"
+                  />
+                  <TouchableOpacity
+                    style={styles.noShowButton}
+                    onPress={() => handleNoShow(attendee.fighter_id, attendee.fighter_name)}
+                  >
+                    <Ionicons name="close-circle-outline" size={16} color={colors.error} />
+                  </TouchableOpacity>
+                </View>
               )}
-              {attendee.checked_out_at && (
-                <Text style={styles.checkedOutLabel}>Left</Text>
-              )}
             </View>
-          ) : (
-            <View style={styles.notCheckedInActions}>
-              <TouchableOpacity
-                style={styles.checkInButton}
-                onPress={() => handleCheckIn(attendee.fighter_id)}
-              >
-                <Ionicons name="checkmark-circle" size={16} color="#fff" />
-                <Text style={styles.checkInText}>Check In</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.noShowButton}
-                onPress={() => handleNoShow(attendee.fighter_id, attendee.fighter_name)}
-              >
-                <Ionicons name="close-circle-outline" size={16} color={colors.error} />
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </View>
+          </View>
+        </GlassCard>
+      </AnimatedListItem>
     );
   };
 
@@ -207,30 +220,29 @@ export function EventCheckInScreen({ navigation, route }: EventCheckInScreenProp
           >
             {/* Stats Bar */}
             <View style={styles.statsBar}>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{checkedInCount}/{attendees.length}</Text>
-                <Text style={styles.statLabel}>Checked In</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, noShowCount > 0 && styles.statValueWarning]}>
-                  {noShowCount}
-                </Text>
-                <Text style={styles.statLabel}>No-Shows</Text>
-              </View>
+              <StatCard
+                icon="checkmark-circle"
+                value={`${checkedInCount}/${attendees.length}`}
+                label="Checked In"
+                accentColor={colors.success}
+              />
+              <StatCard
+                icon="close-circle"
+                value={noShowCount}
+                label="No-Shows"
+                accentColor={noShowCount > 0 ? colors.error : colors.textMuted}
+              />
             </View>
 
             {/* Attendee List */}
             {attendees.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="people-outline" size={48} color={colors.textMuted} />
-                <Text style={styles.emptyTitle}>No Approved Fighters</Text>
-                <Text style={styles.emptySubtitle}>
-                  Approved fighters will appear here for check-in
-                </Text>
-              </View>
+              <EmptyState
+                icon="people-outline"
+                title="No Approved Fighters"
+                description="Approved fighters will appear here for check-in"
+              />
             ) : (
-              attendees.map(renderAttendee)
+              attendees.map((attendee, index) => renderAttendee(attendee, index))
             )}
 
             <View style={styles.bottomPadding} />
@@ -298,44 +310,16 @@ const styles = StyleSheet.create({
   },
   statsBar: {
     flexDirection: 'row',
-    backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
+    gap: spacing[3],
     marginBottom: spacing[4],
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
+  attendeeCardWrapper: {
+    marginBottom: spacing[2],
   },
-  statValue: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: typography.fontWeight.bold,
-  },
-  statValueWarning: {
-    color: colors.error,
-  },
-  statLabel: {
-    color: colors.textMuted,
-    fontSize: typography.fontSize.xs,
-    marginTop: 2,
-  },
-  statDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: colors.border,
-    marginHorizontal: spacing[4],
-  },
-  attendeeCard: {
+  attendeeCardRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.lg,
-    padding: spacing[3],
-    marginBottom: spacing[2],
   },
   attendeeInfo: {
     flexDirection: 'row',
@@ -412,20 +396,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing[2],
   },
-  checkInButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.success,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    borderRadius: borderRadius.full,
-    gap: spacing[1],
-  },
-  checkInText: {
-    color: '#fff',
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-  },
+  // checkInButton styles removed - using GradientButton component
   noShowButton: {
     padding: spacing[2],
   },

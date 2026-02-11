@@ -17,7 +17,7 @@ import { supabase } from '../../lib/supabase';
 import { Fighter, Gym, WEIGHT_CLASS_LABELS, EXPERIENCE_LABELS } from '../../types';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { isDesktop } from '../../lib/responsive';
-import { Input } from '../../components';
+import { GlassCard, BadgeRow, EmptyState, AnimatedListItem } from '../../components';
 
 type ManageFightersScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -94,53 +94,48 @@ export function ManageFightersScreen({ navigation }: ManageFightersScreenProps) 
 
   const gymMembers = fighters.filter(f => f.isGymMember);
 
-  const renderFighterCard = (fighter: FighterWithStatus) => (
-    <TouchableOpacity
-      key={fighter.id}
-      style={styles.fighterCard}
-      onPress={() => navigation.navigate('FighterProfileView', { fighterId: fighter.id })}
-      activeOpacity={0.7}
-    >
-      <View style={styles.fighterAvatar}>
-        {fighter.avatar_url ? (
-          <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarInitials}>
-              {fighter.first_name[0]}{fighter.last_name[0]}
+  const renderFighterCard = (fighter: FighterWithStatus, index: number) => (
+    <AnimatedListItem key={fighter.id} index={index}>
+      <GlassCard
+        onPress={() => navigation.navigate('FighterProfileView', { fighterId: fighter.id })}
+        accentColor={fighter.isGymMember ? colors.success : undefined}
+        style={styles.fighterCardWrapper}
+      >
+        <View style={styles.fighterCardRow}>
+          <View style={styles.fighterAvatar}>
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarInitials}>
+                {fighter.first_name[0]}{fighter.last_name[0]}
+              </Text>
+            </View>
+            {fighter.isGymMember && (
+              <View style={styles.memberBadge}>
+                <Ionicons name="checkmark" size={10} color={colors.textPrimary} />
+              </View>
+            )}
+          </View>
+
+          <View style={styles.fighterInfo}>
+            <Text style={styles.fighterName}>
+              {fighter.first_name} {fighter.last_name}
+            </Text>
+            <Text style={styles.fighterDetails}>
+              {WEIGHT_CLASS_LABELS[fighter.weight_class]} • {EXPERIENCE_LABELS[fighter.experience_level]}
+            </Text>
+            <Text style={styles.fighterLocation}>
+              {fighter.city}, {fighter.country}
             </Text>
           </View>
-        ) : (
-          <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarInitials}>
-              {fighter.first_name[0]}{fighter.last_name[0]}
-            </Text>
+
+          <View style={styles.fighterStats}>
+            <Text style={styles.statValue}>{fighter.sparring_count || 0}</Text>
+            <Text style={styles.statLabel}>Spars</Text>
           </View>
-        )}
-        {fighter.isGymMember && (
-          <View style={styles.memberBadge}>
-            <Ionicons name="checkmark" size={10} color={colors.textPrimary} />
-          </View>
-        )}
-      </View>
 
-      <View style={styles.fighterInfo}>
-        <Text style={styles.fighterName}>
-          {fighter.first_name} {fighter.last_name}
-        </Text>
-        <Text style={styles.fighterDetails}>
-          {WEIGHT_CLASS_LABELS[fighter.weight_class]} • {EXPERIENCE_LABELS[fighter.experience_level]}
-        </Text>
-        <Text style={styles.fighterLocation}>
-          {fighter.city}, {fighter.country}
-        </Text>
-      </View>
-
-      <View style={styles.fighterStats}>
-        <Text style={styles.statValue}>{fighter.sparring_count || 0}</Text>
-        <Text style={styles.statLabel}>Spars</Text>
-      </View>
-
-      <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-    </TouchableOpacity>
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+        </View>
+      </GlassCard>
+    </AnimatedListItem>
   );
 
   // Desktop layout
@@ -181,23 +176,15 @@ export function ManageFightersScreen({ navigation }: ManageFightersScreenProps) 
               )}
             </View>
 
-            <View style={styles.filterTabs}>
-              {[
-                { key: 'all', label: 'All Fighters' },
-                { key: 'members', label: 'Gym Members' },
-                { key: 'nearby', label: 'Nearby' },
-              ].map(tab => (
-                <TouchableOpacity
-                  key={tab.key}
-                  style={[styles.filterTab, filter === tab.key && styles.filterTabActive]}
-                  onPress={() => setFilter(tab.key as any)}
-                >
-                  <Text style={[styles.filterTabText, filter === tab.key && styles.filterTabTextActive]}>
-                    {tab.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <BadgeRow
+              items={[
+                { key: 'all', label: 'All Fighters', icon: 'people' },
+                { key: 'members', label: 'Gym Members', icon: 'checkmark-circle' },
+                { key: 'nearby', label: 'Nearby', icon: 'location' },
+              ]}
+              selected={filter}
+              onSelect={(key) => setFilter(key as any)}
+            />
           </View>
 
           {/* Fighters List */}
@@ -214,16 +201,14 @@ export function ManageFightersScreen({ navigation }: ManageFightersScreenProps) 
                 <Text style={styles.loadingText}>Loading fighters...</Text>
               </View>
             ) : filteredFighters.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <Ionicons name="people-outline" size={64} color={colors.textMuted} />
-                <Text style={styles.emptyTitle}>No fighters found</Text>
-                <Text style={styles.emptySubtitle}>
-                  {searchQuery ? 'Try a different search term' : 'Fighters will appear here when they register'}
-                </Text>
-              </View>
+              <EmptyState
+                icon="people-outline"
+                title="No fighters found"
+                description={searchQuery ? 'Try a different search term' : 'Fighters will appear here when they register'}
+              />
             ) : (
               <View style={styles.fightersGrid}>
-                {filteredFighters.map(renderFighterCard)}
+                {filteredFighters.map((fighter, index) => renderFighterCard(fighter, index))}
               </View>
             )}
           </ScrollView>
@@ -261,28 +246,15 @@ export function ManageFightersScreen({ navigation }: ManageFightersScreenProps) 
           />
         </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterScroll}
-          contentContainerStyle={styles.filterScrollContent}
-        >
-          {[
+        <BadgeRow
+          items={[
             { key: 'all', label: 'All' },
             { key: 'members', label: 'Members' },
             { key: 'nearby', label: 'Nearby' },
-          ].map(tab => (
-            <TouchableOpacity
-              key={tab.key}
-              style={[styles.filterChip, filter === tab.key && styles.filterChipActive]}
-              onPress={() => setFilter(tab.key as any)}
-            >
-              <Text style={[styles.filterChipText, filter === tab.key && styles.filterChipTextActive]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+          ]}
+          selected={filter}
+          onSelect={(key) => setFilter(key as any)}
+        />
       </View>
 
       {/* Fighters List */}
@@ -299,15 +271,13 @@ export function ManageFightersScreen({ navigation }: ManageFightersScreenProps) 
             <Text style={styles.loadingText}>Loading fighters...</Text>
           </View>
         ) : filteredFighters.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="people-outline" size={64} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>No fighters found</Text>
-            <Text style={styles.emptySubtitle}>
-              {searchQuery ? 'Try a different search' : 'Invite fighters to join your gym'}
-            </Text>
-          </View>
+          <EmptyState
+            icon="people-outline"
+            title="No fighters found"
+            description={searchQuery ? 'Try a different search' : 'Invite fighters to join your gym'}
+          />
         ) : (
-          filteredFighters.map(renderFighterCard)
+          filteredFighters.map((fighter, index) => renderFighterCard(fighter, index))
         )}
       </ScrollView>
     </SafeAreaView>
@@ -464,15 +434,12 @@ const styles = StyleSheet.create({
   fightersGrid: {
     gap: spacing[3],
   },
-  fighterCard: {
+  fighterCardWrapper: {
+    marginBottom: spacing[3],
+  },
+  fighterCardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    marginBottom: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   fighterAvatar: {
     position: 'relative',

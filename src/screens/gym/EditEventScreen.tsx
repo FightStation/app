@@ -14,7 +14,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import { Button, Input } from '../../components';
+import { GlassCard, GlassInput, GradientButton, SectionHeader, StatCard, EmptyState, AnimatedListItem } from '../../components';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { isDesktop } from '../../lib/responsive';
 
@@ -364,14 +364,14 @@ export function EditEventScreen({ navigation, route }: any) {
 
   const renderDetailsTab = () => (
     <>
-      <Input
+      <GlassInput
         label="Event Title"
         placeholder="e.g., Technical Sparring Session"
         value={title}
         onChangeText={setTitle}
       />
 
-      <Input
+      <GlassInput
         label="Description"
         placeholder="Describe the session, rules, requirements..."
         value={description}
@@ -382,7 +382,7 @@ export function EditEventScreen({ navigation, route }: any) {
 
       <View style={styles.row}>
         <View style={styles.halfField}>
-          <Input
+          <GlassInput
             label="Date"
             placeholder="YYYY-MM-DD"
             value={eventDate}
@@ -393,7 +393,7 @@ export function EditEventScreen({ navigation, route }: any) {
 
       <View style={styles.row}>
         <View style={styles.halfField}>
-          <Input
+          <GlassInput
             label="Start Time"
             placeholder="18:00"
             value={startTime}
@@ -401,7 +401,7 @@ export function EditEventScreen({ navigation, route }: any) {
           />
         </View>
         <View style={styles.halfField}>
-          <Input
+          <GlassInput
             label="End Time"
             placeholder="20:00"
             value={endTime}
@@ -410,7 +410,7 @@ export function EditEventScreen({ navigation, route }: any) {
         </View>
       </View>
 
-      <Input
+      <GlassInput
         label="Max Participants"
         placeholder="16"
         value={maxParticipants}
@@ -420,15 +420,13 @@ export function EditEventScreen({ navigation, route }: any) {
 
       {event?.type === 'sparring' && (
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>INTENSITY</Text>
+          <SectionHeader title="Intensity" />
           {INTENSITY_OPTIONS.map((option) => (
-            <TouchableOpacity
+            <GlassCard
               key={option.id}
-              style={[
-                styles.optionCard,
-                intensity === option.id && styles.optionCardSelected,
-              ]}
               onPress={() => setIntensity(option.id)}
+              intensity={intensity === option.id ? 'accent' : 'light'}
+              style={styles.optionCard}
             >
               <View style={styles.optionHeader}>
                 <Text
@@ -449,13 +447,13 @@ export function EditEventScreen({ navigation, route }: any) {
                 </View>
               </View>
               <Text style={styles.optionDescription}>{option.description}</Text>
-            </TouchableOpacity>
+            </GlassCard>
           ))}
         </View>
       )}
 
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>WEIGHT CLASSES</Text>
+        <SectionHeader title="Weight Classes" />
         <View style={styles.tagsContainer}>
           {WEIGHT_CLASSES.map((wc) => (
             <TouchableOpacity
@@ -480,7 +478,7 @@ export function EditEventScreen({ navigation, route }: any) {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>EXPERIENCE LEVELS</Text>
+        <SectionHeader title="Experience Levels" />
         <View style={styles.tagsContainer}>
           {EXPERIENCE_LEVELS.map((exp) => (
             <TouchableOpacity
@@ -504,10 +502,11 @@ export function EditEventScreen({ navigation, route }: any) {
         </View>
       </View>
 
-      <Button
+      <GradientButton
         title={saving ? 'Saving...' : 'Save Changes'}
         onPress={handleSave}
         loading={saving}
+        fullWidth
         style={styles.saveButton}
       />
     </>
@@ -521,50 +520,59 @@ export function EditEventScreen({ navigation, route }: any) {
       <>
         {/* Stats */}
         <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{approvedFighters.length}</Text>
-            <Text style={styles.statLabel}>Approved</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={[styles.statNumber, { color: colors.warning }]}>{pendingFighters.length}</Text>
-            <Text style={styles.statLabel}>Pending</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{maxParticipants || '16'}</Text>
-            <Text style={styles.statLabel}>Max</Text>
-          </View>
+          <StatCard
+            icon="checkmark-circle"
+            value={approvedFighters.length}
+            label="Approved"
+            accentColor={colors.success}
+          />
+          <StatCard
+            icon="time"
+            value={pendingFighters.length}
+            label="Pending"
+            accentColor={colors.warning}
+          />
+          <StatCard
+            icon="people"
+            value={maxParticipants || '16'}
+            label="Max"
+          />
         </View>
 
         {/* Pending Requests */}
         {pendingFighters.length > 0 && (
           <View style={styles.fighterSection}>
-            <Text style={styles.sectionLabel}>PENDING REQUESTS</Text>
-            {pendingFighters.map((fighter) => (
-              <View key={fighter.id} style={styles.fighterCard}>
-                <View style={styles.fighterAvatar}>
-                  <Ionicons name="person" size={24} color={colors.primary[500]} />
-                </View>
-                <View style={styles.fighterInfo}>
-                  <Text style={styles.fighterName}>{fighter.name}</Text>
-                  <Text style={styles.fighterDetails}>
-                    {fighter.weightClass} - {fighter.experience}
-                  </Text>
-                </View>
-                <View style={styles.fighterActions}>
-                  <TouchableOpacity
-                    style={[styles.actionBtn, styles.approveBtn]}
-                    onPress={() => handleFighterAction(fighter, 'approve')}
-                  >
-                    <Ionicons name="checkmark" size={20} color={colors.textPrimary} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.actionBtn, styles.rejectBtn]}
-                    onPress={() => handleFighterAction(fighter, 'reject')}
-                  >
-                    <Ionicons name="close" size={20} color={colors.textPrimary} />
-                  </TouchableOpacity>
-                </View>
-              </View>
+            <SectionHeader title="Pending Requests" />
+            {pendingFighters.map((fighter, index) => (
+              <AnimatedListItem key={fighter.id} index={index}>
+                <GlassCard accentColor={colors.warning}>
+                  <View style={styles.fighterCardRow}>
+                    <View style={styles.fighterAvatar}>
+                      <Ionicons name="person" size={24} color={colors.primary[500]} />
+                    </View>
+                    <View style={styles.fighterInfo}>
+                      <Text style={styles.fighterName}>{fighter.name}</Text>
+                      <Text style={styles.fighterDetails}>
+                        {fighter.weightClass} - {fighter.experience}
+                      </Text>
+                    </View>
+                    <View style={styles.fighterActions}>
+                      <TouchableOpacity
+                        style={[styles.actionBtn, styles.approveBtn]}
+                        onPress={() => handleFighterAction(fighter, 'approve')}
+                      >
+                        <Ionicons name="checkmark" size={20} color={colors.textPrimary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.actionBtn, styles.rejectBtn]}
+                        onPress={() => handleFighterAction(fighter, 'reject')}
+                      >
+                        <Ionicons name="close" size={20} color={colors.textPrimary} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </GlassCard>
+              </AnimatedListItem>
             ))}
           </View>
         )}
@@ -572,39 +580,39 @@ export function EditEventScreen({ navigation, route }: any) {
         {/* Approved Fighters */}
         {approvedFighters.length > 0 && (
           <View style={styles.fighterSection}>
-            <Text style={styles.sectionLabel}>APPROVED FIGHTERS</Text>
-            {approvedFighters.map((fighter) => (
-              <View key={fighter.id} style={styles.fighterCard}>
-                <View style={styles.fighterAvatar}>
-                  <Ionicons name="person" size={24} color={colors.primary[500]} />
-                </View>
-                <View style={styles.fighterInfo}>
-                  <Text style={styles.fighterName}>{fighter.name}</Text>
-                  <Text style={styles.fighterDetails}>
-                    {fighter.weightClass} - {fighter.experience}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.removeBtn}
-                  onPress={() => handleFighterAction(fighter, 'remove')}
-                >
-                  <Ionicons name="trash-outline" size={20} color={colors.error} />
-                </TouchableOpacity>
-              </View>
+            <SectionHeader title="Approved Fighters" />
+            {approvedFighters.map((fighter, index) => (
+              <AnimatedListItem key={fighter.id} index={index}>
+                <GlassCard accentColor={colors.success}>
+                  <View style={styles.fighterCardRow}>
+                    <View style={styles.fighterAvatar}>
+                      <Ionicons name="person" size={24} color={colors.primary[500]} />
+                    </View>
+                    <View style={styles.fighterInfo}>
+                      <Text style={styles.fighterName}>{fighter.name}</Text>
+                      <Text style={styles.fighterDetails}>
+                        {fighter.weightClass} - {fighter.experience}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.removeBtn}
+                      onPress={() => handleFighterAction(fighter, 'remove')}
+                    >
+                      <Ionicons name="trash-outline" size={20} color={colors.error} />
+                    </TouchableOpacity>
+                  </View>
+                </GlassCard>
+              </AnimatedListItem>
             ))}
           </View>
         )}
 
         {fighters.length === 0 && (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyIconContainer}>
-              <Ionicons name="people-outline" size={48} color={colors.primary[500]} />
-            </View>
-            <Text style={styles.emptyStateText}>No fighters yet</Text>
-            <Text style={styles.emptyStateSubtext}>
-              Fighters will appear here when they request to join this event
-            </Text>
-          </View>
+          <EmptyState
+            icon="people-outline"
+            title="No fighters yet"
+            description="Fighters will appear here when they request to join this event"
+          />
         )}
       </>
     );
@@ -987,15 +995,9 @@ const styles = StyleSheet.create({
   fighterSection: {
     marginBottom: spacing[6],
   },
-  fighterCard: {
+  fighterCardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing[3],
     gap: spacing[3],
   },
   fighterAvatar: {
