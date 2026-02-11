@@ -20,7 +20,7 @@ import { Post, Fighter, Gym, Coach, SparringEvent, CombatSport, COMBAT_SPORT_SHO
 import { colors, spacing, typography, borderRadius, gradients, glass } from '../../lib/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { isDesktop } from '../../lib/responsive';
-import { GlassCard, PulseIndicator, AnimatedListItem, GradientButton, BadgeRow, EmptyState, SectionHeader, SkeletonFeed } from '../../components';
+import { GlassCard, PulseIndicator, AnimatedListItem, GradientButton, EmptyState, SectionHeader, SkeletonFeed } from '../../components';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CONTENT_WIDTH = isDesktop ? 600 : SCREEN_WIDTH;
@@ -31,9 +31,6 @@ interface FeedPost extends Post {
   author_coach?: Coach;
   event?: SparringEvent & { gym?: Gym };
 }
-
-type FeedTab = 'all' | 'gyms' | 'fighters';
-type SportFilter = 'all' | CombatSport;
 
 // Sport color helper
 const getSportColor = (sport: CombatSport): string => {
@@ -149,22 +146,6 @@ const getMockDiscovery = (): DiscoverItem[] => [
   { id: 'd5', type: 'fighter', name: 'Sarah Chen', subtitle: 'Lightweight • Advanced', stats: '8-1-0', sport: 'boxing' },
 ];
 
-// All supported sports for filter
-const SPORT_FILTERS: { key: SportFilter; label: string; color: string }[] = [
-  { key: 'all', label: 'ALL', color: colors.primary[500] },
-  { key: 'boxing', label: 'BOXING', color: colors.sport.boxing },
-  { key: 'mma', label: 'MMA', color: colors.sport.mma },
-  { key: 'muay_thai', label: 'MUAY THAI', color: colors.sport.muay_thai },
-  { key: 'kickboxing', label: 'KICKBOXING', color: colors.sport.kickboxing },
-];
-
-const getAuthorSports = (post: FeedPost): CombatSport[] => {
-  if (post.author_fighter?.sports) return post.author_fighter.sports;
-  if (post.author_fighter?.primary_sport) return [post.author_fighter.primary_sport];
-  if (post.author_gym?.sports) return post.author_gym.sports;
-  return [];
-};
-
 export function FeedScreen({ navigation }: any) {
   const { user } = useAuth();
   const [posts, setPosts] = useState<FeedPost[]>([]);
@@ -172,25 +153,8 @@ export function FeedScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
-  const [activeTab, setActiveTab] = useState<FeedTab>('all');
-  const [activeSport, setActiveSport] = useState<SportFilter>('all');
   const [lastTap, setLastTap] = useState<{ postId: string; time: number } | null>(null);
   const heartAnimations = useRef<{ [key: string]: Animated.Value }>({}).current;
-
-  // Filter posts based on active tab
-  const filteredPosts = posts.filter(post => {
-    // Tab filter
-    if (activeTab === 'gyms' && post.author_type !== 'gym') return false;
-    if (activeTab === 'fighters' && post.author_type !== 'fighter') return false;
-
-    // Sport filter
-    if (activeSport !== 'all') {
-      const authorSports = getAuthorSports(post);
-      if (!authorSports.includes(activeSport)) return false;
-    }
-
-    return true;
-  });
 
   useEffect(() => {
     loadFeed();
@@ -434,7 +398,7 @@ export function FeedScreen({ navigation }: any) {
           <View style={styles.addStoryIcon}>
             <Ionicons name="add" size={28} color={colors.primary[500]} />
           </View>
-          <Text style={styles.storyLabel}>Your Story</Text>
+          <Text style={styles.storyLabel}>My Camp</Text>
         </TouchableOpacity>
 
         {/* Story Items with gradient ring borders */}
@@ -505,43 +469,6 @@ export function FeedScreen({ navigation }: any) {
         })}
       </ScrollView>
     </View>
-  );
-
-  // Render Sport Filter Chips
-  const renderSportFilters = () => (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.sportFilterContainer}
-      contentContainerStyle={styles.sportFilterScroll}
-    >
-      {SPORT_FILTERS.map((filter) => {
-        const isActive = activeSport === filter.key;
-        return (
-          <TouchableOpacity
-            key={filter.key}
-            style={[
-              styles.sportChip,
-              isActive && { backgroundColor: filter.color, borderColor: filter.color },
-            ]}
-            onPress={() => setActiveSport(filter.key)}
-          >
-            {filter.key !== 'all' && (
-              <View style={[
-                styles.sportChipDot,
-                { backgroundColor: isActive ? colors.textPrimary : filter.color },
-              ]} />
-            )}
-            <Text style={[
-              styles.sportChipText,
-              isActive && styles.sportChipTextActive,
-            ]}>
-              {filter.label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </ScrollView>
   );
 
   // Render Fighter Badges
@@ -637,11 +564,6 @@ export function FeedScreen({ navigation }: any) {
             </TouchableOpacity>
           </TouchableOpacity>
 
-          {/* Post Content */}
-          {post.content && (
-            <Text style={styles.postContent}>{post.content}</Text>
-          )}
-
           {/* Media with double-tap */}
           {post.media_urls && post.media_urls.length > 0 && (
             <Pressable
@@ -665,6 +587,14 @@ export function FeedScreen({ navigation }: any) {
               {post.media_urls.length > 1 && (
                 <View style={styles.mediaCount}>
                   <Text style={styles.mediaCountText}>+{post.media_urls.length - 1}</Text>
+                </View>
+              )}
+              {/* Post type badge overlay */}
+              {post.post_type && (
+                <View style={styles.postTypeBadge}>
+                  <Text style={styles.postTypeBadgeText}>
+                    {post.post_type === 'event_share' ? 'EVENT' : post.post_type === 'training_update' ? 'TRAINING' : post.post_type === 'reel' ? 'REEL' : 'POST'}
+                  </Text>
                 </View>
               )}
               {/* Double-tap heart animation */}
@@ -731,25 +661,10 @@ export function FeedScreen({ navigation }: any) {
             </TouchableOpacity>
           )}
 
-          {/* Engagement Stats */}
-          {(post.likes_count > 0 || post.comments_count > 0) && (
-            <View style={styles.statsRow}>
-              {post.likes_count > 0 && (
-                <View style={styles.statItem}>
-                  <Ionicons name="heart" size={14} color={colors.error} />
-                  <Text style={styles.statsText}>{post.likes_count}</Text>
-                </View>
-              )}
-              {post.comments_count > 0 && (
-                <Text style={styles.statsText}>{post.comments_count} comments</Text>
-              )}
-            </View>
-          )}
-
-          {/* Action Buttons */}
+          {/* Action Row: like/comment/share + Spar CTA */}
           <View style={styles.actionsRow}>
             <TouchableOpacity
-              style={[styles.actionButton, isLiked && styles.actionButtonActive]}
+              style={styles.actionWithCount}
               onPress={() => handleLike(post.id)}
             >
               <Ionicons
@@ -757,10 +672,16 @@ export function FeedScreen({ navigation }: any) {
                 size={22}
                 color={isLiked ? colors.error : colors.textSecondary}
               />
+              {post.likes_count > 0 && (
+                <Text style={styles.actionCountText}>{post.likes_count > 999 ? `${(post.likes_count / 1000).toFixed(1)}k` : post.likes_count}</Text>
+              )}
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity style={styles.actionWithCount}>
               <Ionicons name="chatbubble-outline" size={20} color={colors.textSecondary} />
+              {post.comments_count > 0 && (
+                <Text style={styles.actionCountText}>{post.comments_count}</Text>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionButton}>
@@ -769,10 +690,24 @@ export function FeedScreen({ navigation }: any) {
 
             <View style={{ flex: 1 }} />
 
-            <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="bookmark-outline" size={20} color={colors.textSecondary} />
+            <TouchableOpacity style={styles.sparCta}>
+              <Text style={styles.sparCtaText}>Spar</Text>
+              <Ionicons name="flash" size={14} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
+
+          {/* Caption (Instagram-style: bold author + text) */}
+          {post.content && (
+            <View style={styles.captionRow}>
+              <Text style={styles.captionText}>
+                <Text style={styles.captionAuthor}>{author.name.split(' ')[0]}</Text>
+                {'  '}{post.content}
+              </Text>
+            </View>
+          )}
+
+          {/* Timestamp */}
+          <Text style={styles.timestamp}>{formatTimeAgo(post.created_at).toUpperCase()}</Text>
         </GlassCard>
       </AnimatedListItem>
     );
@@ -808,21 +743,6 @@ export function FeedScreen({ navigation }: any) {
 
       {/* Stories Row */}
       {renderStoriesRow()}
-
-      {/* Sport Filter Chips */}
-      {renderSportFilters()}
-
-      {/* Tab Bar */}
-      <BadgeRow
-        items={[
-          { key: 'all', label: 'ALL' },
-          { key: 'gyms', label: 'GYMS', icon: 'business' as const },
-          { key: 'fighters', label: 'FIGHTERS', icon: 'fitness' as const },
-        ]}
-        selected={activeTab}
-        onSelect={(key) => setActiveTab(key as FeedTab)}
-        style={{ paddingHorizontal: spacing[4], paddingVertical: spacing[3] }}
-      />
     </View>
   );
 
@@ -910,7 +830,7 @@ export function FeedScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <FlatList
-        data={filteredPosts}
+        data={posts}
         renderItem={renderPostCard}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={renderHeader}
@@ -928,6 +848,14 @@ export function FeedScreen({ navigation }: any) {
         ListEmptyComponent={renderEmptyState}
         showsVerticalScrollIndicator={false}
       />
+      {/* FAB */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('CreatePost')}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add" size={28} color={colors.textPrimary} />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -1110,41 +1038,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     letterSpacing: 0.5,
   },
-  // Sport Filters
-  sportFilterContainer: {
-    maxHeight: 44,
-  },
-  sportFilterScroll: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    gap: spacing[2],
-    flexDirection: 'row',
-  },
-  sportChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[1.5],
-    borderRadius: borderRadius.full,
-    borderWidth: 1,
-    borderColor: glass.light.borderColor,
-    backgroundColor: glass.light.backgroundColor,
-    gap: spacing[1],
-  },
-  sportChipDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  sportChipText: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: '700',
-    color: colors.textMuted,
-    letterSpacing: 0.5,
-  },
-  sportChipTextActive: {
-    color: colors.textPrimary,
-  },
   // Feed Content
   feedContent: {
     paddingBottom: spacing[10],
@@ -1167,8 +1060,7 @@ const styles = StyleSheet.create({
   },
   // Post Card - using GlassCard noPadding
   postCard: {
-    marginHorizontal: spacing[4],
-    marginBottom: spacing[4],
+    marginBottom: spacing[2],
   },
   postHeader: {
     flexDirection: 'row',
@@ -1180,16 +1072,16 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 2,
     borderColor: colors.primary[500],
   },
   avatarPlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: `${colors.primary[500]}15`,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1286,7 +1178,7 @@ const styles = StyleSheet.create({
   // Media
   mediaContainer: {
     width: '100%',
-    aspectRatio: 1,
+    aspectRatio: 4 / 5,
     backgroundColor: colors.surface,
     position: 'relative',
   },
@@ -1435,6 +1327,72 @@ const styles = StyleSheet.create({
   actionButtonActive: {
     backgroundColor: `${colors.error}15`,
   },
+  actionWithCount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+    padding: spacing[2],
+    borderRadius: borderRadius.md,
+  },
+  actionCountText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  sparCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary[500],
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    gap: spacing[1],
+  },
+  sparCtaText: {
+    color: colors.textPrimary,
+    fontSize: typography.fontSize.sm,
+    fontWeight: '700',
+  },
+  // Caption (Instagram-style)
+  captionRow: {
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[1],
+  },
+  captionAuthor: {
+    fontWeight: '700',
+    color: colors.textPrimary,
+    fontSize: typography.fontSize.base,
+  },
+  captionText: {
+    color: colors.textPrimary,
+    fontSize: typography.fontSize.base,
+    lineHeight: 20,
+  },
+  timestamp: {
+    fontSize: 10,
+    color: colors.textMuted,
+    letterSpacing: 1,
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[1],
+    paddingBottom: spacing[3],
+  },
+  // Post type badge
+  postTypeBadge: {
+    position: 'absolute',
+    top: spacing[3],
+    right: spacing[3],
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: borderRadius.sm,
+    paddingHorizontal: spacing[2.5],
+    paddingVertical: spacing[1],
+    zIndex: 2,
+  },
+  postTypeBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    letterSpacing: 1,
+  },
   // Empty State / Discovery
   emptyContainer: {
     paddingHorizontal: spacing[4],
@@ -1499,5 +1457,19 @@ const styles = StyleSheet.create({
   },
   followButton: {
     minWidth: 70,
+  },
+  // FAB
+  fab: {
+    position: 'absolute',
+    bottom: spacing[6],
+    right: spacing[4],
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary[500],
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+    elevation: 8,
   },
 });

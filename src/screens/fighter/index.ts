@@ -13,3 +13,4 @@ export { GymSearchScreen } from './GymSearchScreen';
 export { FighterSearchScreen } from './FighterSearchScreen';
 export { SparringInvitesScreen } from './SparringInvitesScreen';
 export { EventReviewScreen } from './EventReviewScreen';
+export { SparringScheduleScreen } from './SparringScheduleScreen';
