@@ -15,9 +15,17 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { GymCard, WebLayout } from '../../components';
+import {
+  GymCard,
+  WebLayout,
+  GlassCard,
+  SectionHeader,
+  BadgeRow,
+  EmptyState,
+  AnimatedListItem,
+} from '../../components';
 import { mockGyms, MockGym } from '../../lib/mockData';
-import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import { colors, spacing, typography, borderRadius, glass } from '../../lib/theme';
 import { isDesktop } from '../../lib/responsive';
 import { useMatching } from '../../hooks/useMatching';
 import { isSupabaseConfigured, supabase } from '../../lib/supabase';
@@ -53,6 +61,13 @@ function transformGymToMockGym(gym: Gym): MockGym {
     memberCount: 5,
   };
 }
+
+const INTENSITY_FILTERS = [
+  { key: 'all', label: 'All', icon: 'grid-outline' as const },
+  { key: 'high', label: 'High Intensity', icon: 'flame-outline' as const },
+  { key: 'hard', label: 'Hard Sparring', icon: 'fitness-outline' as const },
+  { key: 'all_levels', label: 'All Levels', icon: 'people-outline' as const },
+];
 
 export function FindSparringScreen({ navigation }: FindSparringScreenProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -123,22 +138,6 @@ export function FindSparringScreen({ navigation }: FindSparringScreenProps) {
     navigation.navigate('GymProfileView', { gymId });
   };
 
-  const cycleIntensity = () => {
-    const intensities = ['all', 'high', 'hard', 'all_levels'];
-    const currentIndex = intensities.indexOf(selectedIntensity);
-    const nextIndex = (currentIndex + 1) % intensities.length;
-    setSelectedIntensity(intensities[nextIndex]);
-  };
-
-  const getIntensityLabel = () => {
-    switch (selectedIntensity) {
-      case 'high': return 'Intensity: High';
-      case 'hard': return 'Intensity: Hard';
-      case 'all_levels': return 'Intensity: All Levels';
-      default: return 'Intensity: All';
-    }
-  };
-
   // Filter gyms based on search and filters
   const filteredGyms = gyms.filter((gym) => {
     // Search filter
@@ -196,64 +195,56 @@ export function FindSparringScreen({ navigation }: FindSparringScreenProps) {
 
           {/* Search Bar */}
           <View style={styles.searchContainer}>
-            <View style={styles.searchInputContainer}>
-              <Ionicons name="search" size={18} color={colors.textMuted} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search gym name or city..."
-                placeholderTextColor={colors.textMuted}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-              />
-            </View>
+            <GlassCard intensity="light" noPadding style={styles.searchGlass}>
+              <View style={styles.searchInputContainer}>
+                <Ionicons name="search" size={18} color={colors.textMuted} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search gym name or city..."
+                  placeholderTextColor={colors.textMuted}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+              </View>
+            </GlassCard>
           </View>
 
           {/* Filter Pills */}
           <View style={styles.filtersContainer}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filtersScroll}
+            <BadgeRow
+              items={INTENSITY_FILTERS}
+              selected={selectedIntensity}
+              onSelect={setSelectedIntensity}
+            />
+          </View>
+
+          {/* Gym Directory Entry Point */}
+          <View style={styles.directoryEntryContainer}>
+            <GlassCard
+              intensity="accent"
+              onPress={() => navigation.navigate('GymDirectory')}
+              noPadding
             >
-              {/* Location Filter */}
-              <TouchableOpacity style={[styles.filterPill, styles.filterPillActive]}>
-                <Text style={[styles.filterPillText, styles.filterPillTextActive]}>
-                  Berlin, DE
-                </Text>
-                <Ionicons name="chevron-down" size={14} color={colors.textPrimary} />
-              </TouchableOpacity>
-
-              {/* Intensity Filter */}
-              <TouchableOpacity
-                style={[styles.filterPill, selectedIntensity !== 'all' && styles.filterPillActive]}
-                onPress={cycleIntensity}
-              >
-                <Text style={[
-                  styles.filterPillText,
-                  selectedIntensity !== 'all' && styles.filterPillTextActive
-                ]}>
-                  {getIntensityLabel()}
-                </Text>
-                <Ionicons
-                  name="options-outline"
-                  size={14}
-                  color={selectedIntensity !== 'all' ? colors.textPrimary : colors.textSecondary}
-                />
-              </TouchableOpacity>
-
-              {/* Weight Filter */}
-              <TouchableOpacity style={styles.filterPill}>
-                <Text style={styles.filterPillText}>Weight</Text>
-                <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </ScrollView>
+              <View style={styles.directoryEntryContent}>
+                <View style={styles.directoryIconCircle}>
+                  <Ionicons name="globe-outline" size={24} color={colors.primary[500]} />
+                </View>
+                <View style={styles.directoryEntryText}>
+                  <Text style={styles.directoryTitle}>Gym Directory</Text>
+                  <Text style={styles.directorySubtitle}>
+                    Browse fight clubs across 16 countries
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+              </View>
+            </GlassCard>
           </View>
 
           {/* Recommended Events */}
           {events.length > 0 && (
             <>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>RECOMMENDED EVENTS</Text>
+              <View style={styles.sectionHeaderWrap}>
+                <SectionHeader title="Recommended Events" />
               </View>
               <ScrollView
                 horizontal
@@ -261,27 +252,29 @@ export function FindSparringScreen({ navigation }: FindSparringScreenProps) {
                 contentContainerStyle={styles.recommendationScroll}
                 style={styles.recommendationList}
               >
-                {events.map((match) => (
-                  <TouchableOpacity
-                    key={match.entity_id}
-                    style={styles.recommendationCard}
-                    onPress={() => navigation.navigate('EventDetail', { eventId: match.entity_id })}
-                  >
-                    <View style={styles.matchScoreBadge}>
-                      <Text style={styles.matchScoreText}>{Math.round(match.overall_score)}%</Text>
-                    </View>
-                    <Text style={styles.recommendationName} numberOfLines={1}>
-                      {match.event?.title || 'Sparring Event'}
-                    </Text>
-                    <Text style={styles.recommendationDetail} numberOfLines={1}>
-                      {match.event?.gym?.name || 'Local Gym'}
-                    </Text>
-                    {match.reasons.length > 0 && (
-                      <Text style={styles.recommendationReason} numberOfLines={1}>
-                        {match.reasons[0]}
+                {events.map((match, index) => (
+                  <AnimatedListItem key={match.entity_id} index={index}>
+                    <GlassCard
+                      intensity="light"
+                      style={styles.recommendationCard}
+                      onPress={() => navigation.navigate('EventDetail', { eventId: match.entity_id })}
+                    >
+                      <View style={styles.matchScoreBadge}>
+                        <Text style={styles.matchScoreText}>{Math.round(match.overall_score)}%</Text>
+                      </View>
+                      <Text style={styles.recommendationName} numberOfLines={1}>
+                        {match.event?.title || 'Sparring Event'}
                       </Text>
-                    )}
-                  </TouchableOpacity>
+                      <Text style={styles.recommendationDetail} numberOfLines={1}>
+                        {match.event?.gym?.name || 'Local Gym'}
+                      </Text>
+                      {match.reasons.length > 0 && (
+                        <Text style={styles.recommendationReason} numberOfLines={1}>
+                          {match.reasons[0]}
+                        </Text>
+                      )}
+                    </GlassCard>
+                  </AnimatedListItem>
                 ))}
               </ScrollView>
             </>
@@ -290,8 +283,8 @@ export function FindSparringScreen({ navigation }: FindSparringScreenProps) {
           {/* Recommended Partners */}
           {partners.length > 0 && (
             <>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>FIGHTERS NEAR YOU</Text>
+              <View style={styles.sectionHeaderWrap}>
+                <SectionHeader title="Fighters Near You" />
               </View>
               <ScrollView
                 horizontal
@@ -299,25 +292,27 @@ export function FindSparringScreen({ navigation }: FindSparringScreenProps) {
                 contentContainerStyle={styles.recommendationScroll}
                 style={styles.recommendationList}
               >
-                {partners.map((match) => (
-                  <TouchableOpacity
-                    key={match.entity_id}
-                    style={styles.partnerCard}
-                    onPress={() => navigation.navigate('FighterProfileView', { fighterId: match.entity_id })}
-                  >
-                    <View style={styles.partnerAvatar}>
-                      <Ionicons name="person" size={24} color={colors.textMuted} />
-                    </View>
-                    <View style={styles.matchScoreBadgeSmall}>
-                      <Text style={styles.matchScoreTextSmall}>{Math.round(match.overall_score)}%</Text>
-                    </View>
-                    <Text style={styles.partnerName} numberOfLines={1}>
-                      {match.fighter?.first_name || 'Fighter'}
-                    </Text>
-                    <Text style={styles.partnerDetail} numberOfLines={1}>
-                      {match.fighter?.weight_class || 'Unknown'}
-                    </Text>
-                  </TouchableOpacity>
+                {partners.map((match, index) => (
+                  <AnimatedListItem key={match.entity_id} index={index}>
+                    <GlassCard
+                      intensity="light"
+                      style={styles.partnerCard}
+                      onPress={() => navigation.navigate('FighterProfileView', { fighterId: match.entity_id })}
+                    >
+                      <View style={styles.partnerAvatar}>
+                        <Ionicons name="person" size={24} color={colors.textMuted} />
+                      </View>
+                      <View style={styles.matchScoreBadgeSmall}>
+                        <Text style={styles.matchScoreTextSmall}>{Math.round(match.overall_score)}%</Text>
+                      </View>
+                      <Text style={styles.partnerName} numberOfLines={1}>
+                        {match.fighter?.first_name || 'Fighter'}
+                      </Text>
+                      <Text style={styles.partnerDetail} numberOfLines={1}>
+                        {match.fighter?.weight_class || 'Unknown'}
+                      </Text>
+                    </GlassCard>
+                  </AnimatedListItem>
                 ))}
               </ScrollView>
             </>
@@ -331,8 +326,8 @@ export function FindSparringScreen({ navigation }: FindSparringScreenProps) {
           )}
 
           {/* Section Title */}
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>NEARBY GYMS LOOKING FOR PARTNERS</Text>
+          <View style={styles.sectionHeaderWrap}>
+            <SectionHeader title="Nearby Gyms" />
           </View>
 
           {/* Gym Cards List */}
@@ -349,21 +344,22 @@ export function FindSparringScreen({ navigation }: FindSparringScreenProps) {
             }
           >
             {filteredGyms.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="search-outline" size={64} color={colors.textMuted} />
-                <Text style={styles.emptyTitle}>No gyms found</Text>
-                <Text style={styles.emptySubtitle}>
-                  Try adjusting your search or filters
-                </Text>
-              </View>
+              <EmptyState
+                icon="search-outline"
+                title="No gyms found"
+                description="Try adjusting your search or filters"
+                actionLabel="Browse Directory"
+                onAction={() => navigation.navigate('GymDirectory')}
+              />
             ) : (
-              filteredGyms.map((gym) => (
-                <GymCard
-                  key={gym.id}
-                  gym={gym}
-                  onPress={() => handleGymPress(gym.id)}
-                  onRequestSparring={() => handleRequestSparring(gym.id)}
-                />
+              filteredGyms.map((gym, index) => (
+                <AnimatedListItem key={gym.id} index={index}>
+                  <GymCard
+                    gym={gym}
+                    onPress={() => handleGymPress(gym.id)}
+                    onRequestSparring={() => handleRequestSparring(gym.id)}
+                  />
+                </AnimatedListItem>
               ))
             )}
 
@@ -398,10 +394,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     backgroundColor: colors.background,
   },
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -432,15 +424,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // Search
   searchContainer: {
     paddingHorizontal: spacing[4],
     marginBottom: spacing[3],
   },
+  searchGlass: {
+    borderRadius: borderRadius.lg,
+  },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.lg,
     paddingHorizontal: spacing[4],
     paddingVertical: Platform.OS === 'web' ? spacing[3] : spacing[2],
     gap: spacing[2],
@@ -451,47 +445,49 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.base,
     ...(Platform.OS === 'web' && { outlineStyle: 'none' as any }),
   },
+  // Filters
   filtersContainer: {
     marginBottom: spacing[4],
-  },
-  filtersScroll: {
     paddingHorizontal: spacing[4],
-    gap: spacing[2],
   },
-  filterPill: {
+  // Directory Entry Point
+  directoryEntryContainer: {
+    paddingHorizontal: spacing[4],
+    marginBottom: spacing[4],
+  },
+  directoryEntryContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: borderRadius.full,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    gap: spacing[2],
-    marginRight: spacing[2],
+    padding: spacing[4],
   },
-  filterPillActive: {
-    backgroundColor: colors.primary[500],
-    borderColor: colors.primary[500],
+  directoryIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: `${colors.primary[500]}20`,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  filterPillText: {
+  directoryEntryText: {
+    flex: 1,
+    marginLeft: spacing[3],
+  },
+  directoryTitle: {
+    color: colors.textPrimary,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
+    marginBottom: 2,
+  },
+  directorySubtitle: {
     color: colors.textSecondary,
     fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
   },
-  filterPillTextActive: {
-    color: colors.textPrimary,
-  },
-  sectionHeader: {
+  // Section headers
+  sectionHeaderWrap: {
     paddingHorizontal: spacing[4],
     marginBottom: spacing[3],
   },
-  sectionTitle: {
-    color: colors.primary[500],
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-    letterSpacing: typography.letterSpacing.wider,
-  },
+  // Gym list
   gymsList: {
     flex: 1,
   },
@@ -500,25 +496,6 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: spacing[20],
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[10],
-  },
-  emptyTitle: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    marginTop: spacing[4],
-    marginBottom: spacing[2],
-  },
-  emptySubtitle: {
-    color: colors.textMuted,
-    fontSize: typography.fontSize.base,
-    textAlign: 'center',
-    paddingHorizontal: spacing[8],
   },
   // Recommendation sections
   recommendationList: {
@@ -529,9 +506,6 @@ const styles = StyleSheet.create({
     gap: spacing[3],
   },
   recommendationCard: {
-    backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.lg,
-    padding: spacing[3],
     width: 160,
   },
   matchScoreBadge: {
@@ -565,9 +539,6 @@ const styles = StyleSheet.create({
   },
   // Partner cards
   partnerCard: {
-    backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.lg,
-    padding: spacing[3],
     width: 110,
     alignItems: 'center',
   },

@@ -6,12 +6,21 @@ import {
   FlatList,
   RefreshControl,
   TouchableOpacity,
-  ScrollView,
+  TextInput,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { Card, Input } from '../../components';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  GlassCard,
+  GradientButton,
+  SectionHeader,
+  BadgeRow,
+  EmptyState,
+  AnimatedListItem,
+} from '../../components';
 import {
   getDirectoryCountries,
   getCitiesForCountry,
@@ -161,143 +170,140 @@ export function GymDirectoryScreen({ navigation }: GymDirectoryScreenProps) {
   const getSportIcon = (sport: CombatSport): string => {
     switch (sport) {
       case 'boxing':
-        return '🥊';
+        return '\u{1F94A}';
       case 'mma':
-        return '🥋';
+        return '\u{1F94B}';
       case 'muay_thai':
-        return '🦵';
+        return '\u{1F9B5}';
       case 'kickboxing':
-        return '👊';
+        return '\u{1F44A}';
       default:
-        return '🏟️';
+        return '\u{1F3DF}';
     }
   };
 
-  const renderCountry = ({ item }: { item: DirectoryCountry }) => (
-    <TouchableOpacity
-      style={styles.countryCard}
-      onPress={() => handleCountrySelect(item)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.countryFlag}>
-        <Text style={styles.flagEmoji}>{getCountryFlag(item.code)}</Text>
-      </View>
-      <View style={styles.countryInfo}>
-        <Text style={styles.countryName}>{item.name}</Text>
-        {item.name_native && item.name_native !== item.name && (
-          <Text style={styles.countryNative}>{item.name_native}</Text>
-        )}
-      </View>
-      <View style={styles.countryCount}>
-        <Text style={styles.gymCount}>{item.gym_count}</Text>
-        <Text style={styles.gymCountLabel}>{t('directory.gymsCount', { count: item.gym_count }).replace(`${item.gym_count} `, '')}</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={20} color={colors.neutral[500]} />
-    </TouchableOpacity>
+  const renderCountry = ({ item, index }: { item: DirectoryCountry; index: number }) => (
+    <AnimatedListItem index={index}>
+      <GlassCard
+        intensity="light"
+        onPress={() => handleCountrySelect(item)}
+        noPadding
+        style={styles.countryCardGlass}
+      >
+        <View style={styles.countryCardContent}>
+          <View style={styles.countryFlag}>
+            <Text style={styles.flagEmoji}>{getCountryFlag(item.code)}</Text>
+          </View>
+          <View style={styles.countryInfo}>
+            <Text style={styles.countryName}>{item.name}</Text>
+            {item.name_native && item.name_native !== item.name && (
+              <Text style={styles.countryNative}>{item.name_native}</Text>
+            )}
+          </View>
+          <View style={styles.countryCount}>
+            <Text style={styles.gymCount}>{item.gym_count}</Text>
+            <Text style={styles.gymCountLabel}>{t('directory.gymsCount', { count: item.gym_count }).replace(`${item.gym_count} `, '')}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.neutral[500]} />
+        </View>
+      </GlassCard>
+    </AnimatedListItem>
   );
 
-  const renderGym = ({ item }: { item: DirectoryGym }) => (
-    <Card
-      style={styles.gymCard}
-      onPress={() => handleGymPress(item)}
-    >
-      <View style={styles.gymHeader}>
-        <View style={styles.gymSportIcon}>
-          <Text style={styles.sportEmoji}>
-            {item.sports.length > 0 ? getSportIcon(item.sports[0]) : '🏟️'}
-          </Text>
-        </View>
-        <View style={styles.gymInfo}>
-          <Text style={styles.gymName}>{item.name}</Text>
-          <Text style={styles.gymLocation}>
-            {item.city}{item.address ? ` • ${item.address}` : ''}
-          </Text>
-        </View>
-        {item.is_claimed ? (
-          <View style={styles.claimedBadge}>
-            <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-            <Text style={styles.claimedText}>{t('directory.claimed')}</Text>
-          </View>
-        ) : (
-          <TouchableOpacity
-            style={styles.claimButton}
-            onPress={() => navigation.navigate('DirectoryGymDetail', { gymId: item.id })}
-          >
-            <Text style={styles.claimButtonText}>{t('directory.claimThisGym')}</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <View style={styles.gymSports}>
-        {item.sports.map((sport) => (
-          <View key={sport} style={styles.sportBadge}>
-            <Text style={styles.sportBadgeText}>
-              {COMBAT_SPORT_LABELS[sport] || sport}
+  const renderGym = ({ item, index }: { item: DirectoryGym; index: number }) => (
+    <AnimatedListItem index={index}>
+      <GlassCard
+        intensity="light"
+        onPress={() => handleGymPress(item)}
+        style={styles.gymCardGlass}
+      >
+        <View style={styles.gymHeader}>
+          <View style={styles.gymSportIcon}>
+            <Text style={styles.sportEmoji}>
+              {item.sports.length > 0 ? getSportIcon(item.sports[0]) : '\u{1F3DF}'}
             </Text>
           </View>
-        ))}
-      </View>
-
-      {(item.phone || item.website || item.instagram) && (
-        <View style={styles.gymContact}>
-          {item.phone && (
-            <View style={styles.contactItem}>
-              <Ionicons name="call-outline" size={14} color={colors.neutral[500]} />
-              <Text style={styles.contactText}>{item.phone}</Text>
+          <View style={styles.gymInfo}>
+            <Text style={styles.gymName}>{item.name}</Text>
+            <Text style={styles.gymLocation}>
+              {item.city}{item.address ? ` \u2022 ${item.address}` : ''}
+            </Text>
+          </View>
+          {item.is_claimed ? (
+            <View style={styles.claimedBadge}>
+              <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+              <Text style={styles.claimedText}>{t('directory.claimed')}</Text>
             </View>
-          )}
-          {item.website && (
-            <View style={styles.contactItem}>
-              <Ionicons name="globe-outline" size={14} color={colors.neutral[500]} />
-              <Text style={styles.contactText} numberOfLines={1}>
-                {item.website.replace(/^https?:\/\//, '')}
-              </Text>
-            </View>
+          ) : (
+            <GradientButton
+              title={t('directory.claimThisGym')}
+              onPress={() => navigation.navigate('DirectoryGymDetail', { gymId: item.id })}
+              size="sm"
+            />
           )}
         </View>
-      )}
-    </Card>
+
+        <View style={styles.gymSports}>
+          {item.sports.map((sport) => (
+            <View key={sport} style={styles.sportBadge}>
+              <Text style={styles.sportBadgeText}>
+                {COMBAT_SPORT_LABELS[sport] || sport}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        {(item.phone || item.website || item.instagram) && (
+          <View style={styles.gymContact}>
+            {item.phone && (
+              <View style={styles.contactItem}>
+                <Ionicons name="call-outline" size={14} color={colors.neutral[500]} />
+                <Text style={styles.contactText}>{item.phone}</Text>
+              </View>
+            )}
+            {item.website && (
+              <View style={styles.contactItem}>
+                <Ionicons name="globe-outline" size={14} color={colors.neutral[500]} />
+                <Text style={styles.contactText} numberOfLines={1}>
+                  {item.website.replace(/^https?:\/\//, '')}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+      </GlassCard>
+    </AnimatedListItem>
   );
 
   const renderCityTabs = () => {
     if (!cities.length) return null;
 
+    const badgeItems = [
+      { key: '__all__', label: t('common.viewAll') },
+      ...cities.map(city => ({ key: city, label: city })),
+    ];
+
     return (
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.cityTabs}
-        contentContainerStyle={styles.cityTabsContent}
-      >
-        <TouchableOpacity
-          style={[styles.cityTab, !selectedCity && styles.cityTabActive]}
-          onPress={() => handleCitySelect(null)}
-        >
-          <Text style={[styles.cityTabText, !selectedCity && styles.cityTabTextActive]}>
-            {t('common.viewAll')}
-          </Text>
-        </TouchableOpacity>
-        {cities.map((city) => (
-          <TouchableOpacity
-            key={city}
-            style={[styles.cityTab, selectedCity === city && styles.cityTabActive]}
-            onPress={() => handleCitySelect(city)}
-          >
-            <Text style={[styles.cityTabText, selectedCity === city && styles.cityTabTextActive]}>
-              {city}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <View style={styles.cityTabsContainer}>
+        <BadgeRow
+          items={badgeItems}
+          selected={selectedCity || '__all__'}
+          onSelect={(key: string) => handleCitySelect(key === '__all__' ? null : key)}
+        />
+      </View>
     );
   };
 
   if (viewMode === 'countries') {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <Text style={styles.title}>{t('directory.title')}</Text>
-          <Text style={styles.subtitle}>{t('directory.selectCountry')}</Text>
+          <View style={styles.headerRow}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color={colors.neutral[50]} />
+            </TouchableOpacity>
+          </View>
+          <SectionHeader title={t('directory.title')} subtitle={t('directory.selectCountry')} />
         </View>
 
         <FlatList
@@ -306,44 +312,56 @@ export function GymDirectoryScreen({ navigation }: GymDirectoryScreenProps) {
           keyExtractor={(item) => item.code}
           contentContainerStyle={styles.list}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary[500]}
+            />
           }
           ListEmptyComponent={
-            <View style={styles.empty}>
-              {loading ? (
+            loading ? (
+              <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={colors.primary[500]} />
-              ) : (
-                <>
-                  <Ionicons name="business-outline" size={48} color={colors.neutral[600]} />
-                  <Text style={styles.emptyText}>{t('directory.noGymsFound')}</Text>
-                </>
-              )}
-            </View>
+              </View>
+            ) : (
+              <EmptyState
+                icon="business-outline"
+                title={t('directory.noGymsFound')}
+                description="No countries with registered gyms yet"
+              />
+            )
           }
         />
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.neutral[50]} />
           </TouchableOpacity>
-          <View style={styles.headerTitle}>
+          <View style={styles.headerTitleRow}>
             <Text style={styles.countryHeaderFlag}>{getCountryFlag(selectedCountry!.code)}</Text>
             <Text style={styles.countryHeaderName}>{selectedCountry!.name}</Text>
           </View>
         </View>
-        <Input
-          placeholder={t('directory.searchByCity')}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          containerStyle={styles.searchContainer}
-          leftIcon={<Ionicons name="search" size={18} color={colors.neutral[500]} />}
-        />
+
+        {/* Search */}
+        <GlassCard intensity="light" noPadding style={styles.searchGlass}>
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="search" size={18} color={colors.neutral[500]} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder={t('directory.searchByCity')}
+              placeholderTextColor={colors.neutral[500]}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+        </GlassCard>
       </View>
 
       {renderCityTabs()}
@@ -354,25 +372,29 @@ export function GymDirectoryScreen({ navigation }: GymDirectoryScreenProps) {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary[500]}
+          />
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            {loading ? (
+          loading ? (
+            <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary[500]} />
-            ) : (
-              <>
-                <Ionicons name="business-outline" size={48} color={colors.neutral[600]} />
-                <Text style={styles.emptyText}>{t('directory.noGymsFound')}</Text>
-                <TouchableOpacity style={styles.addGymButton}>
-                  <Text style={styles.addGymText}>{t('directory.addGym')}</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
+            </View>
+          ) : (
+            <EmptyState
+              icon="business-outline"
+              title={t('directory.noGymsFound')}
+              description="No gyms found in this area"
+              actionLabel={t('directory.addGym')}
+              onAction={() => {}}
+            />
+          )
         }
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -383,19 +405,19 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: spacing[4],
-    paddingTop: spacing[6],
+    paddingTop: spacing[2],
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing[4],
+    marginBottom: spacing[3],
   },
   backButton: {
     padding: spacing[2],
     marginRight: spacing[2],
     marginLeft: -spacing[2],
   },
-  headerTitle: {
+  headerTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
@@ -406,41 +428,55 @@ const styles = StyleSheet.create({
   },
   countryHeaderName: {
     fontSize: typography.fontSize.xl,
-    fontWeight: 'bold',
+    fontWeight: typography.fontWeight.bold,
     color: colors.neutral[50],
   },
-  title: {
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: 'bold',
-    color: colors.neutral[50],
-    marginBottom: spacing[2],
+  // Search
+  searchGlass: {
+    borderRadius: borderRadius.lg,
   },
-  subtitle: {
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing[4],
+    paddingVertical: Platform.OS === 'web' ? spacing[3] : spacing[2],
+    gap: spacing[2],
+  },
+  searchInput: {
+    flex: 1,
+    color: colors.textPrimary,
     fontSize: typography.fontSize.base,
-    color: colors.neutral[400],
-  },
-  searchContainer: {
-    marginBottom: 0,
+    ...(Platform.OS === 'web' && { outlineStyle: 'none' as any }),
   },
   list: {
     padding: spacing[4],
     paddingTop: spacing[2],
   },
+  loadingContainer: {
+    alignItems: 'center',
+    padding: spacing[10],
+  },
+
+  // City tabs
+  cityTabsContainer: {
+    paddingHorizontal: spacing[4],
+    marginBottom: spacing[2],
+  },
 
   // Country list styles
-  countryCard: {
+  countryCardGlass: {
+    marginBottom: spacing[3],
+  },
+  countryCardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
     padding: spacing[4],
-    borderRadius: borderRadius.lg,
-    marginBottom: spacing[3],
   },
   countryFlag: {
     width: 48,
     height: 48,
     borderRadius: borderRadius.md,
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: `${colors.primary[500]}10`,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing[3],
@@ -453,7 +489,7 @@ const styles = StyleSheet.create({
   },
   countryName: {
     fontSize: typography.fontSize.lg,
-    fontWeight: '600',
+    fontWeight: typography.fontWeight.semibold,
     color: colors.neutral[50],
   },
   countryNative: {
@@ -467,7 +503,7 @@ const styles = StyleSheet.create({
   },
   gymCount: {
     fontSize: typography.fontSize.xl,
-    fontWeight: 'bold',
+    fontWeight: typography.fontWeight.bold,
     color: colors.primary[500],
   },
   gymCountLabel: {
@@ -475,35 +511,8 @@ const styles = StyleSheet.create({
     color: colors.neutral[500],
   },
 
-  // City tabs styles
-  cityTabs: {
-    maxHeight: 44,
-    marginBottom: spacing[2],
-  },
-  cityTabsContent: {
-    paddingHorizontal: spacing[4],
-    gap: spacing[2],
-  },
-  cityTab: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.surface,
-  },
-  cityTabActive: {
-    backgroundColor: colors.primary[500],
-  },
-  cityTabText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[400],
-    fontWeight: '500',
-  },
-  cityTabTextActive: {
-    color: colors.neutral[50],
-  },
-
   // Gym card styles
-  gymCard: {
+  gymCardGlass: {
     marginBottom: spacing[3],
   },
   gymHeader: {
@@ -515,7 +524,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: borderRadius.md,
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: `${colors.primary[500]}10`,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing[3],
@@ -528,7 +537,7 @@ const styles = StyleSheet.create({
   },
   gymName: {
     fontSize: typography.fontSize.lg,
-    fontWeight: '600',
+    fontWeight: typography.fontWeight.semibold,
     color: colors.neutral[50],
     marginBottom: spacing[1],
   },
@@ -544,18 +553,7 @@ const styles = StyleSheet.create({
   claimedText: {
     fontSize: typography.fontSize.xs,
     color: colors.success,
-    fontWeight: '500',
-  },
-  claimButton: {
-    backgroundColor: colors.primary[500],
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    borderRadius: borderRadius.md,
-  },
-  claimButtonText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.neutral[50],
-    fontWeight: '600',
+    fontWeight: typography.fontWeight.medium,
   },
   gymSports: {
     flexDirection: 'row',
@@ -564,14 +562,15 @@ const styles = StyleSheet.create({
     marginBottom: spacing[3],
   },
   sportBadge: {
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: `${colors.primary[500]}15`,
     paddingHorizontal: spacing[2],
     paddingVertical: spacing[1],
     borderRadius: borderRadius.sm,
   },
   sportBadgeText: {
     fontSize: typography.fontSize.xs,
-    color: colors.neutral[300],
+    color: colors.primary[400],
+    fontWeight: typography.fontWeight.medium,
   },
   gymContact: {
     flexDirection: 'row',
@@ -579,7 +578,7 @@ const styles = StyleSheet.create({
     gap: spacing[4],
     paddingTop: spacing[3],
     borderTopWidth: 1,
-    borderTopColor: colors.neutral[700],
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
   },
   contactItem: {
     flexDirection: 'row',
@@ -589,28 +588,5 @@ const styles = StyleSheet.create({
   contactText: {
     fontSize: typography.fontSize.sm,
     color: colors.neutral[400],
-  },
-
-  // Empty state
-  empty: {
-    alignItems: 'center',
-    padding: spacing[10],
-  },
-  emptyText: {
-    fontSize: typography.fontSize.lg,
-    color: colors.neutral[400],
-    marginTop: spacing[4],
-    marginBottom: spacing[4],
-  },
-  addGymButton: {
-    paddingHorizontal: spacing[6],
-    paddingVertical: spacing[3],
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-  },
-  addGymText: {
-    fontSize: typography.fontSize.base,
-    color: colors.primary[500],
-    fontWeight: '500',
   },
 });
