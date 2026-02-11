@@ -6,12 +6,13 @@ import {
   ScrollView,
   Image,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Card, Button, GlassCard, GradientButton, PulseIndicator, SectionHeader } from '../../components';
+import { GlassCard, GradientButton, PulseIndicator, SectionHeader } from '../../components';
 import { useToast } from '../../context/ToastContext';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -364,13 +365,12 @@ export function EventDetailScreen({ navigation, route, eventId: propEventId }: E
 
         {/* Share Button - visible to all users */}
         {navigation && (
-          <Button
-            title="Share Event"
-            onPress={() => navigation.navigate('ShareEvent', { eventId: event.id })}
-            variant="outline"
-            size="lg"
-            style={styles.shareButton}
-          />
+          <GlassCard onPress={() => navigation.navigate('ShareEvent', { eventId: event.id })} style={styles.shareButton}>
+            <View style={styles.shareButtonContent}>
+              <Ionicons name="share-outline" size={18} color={colors.primary[400]} />
+              <Text style={styles.shareButtonText}>Share Event</Text>
+            </View>
+          </GlassCard>
         )}
 
         {isOwnGym && navigation && (
@@ -382,20 +382,12 @@ export function EventDetailScreen({ navigation, route, eventId: propEventId }: E
               fullWidth
               icon="create-outline"
             />
-            <Button
-              title="Manage Requests"
-              onPress={() => navigation.navigate('ManageRequests', { eventId: event.id })}
-              variant="outline"
-              size="lg"
-              style={{ marginTop: spacing[2] }}
-            />
-            <Button
-              title="Check-In Fighters"
-              onPress={() => navigation.navigate('EventCheckIn', { eventId: event.id, eventTitle: event.title })}
-              variant="outline"
-              size="lg"
-              style={{ marginTop: spacing[2] }}
-            />
+            <GlassCard onPress={() => navigation.navigate('ManageRequests', { eventId: event.id })} style={{ marginTop: spacing[2] }}>
+              <Text style={styles.secondaryButtonText}>Manage Requests</Text>
+            </GlassCard>
+            <GlassCard onPress={() => navigation.navigate('EventCheckIn', { eventId: event.id, eventTitle: event.title })} style={{ marginTop: spacing[2] }}>
+              <Text style={styles.secondaryButtonText}>Check-In Fighters</Text>
+            </GlassCard>
           </View>
         )}
 
@@ -432,31 +424,28 @@ export function EventDetailScreen({ navigation, route, eventId: propEventId }: E
                 />
               </View>
             ) : existingRequest.status === 'pending' ? (
-              <Button
-                title="Cancel Request"
-                onPress={handleCancelRequest}
-                loading={requesting}
-                variant="outline"
-                size="lg"
-              />
+              <GlassCard onPress={handleCancelRequest} style={styles.cancelRequestCard}>
+                <View style={styles.shareButtonContent}>
+                  {requesting ? <ActivityIndicator size="small" color={colors.neutral[200]} /> : null}
+                  <Text style={styles.secondaryButtonText}>Cancel Request</Text>
+                </View>
+              </GlassCard>
             ) : existingRequest.status === 'approved' ? (
               <View>
-                <Button
-                  title="You're In!"
-                  onPress={() => {}}
-                  disabled
-                  size="lg"
-                  variant="secondary"
-                />
+                <GlassCard intensity="accent" style={styles.confirmedCard}>
+                  <View style={styles.shareButtonContent}>
+                    <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+                    <Text style={styles.confirmedText}>You're In!</Text>
+                  </View>
+                </GlassCard>
                 {/* Write Review - only for approved fighters on completed events */}
                 {event.status === 'completed' && navigation && (
-                  <Button
-                    title="Write Review"
-                    onPress={() => navigation.navigate('EventReview', { eventId: event.id, eventTitle: event.title })}
-                    variant="outline"
-                    size="lg"
-                    style={{ marginTop: spacing[2] }}
-                  />
+                  <GlassCard onPress={() => navigation.navigate('EventReview', { eventId: event.id, eventTitle: event.title })} style={{ marginTop: spacing[2] }}>
+                    <View style={styles.shareButtonContent}>
+                      <Ionicons name="star-outline" size={18} color={colors.primary[400]} />
+                      <Text style={styles.shareButtonText}>Write Review</Text>
+                    </View>
+                  </GlassCard>
                 )}
               </View>
             ) : null}
@@ -721,6 +710,34 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.warning,
     fontFamily: typography.fontFamily.semibold,
+    fontWeight: '600',
+  },
+  shareButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[2],
+  },
+  shareButtonText: {
+    color: colors.primary[400],
+    fontSize: typography.fontSize.base,
+    fontWeight: '600',
+  },
+  secondaryButtonText: {
+    color: colors.neutral[200],
+    fontSize: typography.fontSize.base,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  cancelRequestCard: {
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  confirmedCard: {
+    marginBottom: spacing[2],
+  },
+  confirmedText: {
+    color: colors.success,
+    fontSize: typography.fontSize.base,
     fontWeight: '600',
   },
 });

@@ -21,7 +21,7 @@ import Animated, {
   withSequence,
   FadeIn,
 } from 'react-native-reanimated';
-import { Button, Input, GradientButton, GlassCard } from '../../components';
+import { GradientButton, GlassCard, GlassInput } from '../../components';
 import { useAuth } from '../../context/AuthContext';
 import { colors, spacing, typography, borderRadius, shadows, gradients, glass } from '../../lib/theme';
 import { isDesktop, isWeb } from '../../lib/responsive';
@@ -177,7 +177,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
 
               {/* Form */}
               <View style={styles.desktopForm}>
-                <Input
+                <GlassInput
                   label="Email"
                   placeholder="Enter your email"
                   value={email}
@@ -188,7 +188,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
                   leftIcon={<Ionicons name="mail-outline" size={20} color={colors.neutral[400]} />}
                 />
 
-                <Input
+                <GlassInput
                   label="Password"
                   placeholder="Enter your password"
                   value={password}
@@ -286,7 +286,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
           ) : null}
 
           <Animated.View entering={FadeIn.delay(200).duration(500)}>
-            <Input
+            <GlassInput
               label="Email"
               placeholder="Enter your email"
               value={email}
@@ -299,7 +299,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
           </Animated.View>
 
           <Animated.View entering={FadeIn.delay(300).duration(500)}>
-            <Input
+            <GlassInput
               label="Password"
               placeholder="Enter your password"
               value={password}

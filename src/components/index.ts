@@ -23,6 +23,7 @@ export { MatchScoreBadge } from './MatchScoreBadge';
 
 // Premium redesign primitives
 export { GlassCard } from './GlassCard';
+export { GlassInput } from './GlassInput';
 export { GradientButton } from './GradientButton';
 export { AnimatedHeader } from './AnimatedHeader';
 export { SectionHeader } from './SectionHeader';

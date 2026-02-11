@@ -21,7 +21,7 @@ import Animated, {
   withSequence,
   FadeIn,
 } from 'react-native-reanimated';
-import { Button, Input, GradientButton, GlassCard } from '../../components';
+import { GradientButton, GlassCard, GlassInput } from '../../components';
 import { useAuth } from '../../context/AuthContext';
 import { colors, spacing, typography, borderRadius, shadows, gradients, glass } from '../../lib/theme';
 import { isDesktop } from '../../lib/responsive';
@@ -96,7 +96,7 @@ export function RegisterScreen({ navigation, route }: any) {
   const renderForm = (isDesktopLayout: boolean) => (
     <>
       <Animated.View entering={FadeIn.delay(200).duration(500)}>
-        <Input
+        <GlassInput
           label="Email"
           placeholder="Enter your email"
           value={email}
@@ -109,7 +109,7 @@ export function RegisterScreen({ navigation, route }: any) {
       </Animated.View>
 
       <Animated.View entering={FadeIn.delay(300).duration(500)}>
-        <Input
+        <GlassInput
           label="Password"
           placeholder="Create a password"
           value={password}
@@ -127,7 +127,7 @@ export function RegisterScreen({ navigation, route }: any) {
       </Animated.View>
 
       <Animated.View entering={FadeIn.delay(400).duration(500)}>
-        <Input
+        <GlassInput
           label="Confirm Password"
           placeholder="Confirm your password"
           value={confirmPassword}
@@ -138,7 +138,7 @@ export function RegisterScreen({ navigation, route }: any) {
       </Animated.View>
 
       <Animated.View entering={FadeIn.delay(500).duration(500)}>
-        <Input
+        <GlassInput
           label="Referral Code (Optional)"
           placeholder="Enter referral code"
           value={referralCode}
