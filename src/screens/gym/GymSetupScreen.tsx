@@ -25,7 +25,7 @@ const TOTAL_STEPS = 3;
 
 // Combat sports with colors
 const COMBAT_SPORTS: { key: CombatSport; label: string; color: string; icon: string }[] = [
-  { key: 'boxing', label: 'Boxing', color: '#C41E3A', icon: 'fitness' },
+  { key: 'boxing', label: 'Boxing', color: '#EF4444', icon: 'fitness' },
   { key: 'mma', label: 'MMA', color: '#F97316', icon: 'hand-left' },
   { key: 'muay_thai', label: 'Muay Thai', color: '#EAB308', icon: 'flash' },
   { key: 'kickboxing', label: 'Kickboxing', color: '#3B82F6', icon: 'flame' },

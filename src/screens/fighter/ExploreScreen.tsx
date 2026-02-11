@@ -390,7 +390,7 @@ export function ExploreScreen({ navigation }: ExploreScreenProps) {
         {/* Map placeholder with pins and discipline chips */}
         <View style={styles.mapContainer}>
           <LinearGradient
-            colors={['#141414', '#1A1A1A', '#111111'] as const}
+            colors={['#131A2A', '#161D2E', '#0E1320'] as const}
             style={styles.mapGradient}
           >
             {/* Grid overlay for map texture */}
@@ -604,7 +604,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
     borderRadius: borderRadius.full,
-    backgroundColor: 'rgba(26, 26, 26, 0.85)',
+    backgroundColor: 'rgba(30, 39, 64, 0.85)',
     borderWidth: 1,
     borderColor: colors.border,
   },

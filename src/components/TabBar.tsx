@@ -235,14 +235,14 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(13, 13, 13, 0.85)',
+    backgroundColor: 'rgba(16, 22, 34, 0.85)',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(255, 255, 255, 0.1)',
     overflow: 'hidden',
   },
   gradientOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(26, 26, 26, 0.4)',
+    backgroundColor: 'rgba(22, 29, 46, 0.4)',
   },
   indicatorContainer: {
     position: 'absolute',
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing[0.5],
   },
   iconContainerFocused: {
-    backgroundColor: 'rgba(196, 30, 58, 0.15)',
+    backgroundColor: 'rgba(19, 91, 236, 0.15)',
     shadowColor: colors.primary[500],
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,

@@ -93,7 +93,7 @@ export function GradientButton({
       disabled={disabled || loading}
     >
       <LinearGradient
-        colors={disabled ? ['#404040', '#333333'] : gradient}
+        colors={disabled ? ['#334155', '#1E293B'] : gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.gradient, sizeStyles.container]}

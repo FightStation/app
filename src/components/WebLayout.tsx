@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: borderRadius.md,
-    backgroundColor: 'rgba(196, 30, 58, 0.15)',
+    backgroundColor: 'rgba(19, 91, 236, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   navItemActive: {
-    backgroundColor: 'rgba(196, 30, 58, 0.15)',
+    backgroundColor: 'rgba(19, 91, 236, 0.15)',
   },
   navActiveAccent: {
     position: 'absolute',

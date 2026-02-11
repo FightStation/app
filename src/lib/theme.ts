@@ -1,47 +1,47 @@
 // Fight Station Design System
-// WARRIOR THEME - Dark, Premium, Professional
+// ELECTRIC BLUE THEME - Dark Navy, Premium, Professional
 
 export const colors = {
-  // Primary - Deep Red (matches mockup)
+  // Primary - Electric Blue (matches Stitch designs)
   primary: {
-    50: '#FEF2F2',
-    100: '#FEE2E2',
-    200: '#FECACA',
-    300: '#FCA5A5',
-    400: '#F87171',
-    500: '#C41E3A', // Main brand red (darker, more sophisticated)
-    600: '#B91C1C',
-    700: '#991B1B',
-    800: '#7F1D1D',
-    900: '#450A0A',
+    50: '#EFF6FF',
+    100: '#DBEAFE',
+    200: '#BFDBFE',
+    300: '#93C5FD',
+    400: '#60A5FA',
+    500: '#135BEC', // Main brand blue
+    600: '#1048C4',
+    700: '#0D3A9E',
+    800: '#0A2D7A',
+    900: '#061B4D',
   },
-  // Secondary - Warm cream/tan for accents
+  // Secondary - Cool slate for accents
   secondary: {
-    50: '#FEFCE8',
-    100: '#FEF9C3',
-    200: '#FEF08A',
-    300: '#FDE047',
-    400: '#FACC15',
-    500: '#D4A574', // Warm tan/cream
-    600: '#CA8A04',
-    700: '#A16207',
-    800: '#854D0E',
-    900: '#713F12',
+    50: '#F8FAFC',
+    100: '#F1F5F9',
+    200: '#E2E8F0',
+    300: '#CBD5E1',
+    400: '#94A3B8',
+    500: '#64748B', // Slate mid
+    600: '#475569',
+    700: '#334155',
+    800: '#1E293B',
+    900: '#0F172A',
   },
-  // Neutral - Rich blacks and grays
+  // Neutral - Slate-tinted grays
   neutral: {
-    50: '#FAFAFA',
-    100: '#F5F5F5',
-    200: '#E5E5E5',
-    300: '#D4D4D4',
-    400: '#A3A3A3',
-    500: '#737373',
-    600: '#525252',
-    700: '#404040',
-    800: '#262626',
-    850: '#1A1A1A',
-    900: '#141414',
-    950: '#0A0A0A',
+    50: '#F8FAFC',
+    100: '#F1F5F9',
+    200: '#E2E8F0',
+    300: '#CBD5E1',
+    400: '#94A3B8',
+    500: '#64748B',
+    600: '#475569',
+    700: '#334155',
+    800: '#1E293B',
+    850: '#172033',
+    900: '#0F172A',
+    950: '#0A0F1D',
   },
   // Accent colors
   success: '#22C55E',
@@ -49,46 +49,46 @@ export const colors = {
   warning: '#F59E0B',
   error: '#EF4444',
   info: '#3B82F6',
-  // Background - Deep charcoal black
-  background: '#0D0D0D',
-  surface: '#1A1A1A',
-  surfaceLight: '#262626',
-  surfaceElevated: '#2A2A2A',
+  // Background - Deep navy dark
+  background: '#101622',
+  surface: '#161D2E',
+  surfaceLight: '#1E2740',
+  surfaceElevated: '#232E48',
   // Card backgrounds
-  cardBg: '#1C1C1C',
-  cardBgHover: '#242424',
+  cardBg: '#182032',
+  cardBgHover: '#1E2844',
   // Text colors
-  textPrimary: '#FFFFFF',
-  textSecondary: '#A3A3A3',
-  textMuted: '#9CA3AF',
+  textPrimary: '#F1F5F9',
+  textSecondary: '#94A3B8',
+  textMuted: '#64748B',
   // Border colors
-  border: '#2A2A2A',
-  borderLight: '#363636',
+  border: '#1E293B',
+  borderLight: '#334155',
   // Special accent
   accent: {
-    red: '#C41E3A',
-    redLight: '#DC2626',
+    red: '#EF4444',
+    redLight: '#F87171',
     green: '#22C55E',
     gold: '#FFD700',
-    cream: '#D4A574',
+    cream: '#94A3B8',
   },
   // Badge colors
   badge: {
-    highIntensity: '#C41E3A',
-    hardSparring: '#C41E3A',
+    highIntensity: '#135BEC',
+    hardSparring: '#135BEC',
     allLevels: '#22C55E',
-    new: '#C41E3A',
+    new: '#135BEC',
     pending: '#F59E0B',
     verified: '#3B82F6',
   },
-  // Combat sport colors
+  // Combat sport colors (domain colors, kept distinct)
   sport: {
-    boxing: '#C41E3A',      // Deep Red
+    boxing: '#EF4444',      // Red
     mma: '#F97316',         // Vibrant Orange
     muay_thai: '#EAB308',   // Gold
     kickboxing: '#3B82F6',  // Blue
     // Lighter variants for backgrounds
-    boxingLight: 'rgba(196, 30, 58, 0.15)',
+    boxingLight: 'rgba(239, 68, 68, 0.15)',
     mmaLight: 'rgba(249, 115, 22, 0.15)',
     muay_thaiLight: 'rgba(234, 179, 8, 0.15)',
     kickboxingLight: 'rgba(59, 130, 246, 0.15)',
@@ -435,13 +435,13 @@ export const animations = {
 
 // Gradient presets (color arrays for expo-linear-gradient)
 export const gradients = {
-  primaryToDeep: ['#C41E3A', '#7F1D1D'] as const,
-  primaryToCrimson: ['#DC2626', '#C41E3A'] as const,
-  darkFade: ['rgba(13,13,13,0)', 'rgba(13,13,13,0.95)'] as const,
+  primaryToDeep: ['#135BEC', '#0A2D7A'] as const,
+  primaryToCrimson: ['#3B82F6', '#135BEC'] as const,
+  darkFade: ['rgba(16,22,34,0)', 'rgba(16,22,34,0.95)'] as const,
   cardShine: ['rgba(255,255,255,0.08)', 'rgba(255,255,255,0)'] as const,
   heroOverlay: ['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.85)'] as const,
-  warmGlow: ['rgba(196,30,58,0.15)', 'rgba(196,30,58,0)'] as const,
-  surface: ['#1E1E1E', '#1A1A1A'] as const,
+  warmGlow: ['rgba(19,91,236,0.15)', 'rgba(19,91,236,0)'] as const,
+  surface: ['#1A2438', '#161D2E'] as const,
 };
 
 // Glassmorphism tokens
@@ -465,8 +465,8 @@ export const glass = {
     blurIntensity: 60,
   },
   accent: {
-    backgroundColor: 'rgba(196, 30, 58, 0.08)',
-    borderColor: 'rgba(196, 30, 58, 0.2)',
+    backgroundColor: 'rgba(19, 91, 236, 0.08)',
+    borderColor: 'rgba(19, 91, 236, 0.2)',
     borderWidth: 1,
     blurIntensity: 30,
   },
@@ -474,12 +474,12 @@ export const glass = {
 
 // Elevation system - layered surfaces for depth
 export const elevation = {
-  level0: { backgroundColor: '#0D0D0D' },   // Screen background
-  level1: { backgroundColor: '#141414' },   // Recessed areas
-  level2: { backgroundColor: '#1A1A1A' },   // Default surface
-  level3: { backgroundColor: '#202020' },   // Cards, raised
-  level4: { backgroundColor: '#282828' },   // Floating elements
-  level5: { backgroundColor: '#303030' },   // Top-most (modals)
+  level0: { backgroundColor: '#101622' },   // Screen background
+  level1: { backgroundColor: '#131A2A' },   // Recessed areas
+  level2: { backgroundColor: '#161D2E' },   // Default surface
+  level3: { backgroundColor: '#1A2438' },   // Cards, raised
+  level4: { backgroundColor: '#1E2B44' },   // Floating elements
+  level5: { backgroundColor: '#233250' },   // Top-most (modals)
 };
 
 // Pre-built text style presets

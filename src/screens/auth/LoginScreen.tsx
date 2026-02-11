@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 150,
-    backgroundColor: 'rgba(196,30,58,0.05)',
+    backgroundColor: 'rgba(19,91,236,0.05)',
     top: 40,
     alignSelf: 'center',
     left: (width - 300) / 2 - spacing[6],

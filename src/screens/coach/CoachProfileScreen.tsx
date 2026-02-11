@@ -152,7 +152,7 @@ export function CoachProfileScreen({ navigation }: CoachProfileScreenProps) {
             title="Sign Out"
             onPress={signOut}
             icon="log-out-outline"
-            gradient={['#DC2626', '#991B1B'] as readonly [string, string]}
+            gradient={['#EF4444', '#B91C1C'] as readonly [string, string]}
             fullWidth
             style={styles.signOutButton}
           />

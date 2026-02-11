@@ -110,7 +110,7 @@ export function GlassCard({
               intensity === 'dark'
                 ? 'rgba(0, 0, 0, 0.6)'
                 : intensity === 'accent'
-                ? 'rgba(196, 30, 58, 0.12)'
+                ? 'rgba(19, 91, 236, 0.12)'
                 : 'rgba(255, 255, 255, 0.08)',
           },
         ]}

@@ -315,7 +315,7 @@ export function ClaimManagementScreen({ navigation }: ClaimManagementScreenProps
               onPress={handleRejectConfirm}
               style={styles.modalRejectButton}
               size="sm"
-              gradient={[colors.error, '#CC0000'] as readonly [string, string]}
+              gradient={[colors.error, '#991B1B'] as readonly [string, string]}
             />
           </View>
         </GlassCard>

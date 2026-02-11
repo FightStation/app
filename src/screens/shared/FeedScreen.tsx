@@ -56,8 +56,8 @@ const getSportBgColor = (sport: CombatSport): string => {
 // Gradient colors for each sport (used for story ring)
 const getSportGradient = (sport: CombatSport): readonly [string, string] => {
   switch (sport) {
-    case 'boxing': return ['#C41E3A', '#7F1D1D'] as const;
-    case 'mma': return ['#F97316', '#DC2626'] as const;
+    case 'boxing': return ['#135BEC', '#0A2D7A'] as const;
+    case 'mma': return ['#F97316', '#3B82F6'] as const;
     case 'muay_thai': return ['#EAB308', '#F59E0B'] as const;
     case 'kickboxing': return ['#3B82F6', '#6366F1'] as const;
     default: return gradients.primaryToCrimson;
@@ -405,7 +405,7 @@ export function FeedScreen({ navigation }: any) {
         {stories.map((story) => {
           const sportColor = story.sport ? getSportColor(story.sport) : colors.border;
           const sportGrad = story.sport ? getSportGradient(story.sport) : gradients.primaryToCrimson;
-          const ringGradient = story.isLive ? (['#EF4444', '#DC2626'] as const) : sportGrad;
+          const ringGradient = story.isLive ? (['#EF4444', '#B91C1C'] as const) : sportGrad;
 
           return (
             <TouchableOpacity

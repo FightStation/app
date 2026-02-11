@@ -401,7 +401,7 @@ export function EventDetailScreen({ navigation, route, eventId: propEventId }: E
       {role === 'fighter' && !isOwnGym && (
         <View style={styles.pinnedCTA}>
           <LinearGradient
-            colors={['rgba(13,13,13,0)', 'rgba(13,13,13,0.95)', colors.background]}
+            colors={['rgba(16,22,34,0)', 'rgba(16,22,34,0.95)', colors.background]}
             style={styles.pinnedGradient}
           />
           <View style={styles.pinnedContent}>
