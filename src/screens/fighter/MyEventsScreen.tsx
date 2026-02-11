@@ -18,6 +18,13 @@ import { useFocusEffect } from '@react-navigation/native';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import {
+  GlassCard,
+  GradientButton,
+  BadgeRow,
+  AnimatedListItem,
+  EmptyState,
+} from '../../components';
 
 type MyEventsScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -96,6 +103,11 @@ const mockMyEvents: MyEvent[] = [
     isPast: true,
     requestedAt: '1 week ago',
   },
+];
+
+const TAB_ITEMS = [
+  { key: 'upcoming', label: 'Upcoming', icon: 'calendar' as const },
+  { key: 'past', label: 'Past', icon: 'time' as const },
 ];
 
 export function MyEventsScreen({ navigation }: MyEventsScreenProps) {
@@ -314,6 +326,12 @@ export function MyEventsScreen({ navigation }: MyEventsScreenProps) {
   );
   const displayedEvents = activeTab === 'upcoming' ? upcomingEvents : pastEvents;
 
+  // Update tab items with counts
+  const tabItems = [
+    { key: 'upcoming', label: `Upcoming (${upcomingEvents.length})`, icon: 'calendar' as const },
+    { key: 'past', label: `Past (${pastEvents.length})`, icon: 'time' as const },
+  ];
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -341,34 +359,13 @@ export function MyEventsScreen({ navigation }: MyEventsScreenProps) {
           </TouchableOpacity>
         </View>
 
-        {/* Tabs */}
-        <View style={styles.tabsContainer}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'upcoming' && styles.tabActive]}
-            onPress={() => setActiveTab('upcoming')}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === 'upcoming' && styles.tabTextActive,
-              ]}
-            >
-              Upcoming ({upcomingEvents.length})
-            </Text>
-            {activeTab === 'upcoming' && <View style={styles.tabIndicator} />}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'past' && styles.tabActive]}
-            onPress={() => setActiveTab('past')}
-          >
-            <Text
-              style={[styles.tabText, activeTab === 'past' && styles.tabTextActive]}
-            >
-              Past ({pastEvents.length})
-            </Text>
-            {activeTab === 'past' && <View style={styles.tabIndicator} />}
-          </TouchableOpacity>
-        </View>
+        {/* Tabs - BadgeRow */}
+        <BadgeRow
+          items={tabItems}
+          selected={activeTab}
+          onSelect={(key) => setActiveTab(key as 'upcoming' | 'past')}
+          style={{ marginBottom: spacing[4] }}
+        />
 
         {/* Events List */}
         <ScrollView
@@ -384,188 +381,179 @@ export function MyEventsScreen({ navigation }: MyEventsScreenProps) {
           }
         >
           {displayedEvents.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons
-                name={activeTab === 'upcoming' ? 'calendar-outline' : 'time-outline'}
-                size={64}
-                color={colors.textMuted}
-              />
-              <Text style={styles.emptyTitle}>
-                {activeTab === 'upcoming'
-                  ? 'No Upcoming Events'
-                  : 'No Past Events'}
-              </Text>
-              <Text style={styles.emptySubtitle}>
-                {activeTab === 'upcoming'
+            <EmptyState
+              icon={activeTab === 'upcoming' ? 'calendar-outline' : 'time-outline'}
+              title={activeTab === 'upcoming' ? 'No Upcoming Events' : 'No Past Events'}
+              description={
+                activeTab === 'upcoming'
                   ? 'Request to join a sparring session to get started'
-                  : 'Your completed sessions will appear here'}
-              </Text>
-              {activeTab === 'upcoming' && (
-                <TouchableOpacity
-                  style={styles.emptyButton}
-                  onPress={() => navigation.navigate('HomeTab')}
-                >
-                  <Text style={styles.emptyButtonText}>Find Sparring</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+                  : 'Your completed sessions will appear here'
+              }
+              actionLabel={activeTab === 'upcoming' ? 'Find Sparring' : undefined}
+              onAction={activeTab === 'upcoming' ? () => navigation.navigate('HomeTab') : undefined}
+            />
           ) : (
-            displayedEvents.map((event) => {
+            displayedEvents.map((event, index) => {
               const statusBadge = getStatusBadge(event.status, event.isPast);
               return (
-                <View key={event.id} style={styles.eventCard}>
-                  {/* Status Badge */}
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      { backgroundColor: statusBadge.bg },
-                    ]}
-                  >
-                    <Ionicons
-                      name={statusBadge.icon}
-                      size={14}
-                      color={statusBadge.color}
-                    />
-                    <Text style={[styles.statusText, { color: statusBadge.color }]}>
-                      {statusBadge.label}
-                    </Text>
-                  </View>
-
-                  {/* Event Header */}
-                  <TouchableOpacity
-                    style={styles.eventHeader}
+                <AnimatedListItem key={event.id} index={index}>
+                  <GlassCard
+                    style={styles.eventCard}
                     onPress={() => navigation.navigate('EventDetail', { eventId: event.eventId })}
                   >
-                    <Text style={styles.eventTitle}>{event.title}</Text>
+                    {/* Status Badge */}
                     <View
                       style={[
-                        styles.intensityBadge,
-                        {
-                          backgroundColor: `${getIntensityColor(event.intensity)}20`,
-                        },
+                        styles.statusBadge,
+                        { backgroundColor: statusBadge.bg },
                       ]}
                     >
-                      <Text
+                      <Ionicons
+                        name={statusBadge.icon}
+                        size={14}
+                        color={statusBadge.color}
+                      />
+                      <Text style={[styles.statusText, { color: statusBadge.color }]}>
+                        {statusBadge.label}
+                      </Text>
+                    </View>
+
+                    {/* Event Header */}
+                    <View style={styles.eventHeader}>
+                      <Text style={styles.eventTitle}>{event.title}</Text>
+                      <View
                         style={[
-                          styles.intensityText,
-                          { color: getIntensityColor(event.intensity) },
+                          styles.intensityBadge,
+                          {
+                            backgroundColor: `${getIntensityColor(event.intensity)}20`,
+                          },
                         ]}
                       >
-                        {event.intensity}
-                      </Text>
+                        <Text
+                          style={[
+                            styles.intensityText,
+                            { color: getIntensityColor(event.intensity) },
+                          ]}
+                        >
+                          {event.intensity}
+                        </Text>
+                      </View>
                     </View>
-                  </TouchableOpacity>
 
-                  {/* Gym Info */}
-                  <TouchableOpacity
-                    style={styles.gymInfo}
-                    onPress={() => navigation.navigate('GymProfileView', { gymId: event.gymId })}
-                  >
-                    <Ionicons name="business" size={16} color={colors.textMuted} />
-                    <View style={styles.gymDetails}>
-                      <Text style={styles.gymName}>{event.gymName}</Text>
-                      <Text style={styles.gymAddress}>{event.gymAddress}</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-                  </TouchableOpacity>
+                    {/* Gym Info */}
+                    <TouchableOpacity
+                      style={styles.gymInfo}
+                      onPress={() => navigation.navigate('GymProfileView', { gymId: event.gymId })}
+                    >
+                      <Ionicons name="business" size={16} color={colors.textMuted} />
+                      <View style={styles.gymDetails}>
+                        <Text style={styles.gymName}>{event.gymName}</Text>
+                        <Text style={styles.gymAddress}>{event.gymAddress}</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                    </TouchableOpacity>
 
-                  {/* Date & Time */}
-                  <View style={styles.eventMeta}>
-                    <View style={styles.metaItem}>
-                      <Ionicons
-                        name="calendar-outline"
-                        size={16}
-                        color={colors.textMuted}
-                      />
-                      <Text style={styles.metaText}>{event.date}</Text>
+                    {/* Date & Time */}
+                    <View style={styles.eventMeta}>
+                      <View style={styles.metaItem}>
+                        <Ionicons
+                          name="calendar-outline"
+                          size={16}
+                          color={colors.textMuted}
+                        />
+                        <Text style={styles.metaText}>{event.date}</Text>
+                      </View>
+                      <View style={styles.metaItem}>
+                        <Ionicons
+                          name="time-outline"
+                          size={16}
+                          color={colors.textMuted}
+                        />
+                        <Text style={styles.metaText}>{event.time}</Text>
+                      </View>
                     </View>
-                    <View style={styles.metaItem}>
-                      <Ionicons
-                        name="time-outline"
-                        size={16}
-                        color={colors.textMuted}
-                      />
-                      <Text style={styles.metaText}>{event.time}</Text>
-                    </View>
-                  </View>
 
-                  {/* Participants */}
-                  <View style={styles.participantsRow}>
-                    <View style={styles.participantsInfo}>
-                      <Ionicons
-                        name="people"
-                        size={18}
-                        color={colors.textSecondary}
-                      />
-                      <Text style={styles.participantsText}>
-                        {event.participants}/{event.maxParticipants} fighters
-                      </Text>
+                    {/* Participants */}
+                    <View style={styles.participantsRow}>
+                      <View style={styles.participantsInfo}>
+                        <Ionicons
+                          name="people"
+                          size={18}
+                          color={colors.textSecondary}
+                        />
+                        <Text style={styles.participantsText}>
+                          {event.participants}/{event.maxParticipants} fighters
+                        </Text>
+                      </View>
                     </View>
-                  </View>
 
-                  {/* Pending Info */}
-                  {event.status === 'pending' && (
-                    <View style={styles.pendingInfo}>
-                      <Ionicons
-                        name="information-circle"
-                        size={16}
-                        color={colors.warning}
-                      />
-                      <Text style={styles.pendingText}>
-                        Requested {event.requestedAt} • Waiting for gym approval
-                      </Text>
-                    </View>
-                  )}
+                    {/* Pending Info */}
+                    {event.status === 'pending' && (
+                      <View style={styles.pendingInfo}>
+                        <Ionicons
+                          name="information-circle"
+                          size={16}
+                          color={colors.warning}
+                        />
+                        <Text style={styles.pendingText}>
+                          Requested {event.requestedAt} • Waiting for gym approval
+                        </Text>
+                      </View>
+                    )}
 
-                  {/* Actions */}
-                  <View style={styles.eventActions}>
-                    {event.status === 'approved' && !event.isPast && (
-                      <>
-                        <TouchableOpacity style={styles.secondaryButton}>
-                          <Ionicons
-                            name="navigate"
-                            size={16}
-                            color={colors.textPrimary}
+                    {/* Actions */}
+                    <View style={styles.eventActions}>
+                      {event.status === 'approved' && !event.isPast && (
+                        <>
+                          <GlassCard
+                            style={styles.secondaryActionButton}
+                            onPress={() => {}}
+                          >
+                            <View style={styles.actionButtonContent}>
+                              <Ionicons
+                                name="navigate"
+                                size={16}
+                                color={colors.textPrimary}
+                              />
+                              <Text style={styles.secondaryButtonText}>Directions</Text>
+                            </View>
+                          </GlassCard>
+                          <GradientButton
+                            title="Details"
+                            icon="information-circle"
+                            size="sm"
+                            onPress={() => navigation.navigate('EventDetail', { eventId: event.eventId })}
+                            style={{ flex: 1 }}
                           />
-                          <Text style={styles.secondaryButtonText}>Directions</Text>
-                        </TouchableOpacity>
+                        </>
+                      )}
+                      {event.status === 'pending' && (
                         <TouchableOpacity
-                          style={styles.primaryButton}
+                          style={styles.cancelButton}
+                          onPress={() => handleCancelRequest(event.id)}
+                        >
+                          <Ionicons name="close-circle" size={16} color={colors.error} />
+                          <Text style={styles.cancelButtonText}>Cancel Request</Text>
+                        </TouchableOpacity>
+                      )}
+                      {event.isPast && event.status === 'approved' && (
+                        <GlassCard
+                          style={styles.secondaryActionButton}
                           onPress={() => navigation.navigate('EventDetail', { eventId: event.eventId })}
                         >
-                          <Ionicons
-                            name="information-circle"
-                            size={16}
-                            color={colors.textPrimary}
-                          />
-                          <Text style={styles.primaryButtonText}>Details</Text>
-                        </TouchableOpacity>
-                      </>
-                    )}
-                    {event.status === 'pending' && (
-                      <TouchableOpacity
-                        style={styles.cancelButton}
-                        onPress={() => handleCancelRequest(event.id)}
-                      >
-                        <Ionicons name="close-circle" size={16} color={colors.error} />
-                        <Text style={styles.cancelButtonText}>Cancel Request</Text>
-                      </TouchableOpacity>
-                    )}
-                    {event.isPast && event.status === 'approved' && (
-                      <TouchableOpacity
-                        style={styles.secondaryButton}
-                        onPress={() => navigation.navigate('EventDetail', { eventId: event.eventId })}
-                      >
-                        <Ionicons
-                          name="repeat"
-                          size={16}
-                          color={colors.textPrimary}
-                        />
-                        <Text style={styles.secondaryButtonText}>Book Again</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
+                          <View style={styles.actionButtonContent}>
+                            <Ionicons
+                              name="repeat"
+                              size={16}
+                              color={colors.textPrimary}
+                            />
+                            <Text style={styles.secondaryButtonText}>Book Again</Text>
+                          </View>
+                        </GlassCard>
+                      )}
+                    </View>
+                  </GlassCard>
+                </AnimatedListItem>
               );
             })
           )}
@@ -619,37 +607,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tabsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing[4],
-    marginBottom: spacing[4],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: spacing[3],
-    alignItems: 'center',
-    position: 'relative',
-  },
-  tabActive: {},
-  tabText: {
-    color: colors.textMuted,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
-  },
-  tabTextActive: {
-    color: colors.textPrimary,
-    fontWeight: typography.fontWeight.bold,
-  },
-  tabIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: colors.primary[500],
-  },
   container: {
     flex: 1,
   },
@@ -658,11 +615,6 @@ const styles = StyleSheet.create({
   },
   // Event Card
   eventCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
     marginBottom: spacing[4],
   },
   statusBadge: {
@@ -774,32 +726,15 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  primaryButton: {
+  secondaryActionButton: {
     flex: 1,
+    padding: spacing[2],
+  },
+  actionButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary[500],
-    paddingVertical: spacing[2.5],
-    borderRadius: borderRadius.lg,
     gap: spacing[1],
-  },
-  primaryButtonText: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.bold,
-  },
-  secondaryButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceLight,
-    paddingVertical: spacing[2.5],
-    borderRadius: borderRadius.lg,
-    gap: spacing[1],
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   secondaryButtonText: {
     color: colors.textPrimary,
@@ -822,38 +757,6 @@ const styles = StyleSheet.create({
     color: colors.error,
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.semibold,
-  },
-  // Empty State
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[10],
-  },
-  emptyTitle: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    marginTop: spacing[4],
-    marginBottom: spacing[2],
-  },
-  emptySubtitle: {
-    color: colors.textMuted,
-    fontSize: typography.fontSize.base,
-    textAlign: 'center',
-    marginBottom: spacing[6],
-    paddingHorizontal: spacing[8],
-  },
-  emptyButton: {
-    backgroundColor: colors.primary[500],
-    paddingHorizontal: spacing[6],
-    paddingVertical: spacing[3],
-    borderRadius: borderRadius.lg,
-  },
-  emptyButtonText: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.bold,
   },
   bottomPadding: {
     height: spacing[10],

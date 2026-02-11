@@ -11,8 +11,7 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { captureRef } from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
-import { Button, Card } from '../../components';
-import { EventShareCard } from '../../components/EventShareCard';
+import { GlassCard, GradientButton, EventShareCard } from '../../components';
 import { supabase } from '../../lib/supabase';
 import { useReferral } from '../../context/ReferralContext';
 import { SparringEvent } from '../../types';
@@ -171,40 +170,41 @@ export function ShareEventScreen({ route }: ShareEventScreenProps) {
 
       {/* Actions */}
       <View style={styles.actions}>
-        <Button
+        <GradientButton
           title="Share to Social Media"
           onPress={handleShare}
           loading={sharing}
           size="lg"
+          icon="share-social"
+          fullWidth
         />
 
-        <Button
-          title="Save to Gallery"
+        <GlassCard
           onPress={handleSaveToGallery}
-          loading={saving}
-          variant="outline"
-          size="lg"
-          style={styles.secondaryButton}
-        />
+          style={styles.secondaryActionCard}
+        >
+          <Text style={styles.secondaryActionText}>
+            {saving ? 'Saving...' : 'Save to Gallery'}
+          </Text>
+        </GlassCard>
 
-        <Button
-          title="Copy Link"
+        <GlassCard
           onPress={handleCopyLink}
-          variant="ghost"
-          size="lg"
-          style={styles.secondaryButton}
-        />
+          style={styles.secondaryActionCard}
+        >
+          <Text style={styles.secondaryActionText}>Copy Link</Text>
+        </GlassCard>
       </View>
 
       {/* Referral Info */}
       {referralCodeStr && (
-        <Card style={styles.referralCard}>
+        <GlassCard intensity="accent" style={styles.referralCard}>
           <Text style={styles.referralTitle}>Your Referral Code Included</Text>
           <Text style={styles.referralText}>
             When fighters sign up through this link, you'll get credit for the referral!
           </Text>
           <Text style={styles.referralCode}>{referralCodeStr}</Text>
-        </Card>
+        </GlassCard>
       )}
     </ScrollView>
   );
@@ -253,8 +253,16 @@ const styles = StyleSheet.create({
   actions: {
     gap: spacing[3],
   },
-  secondaryButton: {
-    marginTop: 0,
+  secondaryActionCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing[3.5],
+  },
+  secondaryActionText: {
+    color: colors.textPrimary,
+    fontSize: typography.fontSize.base,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   referralCard: {
     marginTop: spacing[6],

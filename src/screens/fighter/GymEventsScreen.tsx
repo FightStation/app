@@ -13,6 +13,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import {
+  GlassCard,
+  GradientButton,
+  AnimatedListItem,
+  EmptyState,
+  SectionHeader,
+} from '../../components';
 
 type GymEventsScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -126,91 +133,105 @@ export function GymEventsScreen({ navigation, route }: GymEventsScreenProps) {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
+          <SectionHeader
+            title="Upcoming Sessions"
+            subtitle={`${mockGymEvents.length} sessions available`}
+          />
+
           {/* Events List */}
-          {mockGymEvents.map((event) => (
-            <View key={event.id} style={styles.eventCard}>
-              {/* Event Header */}
-              <View style={styles.eventHeader}>
-                <View style={styles.eventTitleRow}>
-                  <Text style={styles.eventTitle}>{event.title}</Text>
-                  <View
-                    style={[
-                      styles.intensityBadge,
-                      { backgroundColor: `${getIntensityColor(event.intensity)}20` },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.intensityText,
-                        { color: getIntensityColor(event.intensity) },
-                      ]}
-                    >
-                      {event.intensity}
-                    </Text>
+          {mockGymEvents.length === 0 ? (
+            <EmptyState
+              icon="calendar-outline"
+              title="No Sessions Available"
+              description="This gym doesn't have any upcoming sparring sessions right now."
+            />
+          ) : (
+            mockGymEvents.map((event, index) => (
+              <AnimatedListItem key={event.id} index={index}>
+                <GlassCard style={styles.eventCard}>
+                  {/* Event Header */}
+                  <View style={styles.eventHeader}>
+                    <View style={styles.eventTitleRow}>
+                      <Text style={styles.eventTitle}>{event.title}</Text>
+                      <View
+                        style={[
+                          styles.intensityBadge,
+                          { backgroundColor: `${getIntensityColor(event.intensity)}20` },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.intensityText,
+                            { color: getIntensityColor(event.intensity) },
+                          ]}
+                        >
+                          {event.intensity}
+                        </Text>
+                      </View>
+                    </View>
                   </View>
-                </View>
-              </View>
 
-              {/* Date & Time */}
-              <View style={styles.eventMeta}>
-                <View style={styles.metaItem}>
-                  <Ionicons name="calendar-outline" size={16} color={colors.textMuted} />
-                  <Text style={styles.metaText}>{event.date}</Text>
-                </View>
-                <View style={styles.metaItem}>
-                  <Ionicons name="time-outline" size={16} color={colors.textMuted} />
-                  <Text style={styles.metaText}>{event.time}</Text>
-                </View>
-              </View>
-
-              {/* Description */}
-              <Text style={styles.description}>{event.description}</Text>
-
-              {/* Weight Classes */}
-              <View style={styles.tagsSection}>
-                <Text style={styles.tagLabel}>WEIGHT CLASSES</Text>
-                <View style={styles.tagsRow}>
-                  {event.weightClasses.map((wc, idx) => (
-                    <View key={idx} style={styles.tag}>
-                      <Text style={styles.tagText}>{wc}</Text>
+                  {/* Date & Time */}
+                  <View style={styles.eventMeta}>
+                    <View style={styles.metaItem}>
+                      <Ionicons name="calendar-outline" size={16} color={colors.textMuted} />
+                      <Text style={styles.metaText}>{event.date}</Text>
                     </View>
-                  ))}
-                </View>
-              </View>
-
-              {/* Experience Levels */}
-              <View style={styles.tagsSection}>
-                <Text style={styles.tagLabel}>EXPERIENCE</Text>
-                <View style={styles.tagsRow}>
-                  {event.experienceLevels.map((exp, idx) => (
-                    <View key={idx} style={styles.tag}>
-                      <Text style={styles.tagText}>{exp}</Text>
+                    <View style={styles.metaItem}>
+                      <Ionicons name="time-outline" size={16} color={colors.textMuted} />
+                      <Text style={styles.metaText}>{event.time}</Text>
                     </View>
-                  ))}
-                </View>
-              </View>
+                  </View>
 
-              {/* Footer */}
-              <View style={styles.eventFooter}>
-                <View style={styles.participantsInfo}>
-                  <Ionicons name="people" size={18} color={colors.textSecondary} />
-                  <Text style={styles.participantsText}>
-                    {event.participants}/{event.maxParticipants} fighters
-                  </Text>
-                  <Text style={styles.spotsText}>
-                    • {event.spotsLeft} spots left
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.requestButton}
-                  onPress={() => handleRequestJoin(event.id)}
-                >
-                  <Ionicons name="add-circle" size={18} color={colors.textPrimary} />
-                  <Text style={styles.requestButtonText}>Request to Join</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
+                  {/* Description */}
+                  <Text style={styles.description}>{event.description}</Text>
+
+                  {/* Weight Classes */}
+                  <View style={styles.tagsSection}>
+                    <Text style={styles.tagLabel}>WEIGHT CLASSES</Text>
+                    <View style={styles.tagsRow}>
+                      {event.weightClasses.map((wc, idx) => (
+                        <View key={idx} style={styles.tag}>
+                          <Text style={styles.tagText}>{wc}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+
+                  {/* Experience Levels */}
+                  <View style={styles.tagsSection}>
+                    <Text style={styles.tagLabel}>EXPERIENCE</Text>
+                    <View style={styles.tagsRow}>
+                      {event.experienceLevels.map((exp, idx) => (
+                        <View key={idx} style={styles.tag}>
+                          <Text style={styles.tagText}>{exp}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+
+                  {/* Footer */}
+                  <View style={styles.eventFooter}>
+                    <View style={styles.participantsInfo}>
+                      <Ionicons name="people" size={18} color={colors.textSecondary} />
+                      <Text style={styles.participantsText}>
+                        {event.participants}/{event.maxParticipants} fighters
+                      </Text>
+                      <Text style={styles.spotsText}>
+                        • {event.spotsLeft} spots left
+                      </Text>
+                    </View>
+                    <GradientButton
+                      title="Request to Join"
+                      icon="add-circle"
+                      size="sm"
+                      onPress={() => handleRequestJoin(event.id)}
+                    />
+                  </View>
+                </GlassCard>
+              </AnimatedListItem>
+            ))
+          )}
 
           <View style={styles.bottomPadding} />
         </ScrollView>
@@ -223,7 +244,7 @@ export function GymEventsScreen({ navigation, route }: GymEventsScreenProps) {
           onRequestClose={() => setShowConfirmModal(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
+            <GlassCard intensity="dark" style={styles.modalContent}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Confirm Request</Text>
                 <TouchableOpacity
@@ -254,22 +275,21 @@ export function GymEventsScreen({ navigation, route }: GymEventsScreenProps) {
                   </View>
 
                   <View style={styles.modalActions}>
-                    <TouchableOpacity
-                      style={styles.cancelButton}
+                    <GlassCard
+                      style={styles.modalCancelButton}
                       onPress={() => setShowConfirmModal(false)}
                     >
                       <Text style={styles.cancelButtonText}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.confirmButton}
+                    </GlassCard>
+                    <GradientButton
+                      title="Send Request"
                       onPress={handleConfirmRequest}
-                    >
-                      <Text style={styles.confirmButtonText}>Send Request</Text>
-                    </TouchableOpacity>
+                      style={{ flex: 1 }}
+                    />
                   </View>
                 </>
               )}
-            </View>
+            </GlassCard>
           </View>
         </Modal>
       </View>
@@ -329,11 +349,6 @@ const styles = StyleSheet.create({
   },
   // Event Card
   eventCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
     marginBottom: spacing[4],
   },
   eventHeader: {
@@ -431,20 +446,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.semibold,
   },
-  requestButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primary[500],
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    borderRadius: borderRadius.lg,
-    gap: spacing[1],
-  },
-  requestButtonText: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.bold,
-  },
   bottomPadding: {
     height: spacing[10],
   },
@@ -459,11 +460,6 @@ const styles = StyleSheet.create({
   modalContent: {
     width: '100%',
     maxWidth: 400,
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius['2xl'],
-    padding: spacing[5],
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -518,29 +514,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing[3],
   },
-  cancelButton: {
+  modalCancelButton: {
     flex: 1,
-    paddingVertical: spacing[3],
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing[3],
   },
   cancelButtonText: {
     color: colors.textMuted,
     fontSize: typography.fontSize.base,
     fontWeight: typography.fontWeight.semibold,
-  },
-  confirmButton: {
-    flex: 1,
-    paddingVertical: spacing[3],
-    borderRadius: borderRadius.lg,
-    backgroundColor: colors.primary[500],
-    alignItems: 'center',
-  },
-  confirmButtonText: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.bold,
+    textAlign: 'center',
   },
 });

@@ -14,7 +14,7 @@ import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
 import { Ionicons } from '@expo/vector-icons';
-import { Button } from '../../components';
+import { GlassCard, GradientButton } from '../../components';
 import { WatermarkOverlay, WatermarkPosition } from '../../components/WatermarkOverlay';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 
@@ -146,21 +146,21 @@ export function VideoShareScreen({ navigation }: VideoShareScreenProps) {
           </Text>
 
           <View style={styles.optionsContainer}>
-            <TouchableOpacity style={styles.optionCard} onPress={recordVideo}>
+            <GlassCard style={styles.optionCard} onPress={recordVideo}>
               <View style={styles.optionIcon}>
                 <Ionicons name="videocam" size={40} color={colors.primary[400]} />
               </View>
               <Text style={styles.optionTitle}>Record Video</Text>
               <Text style={styles.optionSubtitle}>Capture a new clip</Text>
-            </TouchableOpacity>
+            </GlassCard>
 
-            <TouchableOpacity style={styles.optionCard} onPress={pickVideo}>
+            <GlassCard style={styles.optionCard} onPress={pickVideo}>
               <View style={styles.optionIcon}>
                 <Ionicons name="images" size={40} color={colors.primary[400]} />
               </View>
               <Text style={styles.optionTitle}>Choose Video</Text>
               <Text style={styles.optionSubtitle}>From your gallery</Text>
-            </TouchableOpacity>
+            </GlassCard>
           </View>
 
           <Text style={styles.tipText}>
@@ -211,38 +211,41 @@ export function VideoShareScreen({ navigation }: VideoShareScreenProps) {
 
           {/* Actions */}
           <View style={styles.actions}>
-            <Button
+            <GradientButton
               title="Share to Social Media"
               onPress={handleShare}
               loading={sharing}
               size="lg"
+              icon="share-social"
+              fullWidth
             />
 
-            <Button
-              title="Save to Gallery"
+            <GlassCard
               onPress={handleSaveToGallery}
-              loading={saving}
-              variant="outline"
-              size="lg"
-              style={styles.secondaryButton}
-            />
+              style={styles.secondaryActionCard}
+            >
+              <Text style={styles.secondaryActionText}>
+                {saving ? 'Saving...' : 'Save to Gallery'}
+              </Text>
+            </GlassCard>
 
-            <Button
-              title="Choose Different Video"
+            <GlassCard
               onPress={() => setVideoUri(null)}
-              variant="ghost"
-              size="lg"
-              style={styles.secondaryButton}
-            />
+              style={styles.secondaryActionCard}
+            >
+              <Text style={styles.secondaryActionText}>Choose Different Video</Text>
+            </GlassCard>
           </View>
 
           {/* Info Note */}
-          <View style={styles.infoNote}>
-            <Ionicons name="information-circle" size={16} color={colors.neutral[500]} />
-            <Text style={styles.infoNoteText}>
-              The watermark previews how your video will look. When sharing, mention @fightstation in your caption!
-            </Text>
-          </View>
+          <GlassCard style={styles.infoNote}>
+            <View style={styles.infoNoteRow}>
+              <Ionicons name="information-circle" size={16} color={colors.neutral[500]} />
+              <Text style={styles.infoNoteText}>
+                The watermark previews how your video will look. When sharing, mention @fightstation in your caption!
+              </Text>
+            </View>
+          </GlassCard>
         </View>
       )}
     </View>
@@ -279,12 +282,7 @@ const styles = StyleSheet.create({
   },
   optionCard: {
     flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing[6],
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   optionIcon: {
     width: 80,
@@ -353,17 +351,24 @@ const styles = StyleSheet.create({
   actions: {
     gap: spacing[3],
   },
-  secondaryButton: {
-    marginTop: 0,
+  secondaryActionCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing[3.5],
+  },
+  secondaryActionText: {
+    color: colors.textPrimary,
+    fontSize: typography.fontSize.base,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   infoNote: {
+    marginTop: spacing[4],
+  },
+  infoNoteRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing[2],
-    marginTop: spacing[4],
-    padding: spacing[3],
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
   },
   infoNoteText: {
     flex: 1,

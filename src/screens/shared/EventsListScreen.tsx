@@ -8,7 +8,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Card, Input } from '../../components';
+import { Ionicons } from '@expo/vector-icons';
+import { GlassCard, GlassInput, EmptyState } from '../../components';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { SparringEvent, Fighter, WEIGHT_CLASS_LABELS } from '../../types';
@@ -90,7 +91,7 @@ export function EventsListScreen({ navigation }: EventsListScreenProps) {
     const isFull = spotsLeft <= 0;
 
     return (
-      <Card
+      <GlassCard
         style={styles.eventCard}
         onPress={() => navigation.navigate('EventDetail', { eventId: item.id })}
       >
@@ -148,7 +149,7 @@ export function EventsListScreen({ navigation }: EventsListScreenProps) {
             </Text>
           )}
         </View>
-      </Card>
+      </GlassCard>
     );
   };
 
@@ -156,11 +157,12 @@ export function EventsListScreen({ navigation }: EventsListScreenProps) {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Find Events</Text>
-        <Input
+        <GlassInput
           placeholder="Search events, gyms, cities..."
           value={searchQuery}
           onChangeText={setSearchQuery}
           containerStyle={styles.searchContainer}
+          leftIcon={<Ionicons name="search" size={18} color={colors.textMuted} />}
         />
       </View>
 
@@ -184,16 +186,17 @@ export function EventsListScreen({ navigation }: EventsListScreenProps) {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyText}>
-              {loading ? 'Loading events...' : 'No events found'}
-            </Text>
-            {!loading && (
-              <Text style={styles.emptySubtext}>
-                Try adjusting your search or check back later
-              </Text>
-            )}
-          </View>
+          loading ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyText}>Loading events...</Text>
+            </View>
+          ) : (
+            <EmptyState
+              icon="calendar-outline"
+              title="No Events Found"
+              description="Try adjusting your search or check back later"
+            />
+          )
         }
       />
     </View>
@@ -336,10 +339,5 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.lg,
     color: colors.neutral[400],
     marginBottom: spacing[2],
-  },
-  emptySubtext: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[500],
-    textAlign: 'center',
   },
 });

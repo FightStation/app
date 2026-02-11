@@ -16,6 +16,13 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Location from 'expo-location';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import {
+  GlassCard,
+  BadgeRow,
+  AnimatedListItem,
+  EmptyState,
+  SectionHeader,
+} from '../../components';
 
 type MapViewScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -46,7 +53,7 @@ const MOCK_LOCATIONS: LocationItem[] = [
     type: 'gym',
     title: 'Elite Boxing Academy',
     subtitle: '127 members • 8 events this week',
-    address: 'Friedrichstraße 123, Berlin',
+    address: 'Friedrichstra\u00dfe 123, Berlin',
     distance: '0.8 km',
     latitude: 52.5200,
     longitude: 13.4050,
@@ -107,6 +114,12 @@ const MOCK_LOCATIONS: LocationItem[] = [
     longitude: 13.4150,
     data: { date: 'Sat, Nov 9', time: '10:00', spots: 6, maxSpots: 15 },
   },
+];
+
+const FILTER_ITEMS = [
+  { key: 'all', label: 'All', icon: 'apps' as const },
+  { key: 'gyms', label: 'Gyms', icon: 'business' as const },
+  { key: 'events', label: 'Events', icon: 'calendar' as const },
 ];
 
 export function MapViewScreen({ navigation }: MapViewScreenProps) {
@@ -299,6 +312,13 @@ export function MapViewScreen({ navigation }: MapViewScreenProps) {
   const gymCount = locations.filter((l) => l.type === 'gym').length;
   const eventCount = locations.filter((l) => l.type === 'event').length;
 
+  // Update filter items with counts
+  const filterItemsWithCounts = [
+    { key: 'all', label: `All (${gymCount + eventCount})`, icon: 'apps' as const },
+    { key: 'gyms', label: `Gyms (${gymCount})`, icon: 'business' as const },
+    { key: 'events', label: `Events (${eventCount})`, icon: 'calendar' as const },
+  ];
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.webContainer}>
@@ -344,103 +364,69 @@ export function MapViewScreen({ navigation }: MapViewScreenProps) {
           </TouchableOpacity>
         )}
 
-        {/* Filter Chips */}
-        <View style={styles.filterContainer}>
-          <TouchableOpacity
-            style={[styles.filterChip, filter === 'all' && styles.filterChipActive]}
-            onPress={() => setFilter('all')}
-          >
-            <Ionicons
-              name="apps"
-              size={16}
-              color={filter === 'all' ? colors.textPrimary : colors.textSecondary}
-            />
-            <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>
-              All ({gymCount + eventCount})
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterChip, filter === 'gyms' && styles.filterChipActive]}
-            onPress={() => setFilter('gyms')}
-          >
-            <Ionicons
-              name="business"
-              size={16}
-              color={filter === 'gyms' ? colors.textPrimary : colors.textSecondary}
-            />
-            <Text style={[styles.filterText, filter === 'gyms' && styles.filterTextActive]}>
-              Gyms ({gymCount})
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterChip, filter === 'events' && styles.filterChipActive]}
-            onPress={() => setFilter('events')}
-          >
-            <Ionicons
-              name="calendar"
-              size={16}
-              color={filter === 'events' ? colors.textPrimary : colors.textSecondary}
-            />
-            <Text style={[styles.filterText, filter === 'events' && styles.filterTextActive]}>
-              Events ({eventCount})
-            </Text>
-          </TouchableOpacity>
-        </View>
+        {/* Filter Chips - BadgeRow */}
+        <BadgeRow
+          items={filterItemsWithCounts}
+          selected={filter}
+          onSelect={(key) => setFilter(key as FilterType)}
+          style={{ paddingVertical: spacing[3] }}
+        />
 
         {/* Results Count */}
-        <View style={styles.resultsHeader}>
-          <Text style={styles.resultsCount}>
-            {filteredLocations.length} location{filteredLocations.length !== 1 ? 's' : ''} found
-          </Text>
-        </View>
+        <SectionHeader
+          title={`${filteredLocations.length} location${filteredLocations.length !== 1 ? 's' : ''} found`}
+        />
 
         {/* Location List */}
         <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
           {filteredLocations.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="location-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyText}>No locations found</Text>
-              <Text style={styles.emptySubtext}>Try changing your filters</Text>
-            </View>
+            <EmptyState
+              icon="location-outline"
+              title="No Locations Found"
+              description="Try changing your filters"
+            />
           ) : (
-            filteredLocations.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.locationCard}
-                onPress={() => handleItemPress(item)}
-              >
-                <View style={[styles.iconContainer, { backgroundColor: `${getMarkerColor(item.type)}20` }]}>
-                  <Ionicons
-                    name={item.type === 'gym' ? 'business' : 'calendar'}
-                    size={24}
-                    color={getMarkerColor(item.type)}
-                  />
-                </View>
-                <View style={styles.locationInfo}>
-                  <View style={styles.locationHeader}>
-                    <Text style={styles.locationTitle}>{item.title}</Text>
-                    {item.distance && (
-                      <View style={styles.distanceBadge}>
-                        <Text style={styles.distanceText}>{item.distance}</Text>
+            filteredLocations.map((item, index) => (
+              <AnimatedListItem key={item.id} index={index}>
+                <GlassCard
+                  style={styles.locationCard}
+                  onPress={() => handleItemPress(item)}
+                >
+                  <View style={styles.locationCardRow}>
+                    <View style={[styles.iconContainer, { backgroundColor: `${getMarkerColor(item.type)}20` }]}>
+                      <Ionicons
+                        name={item.type === 'gym' ? 'business' : 'calendar'}
+                        size={24}
+                        color={getMarkerColor(item.type)}
+                      />
+                    </View>
+                    <View style={styles.locationInfo}>
+                      <View style={styles.locationHeader}>
+                        <Text style={styles.locationTitle}>{item.title}</Text>
+                        {item.distance && (
+                          <View style={styles.distanceBadge}>
+                            <Text style={styles.distanceText}>{item.distance}</Text>
+                          </View>
+                        )}
                       </View>
-                    )}
+                      <Text style={styles.locationSubtitle}>{item.subtitle}</Text>
+                      <View style={styles.addressRow}>
+                        <Ionicons name="location-outline" size={14} color={colors.textMuted} />
+                        <Text style={styles.addressText}>{item.address}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.cardActions}>
+                      <TouchableOpacity
+                        style={styles.directionsButton}
+                        onPress={() => handleOpenInMaps(item)}
+                      >
+                        <Ionicons name="navigate" size={18} color={colors.primary[500]} />
+                      </TouchableOpacity>
+                      <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+                    </View>
                   </View>
-                  <Text style={styles.locationSubtitle}>{item.subtitle}</Text>
-                  <View style={styles.addressRow}>
-                    <Ionicons name="location-outline" size={14} color={colors.textMuted} />
-                    <Text style={styles.addressText}>{item.address}</Text>
-                  </View>
-                </View>
-                <View style={styles.actions}>
-                  <TouchableOpacity
-                    style={styles.directionsButton}
-                    onPress={() => handleOpenInMaps(item)}
-                  >
-                    <Ionicons name="navigate" size={18} color={colors.primary[500]} />
-                  </TouchableOpacity>
-                  <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-                </View>
-              </TouchableOpacity>
+                </GlassCard>
+              </AnimatedListItem>
             ))
           )}
           <View style={styles.bottomPadding} />
@@ -511,47 +497,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.warning,
   },
-  filterContainer: {
-    flexDirection: 'row',
-    gap: spacing[2],
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-  },
-  filterChip: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[1],
-    paddingVertical: spacing[2],
-    borderRadius: borderRadius.lg,
-    backgroundColor: colors.surfaceLight,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  filterChipActive: {
-    backgroundColor: colors.primary[500],
-    borderColor: colors.primary[500],
-  },
-  filterText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
-    fontWeight: typography.fontWeight.medium,
-  },
-  filterTextActive: {
-    color: colors.textPrimary,
-    fontWeight: typography.fontWeight.bold,
-  },
-  resultsHeader: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  resultsCount: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textMuted,
-  },
   list: {
     flex: 1,
   },
@@ -559,14 +504,11 @@ const styles = StyleSheet.create({
     padding: spacing[4],
   },
   locationCard: {
+    marginBottom: spacing[3],
+  },
+  locationCardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    marginBottom: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   iconContainer: {
     width: 48,
@@ -617,7 +559,7 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     color: colors.textMuted,
   },
-  actions: {
+  cardActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[2],
@@ -629,22 +571,6 @@ const styles = StyleSheet.create({
     backgroundColor: `${colors.primary[500]}20`,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[10],
-  },
-  emptyText: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginTop: spacing[3],
-  },
-  emptySubtext: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textMuted,
-    marginTop: spacing[1],
   },
   bottomPadding: {
     height: spacing[10],

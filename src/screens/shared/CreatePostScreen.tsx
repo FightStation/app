@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   Image,
   Alert,
   Platform,
@@ -17,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { Button } from '../../components';
+import { GradientButton, GlassInput, BadgeRow, SectionHeader } from '../../components';
 import { Fighter, Gym, Coach, PostType, PostVisibility } from '../../types';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { isDesktop } from '../../lib/responsive';
@@ -214,15 +213,15 @@ export function CreatePostScreen({ navigation, route }: any) {
     }
   };
 
-  const postTypeOptions = [
-    { value: 'post' as PostType, label: 'Post', icon: 'create-outline' },
-    { value: 'reel' as PostType, label: 'Reel', icon: 'videocam-outline' },
-    { value: 'training_update' as PostType, label: 'Training', icon: 'fitness-outline' },
+  const postTypeItems = [
+    { key: 'post', label: 'Post', icon: 'create-outline' as const },
+    { key: 'reel', label: 'Reel', icon: 'videocam-outline' as const },
+    { key: 'training_update', label: 'Training', icon: 'fitness-outline' as const },
   ];
 
-  const visibilityOptions = [
-    { value: 'public' as PostVisibility, label: 'Public', icon: 'globe-outline' },
-    { value: 'followers' as PostVisibility, label: 'Followers', icon: 'people-outline' },
+  const visibilityItems = [
+    { key: 'public', label: 'Public', icon: 'globe-outline' as const },
+    { key: 'followers', label: 'Followers', icon: 'people-outline' as const },
   ];
 
   return (
@@ -240,7 +239,7 @@ export function CreatePostScreen({ navigation, route }: any) {
             <Ionicons name="close" size={28} color={colors.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Create Post</Text>
-          <Button
+          <GradientButton
             title="Post"
             onPress={handlePost}
             loading={loading}
@@ -276,12 +275,12 @@ export function CreatePostScreen({ navigation, route }: any) {
                 <Text style={styles.authorName}>{author.name}</Text>
                 <TouchableOpacity style={styles.visibilitySelector}>
                   <Ionicons
-                    name={visibilityOptions.find(v => v.value === visibility)?.icon as any}
+                    name={visibility === 'public' ? 'globe-outline' : 'people-outline'}
                     size={14}
                     color={colors.textMuted}
                   />
                   <Text style={styles.visibilityText}>
-                    {visibilityOptions.find(v => v.value === visibility)?.label}
+                    {visibility === 'public' ? 'Public' : 'Followers'}
                   </Text>
                   <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
                 </TouchableOpacity>
@@ -289,37 +288,16 @@ export function CreatePostScreen({ navigation, route }: any) {
             </View>
           )}
 
-          {/* Post Type Selector */}
-          <View style={styles.postTypeRow}>
-            {postTypeOptions.map(option => (
-              <TouchableOpacity
-                key={option.value}
-                style={[
-                  styles.postTypeButton,
-                  postType === option.value && styles.postTypeButtonActive,
-                ]}
-                onPress={() => setPostType(option.value)}
-              >
-                <Ionicons
-                  name={option.icon as any}
-                  size={18}
-                  color={postType === option.value ? colors.primary[500] : colors.textMuted}
-                />
-                <Text
-                  style={[
-                    styles.postTypeText,
-                    postType === option.value && styles.postTypeTextActive,
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {/* Post Type Selector - BadgeRow */}
+          <BadgeRow
+            items={postTypeItems}
+            selected={postType}
+            onSelect={(key) => setPostType(key as PostType)}
+            style={{ marginBottom: spacing[4] }}
+          />
 
-          {/* Content Input */}
-          <TextInput
-            style={styles.contentInput}
+          {/* Content Input - GlassInput */}
+          <GlassInput
             placeholder={
               postType === 'reel'
                 ? "Add a caption for your reel..."
@@ -327,11 +305,10 @@ export function CreatePostScreen({ navigation, route }: any) {
                 ? "Share your training update..."
                 : "What's on your mind?"
             }
-            placeholderTextColor={colors.textMuted}
             value={content}
             onChangeText={setContent}
             multiline
-            textAlignVertical="top"
+            containerStyle={styles.contentInputContainer}
           />
 
           {/* Media Preview */}
@@ -381,35 +358,12 @@ export function CreatePostScreen({ navigation, route }: any) {
           </View>
 
           {/* Visibility Options */}
-          <View style={styles.visibilitySection}>
-            <Text style={styles.sectionLabel}>Who can see this?</Text>
-            <View style={styles.visibilityOptions}>
-              {visibilityOptions.map(option => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[
-                    styles.visibilityOption,
-                    visibility === option.value && styles.visibilityOptionActive,
-                  ]}
-                  onPress={() => setVisibility(option.value)}
-                >
-                  <Ionicons
-                    name={option.icon as any}
-                    size={20}
-                    color={visibility === option.value ? colors.primary[500] : colors.textMuted}
-                  />
-                  <Text
-                    style={[
-                      styles.visibilityOptionText,
-                      visibility === option.value && styles.visibilityOptionTextActive,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+          <SectionHeader title="Who can see this?" />
+          <BadgeRow
+            items={visibilityItems}
+            selected={visibility}
+            onSelect={(key) => setVisibility(key as PostVisibility)}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -499,37 +453,7 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.textMuted,
   },
-  postTypeRow: {
-    flexDirection: 'row',
-    gap: spacing[2],
-    marginBottom: spacing[4],
-  },
-  postTypeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.full,
-    gap: spacing[2],
-  },
-  postTypeButtonActive: {
-    backgroundColor: `${colors.primary[500]}20`,
-    borderWidth: 1,
-    borderColor: colors.primary[500],
-  },
-  postTypeText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textMuted,
-  },
-  postTypeTextActive: {
-    color: colors.primary[500],
-    fontWeight: '500',
-  },
-  contentInput: {
-    fontSize: typography.fontSize.lg,
-    color: colors.textPrimary,
-    minHeight: 120,
+  contentInputContainer: {
     marginBottom: spacing[4],
   },
   mediaPreview: {
@@ -567,6 +491,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    marginBottom: spacing[4],
   },
   mediaButton: {
     flexDirection: 'row',
@@ -575,42 +500,6 @@ const styles = StyleSheet.create({
   },
   mediaButtonText: {
     fontSize: typography.fontSize.sm,
-    color: colors.primary[500],
-    fontWeight: '500',
-  },
-  visibilitySection: {
-    marginTop: spacing[4],
-  },
-  sectionLabel: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: '500',
-    color: colors.textSecondary,
-    marginBottom: spacing[3],
-  },
-  visibilityOptions: {
-    flexDirection: 'row',
-    gap: spacing[3],
-  },
-  visibilityOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.lg,
-    gap: spacing[2],
-    flex: 1,
-  },
-  visibilityOptionActive: {
-    backgroundColor: `${colors.primary[500]}15`,
-    borderWidth: 1,
-    borderColor: colors.primary[500],
-  },
-  visibilityOptionText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textMuted,
-  },
-  visibilityOptionTextActive: {
     color: colors.primary[500],
     fontWeight: '500',
   },
