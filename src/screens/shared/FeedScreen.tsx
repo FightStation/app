@@ -17,10 +17,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Post, Fighter, Gym, Coach, SparringEvent, CombatSport, COMBAT_SPORT_SHORT } from '../../types';
-import { colors, spacing, typography, borderRadius, gradients } from '../../lib/theme';
+import { colors, spacing, typography, borderRadius, gradients, glass } from '../../lib/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { isDesktop } from '../../lib/responsive';
-import { GlassCard, PulseIndicator, AnimatedListItem } from '../../components';
+import { GlassCard, PulseIndicator, AnimatedListItem, GradientButton, BadgeRow, EmptyState, SectionHeader, SkeletonFeed } from '../../components';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CONTENT_WIDTH = isDesktop ? 600 : SCREEN_WIDTH;
@@ -813,42 +813,16 @@ export function FeedScreen({ navigation }: any) {
       {renderSportFilters()}
 
       {/* Tab Bar */}
-      <View style={styles.tabBar}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'all' && styles.activeTab]}
-          onPress={() => setActiveTab('all')}
-        >
-          <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
-            ALL
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'gyms' && styles.activeTab]}
-          onPress={() => setActiveTab('gyms')}
-        >
-          <Ionicons
-            name="business"
-            size={16}
-            color={activeTab === 'gyms' ? colors.primary[500] : colors.textMuted}
-          />
-          <Text style={[styles.tabText, activeTab === 'gyms' && styles.activeTabText]}>
-            GYMS
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'fighters' && styles.activeTab]}
-          onPress={() => setActiveTab('fighters')}
-        >
-          <Ionicons
-            name="fitness"
-            size={16}
-            color={activeTab === 'fighters' ? colors.primary[500] : colors.textMuted}
-          />
-          <Text style={[styles.tabText, activeTab === 'fighters' && styles.activeTabText]}>
-            FIGHTERS
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <BadgeRow
+        items={[
+          { key: 'all', label: 'ALL' },
+          { key: 'gyms', label: 'GYMS', icon: 'business' as const },
+          { key: 'fighters', label: 'FIGHTERS', icon: 'fitness' as const },
+        ]}
+        selected={activeTab}
+        onSelect={(key) => setActiveTab(key as FeedTab)}
+        style={{ paddingHorizontal: spacing[4], paddingVertical: spacing[3] }}
+      />
     </View>
   );
 
@@ -858,23 +832,20 @@ export function FeedScreen({ navigation }: any) {
 
     return (
       <View style={styles.emptyContainer}>
-        {/* Empty Message */}
-        <View style={styles.emptyMessageBox}>
-          <Ionicons name="flame" size={40} color={colors.primary[500]} />
-          <Text style={styles.emptyTitle}>No posts yet</Text>
-          <Text style={styles.emptySubtitle}>
-            Discover fighters and gyms to follow
-          </Text>
-        </View>
+        <EmptyState
+          icon="flame"
+          title="No posts yet"
+          description="Discover fighters and gyms to follow"
+        />
 
         {/* Discovery Section */}
         <View style={styles.discoverySection}>
-          <Text style={styles.discoverySectionTitle}>TRENDING</Text>
+          <SectionHeader title="Trending" />
 
           {discovery.map((item) => {
             const sportColor = item.sport ? getSportColor(item.sport) : colors.primary[500];
             return (
-              <TouchableOpacity
+              <GlassCard
                 key={item.id}
                 style={styles.discoveryCard}
                 onPress={() => {
@@ -885,39 +856,41 @@ export function FeedScreen({ navigation }: any) {
                   }
                 }}
               >
-                <View style={[
-                  styles.discoveryAvatar,
-                  item.type === 'event' && styles.discoveryAvatarEvent,
-                  item.sport && { borderWidth: 2, borderColor: sportColor },
-                ]}>
-                  <Ionicons
-                    name={item.type === 'gym' ? 'business' : item.type === 'fighter' ? 'person' : 'calendar'}
-                    size={20}
-                    color={item.sport ? sportColor : colors.textSecondary}
+                <View style={styles.discoveryCardContent}>
+                  <View style={[
+                    styles.discoveryAvatar,
+                    item.type === 'event' && styles.discoveryAvatarEvent,
+                    item.sport && { borderWidth: 2, borderColor: sportColor },
+                  ]}>
+                    <Ionicons
+                      name={item.type === 'gym' ? 'business' : item.type === 'fighter' ? 'person' : 'calendar'}
+                      size={20}
+                      color={item.sport ? sportColor : colors.textSecondary}
+                    />
+                  </View>
+                  <View style={styles.discoveryInfo}>
+                    <View style={styles.discoveryNameRow}>
+                      <Text style={styles.discoveryName}>{item.name}</Text>
+                      {item.sport && (
+                        <View style={[styles.discoverySportBadge, { backgroundColor: getSportBgColor(item.sport) }]}>
+                          <Text style={[styles.discoverySportText, { color: sportColor }]}>
+                            {COMBAT_SPORT_SHORT[item.sport]}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.discoverySubtitle}>{item.subtitle}</Text>
+                  </View>
+                  <View style={styles.discoveryStats}>
+                    <Text style={styles.discoveryStatsText}>{item.stats}</Text>
+                  </View>
+                  <GradientButton
+                    title={item.type === 'event' ? 'View' : 'Follow'}
+                    size="sm"
+                    style={styles.followButton}
                   />
                 </View>
-                <View style={styles.discoveryInfo}>
-                  <View style={styles.discoveryNameRow}>
-                    <Text style={styles.discoveryName}>{item.name}</Text>
-                    {item.sport && (
-                      <View style={[styles.discoverySportBadge, { backgroundColor: getSportBgColor(item.sport) }]}>
-                        <Text style={[styles.discoverySportText, { color: sportColor }]}>
-                          {COMBAT_SPORT_SHORT[item.sport]}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={styles.discoverySubtitle}>{item.subtitle}</Text>
-                </View>
-                <View style={styles.discoveryStats}>
-                  <Text style={styles.discoveryStatsText}>{item.stats}</Text>
-                </View>
-                <TouchableOpacity style={[styles.followButton, item.sport && { backgroundColor: sportColor }]}>
-                  <Text style={styles.followButtonText}>
-                    {item.type === 'event' ? 'View' : 'Follow'}
-                  </Text>
-                </TouchableOpacity>
-              </TouchableOpacity>
+              </GlassCard>
             );
           })}
         </View>
@@ -925,32 +898,11 @@ export function FeedScreen({ navigation }: any) {
     );
   };
 
-  // Skeleton loading card
-  const renderSkeletonCard = (index: number) => (
-    <View key={`skeleton-${index}`} style={styles.skeletonPostCard}>
-      <View style={styles.postHeader}>
-        <View style={[styles.skeletonAvatar, styles.skeleton]} />
-        <View style={styles.authorInfo}>
-          <View style={[styles.skeletonText, styles.skeleton, { width: 120 }]} />
-          <View style={[styles.skeletonText, styles.skeleton, { width: 80, marginTop: 6 }]} />
-        </View>
-      </View>
-      <View style={[styles.skeletonMedia, styles.skeleton]} />
-      <View style={styles.actionsRow}>
-        <View style={[styles.skeletonAction, styles.skeleton]} />
-        <View style={[styles.skeletonAction, styles.skeleton]} />
-        <View style={[styles.skeletonAction, styles.skeleton]} />
-      </View>
-    </View>
-  );
-
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         {renderHeader()}
-        <ScrollView style={styles.skeletonContainer} showsVerticalScrollIndicator={false}>
-          {[0, 1, 2].map(renderSkeletonCard)}
-        </ScrollView>
+        <SkeletonFeed />
       </SafeAreaView>
     );
   }
@@ -1028,11 +980,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: borderRadius.lg,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: glass.light.backgroundColor,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderWidth: glass.light.borderWidth,
+    borderColor: glass.light.borderColor,
     position: 'relative',
   },
   notificationDot: {
@@ -1175,8 +1127,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[1.5],
     borderRadius: borderRadius.full,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderColor: glass.light.borderColor,
+    backgroundColor: glass.light.backgroundColor,
     gap: spacing[1],
   },
   sportChipDot: {
@@ -1192,33 +1144,6 @@ const styles = StyleSheet.create({
   },
   sportChipTextActive: {
     color: colors.textPrimary,
-  },
-  // Tab Bar
-  tabBar: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    gap: spacing[2],
-  },
-  tab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    borderRadius: borderRadius.md,
-    gap: spacing[1],
-  },
-  activeTab: {
-    backgroundColor: `${colors.primary[500]}20`,
-  },
-  tabText: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: '800',
-    color: colors.textMuted,
-    letterSpacing: 0.5,
-  },
-  activeTabText: {
-    color: colors.primary[500],
   },
   // Feed Content
   feedContent: {
@@ -1239,44 +1164,6 @@ const styles = StyleSheet.create({
     marginTop: spacing[4],
     color: colors.textMuted,
     fontSize: typography.fontSize.base,
-  },
-  // Skeleton styles
-  skeletonContainer: {
-    flex: 1,
-    paddingTop: spacing[2],
-  },
-  skeleton: {
-    backgroundColor: colors.surfaceLight,
-    overflow: 'hidden',
-  },
-  skeletonAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginRight: spacing[3],
-  },
-  skeletonText: {
-    height: 14,
-    borderRadius: borderRadius.sm,
-  },
-  skeletonMedia: {
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: 0,
-  },
-  skeletonAction: {
-    width: 24,
-    height: 24,
-    borderRadius: borderRadius.sm,
-  },
-  skeletonPostCard: {
-    backgroundColor: colors.cardBg,
-    marginHorizontal: spacing[4],
-    marginBottom: spacing[4],
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
   },
   // Post Card - using GlassCard noPadding
   postCard: {
@@ -1552,45 +1439,15 @@ const styles = StyleSheet.create({
   emptyContainer: {
     paddingHorizontal: spacing[4],
   },
-  emptyMessageBox: {
-    alignItems: 'center',
-    paddingVertical: spacing[8],
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    marginBottom: spacing[6],
-  },
-  emptyTitle: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    marginTop: spacing[3],
-  },
-  emptySubtitle: {
-    fontSize: typography.fontSize.base,
-    color: colors.textMuted,
-    marginTop: spacing[1],
-  },
   discoverySection: {
     marginBottom: spacing[6],
   },
-  discoverySectionTitle: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: '900',
-    color: colors.primary[500],
-    letterSpacing: 1,
-    marginBottom: spacing[3],
-  },
   discoveryCard: {
+    marginBottom: spacing[2],
+  },
+  discoveryCardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: borderRadius.xl,
-    padding: spacing[3],
-    marginBottom: spacing[2],
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
   },
   discoveryAvatar: {
     width: 44,
@@ -1641,14 +1498,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   followButton: {
-    backgroundColor: colors.primary[500],
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    borderRadius: borderRadius.md,
-  },
-  followButtonText: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.sm,
-    fontWeight: '700',
+    minWidth: 70,
   },
 });

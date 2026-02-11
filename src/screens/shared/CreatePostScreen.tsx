@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { GradientButton, GlassInput, BadgeRow, SectionHeader } from '../../components';
+import { GradientButton, GlassInput, GlassCard, BadgeRow, SectionHeader } from '../../components';
 import { Fighter, Gym, Coach, PostType, PostVisibility } from '../../types';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { isDesktop } from '../../lib/responsive';
@@ -238,7 +238,7 @@ export function CreatePostScreen({ navigation, route }: any) {
           >
             <Ionicons name="close" size={28} color={colors.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Create Post</Text>
+          <Text style={styles.headerTitle}>New Post</Text>
           <GradientButton
             title="Post"
             onPress={handlePost}
@@ -257,38 +257,7 @@ export function CreatePostScreen({ navigation, route }: any) {
           ]}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Author Info */}
-          {author && (
-            <View style={styles.authorRow}>
-              <View style={styles.avatarContainer}>
-                {author.avatar ? (
-                  <Image source={{ uri: author.avatar }} style={styles.avatar} />
-                ) : (
-                  <View style={styles.avatarPlaceholder}>
-                    <Text style={styles.avatarInitials}>
-                      {author.name.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                )}
-              </View>
-              <View style={styles.authorInfo}>
-                <Text style={styles.authorName}>{author.name}</Text>
-                <TouchableOpacity style={styles.visibilitySelector}>
-                  <Ionicons
-                    name={visibility === 'public' ? 'globe-outline' : 'people-outline'}
-                    size={14}
-                    color={colors.textMuted}
-                  />
-                  <Text style={styles.visibilityText}>
-                    {visibility === 'public' ? 'Public' : 'Followers'}
-                  </Text>
-                  <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
-          {/* Post Type Selector - BadgeRow */}
+          {/* 1. Post Type Selector */}
           <BadgeRow
             items={postTypeItems}
             selected={postType}
@@ -296,74 +265,137 @@ export function CreatePostScreen({ navigation, route }: any) {
             style={{ marginBottom: spacing[4] }}
           />
 
-          {/* Content Input - GlassInput */}
+          {/* 2. Hero Media Area */}
+          <View style={styles.heroMediaContainer}>
+            {media.length > 0 ? (
+              <View style={styles.heroImageWrapper}>
+                {media[0].type === 'video' ? (
+                  <View style={styles.heroVideoPlaceholder}>
+                    <Ionicons name="videocam" size={48} color={colors.primary[500]} />
+                    <Text style={styles.heroVideoText}>Video</Text>
+                  </View>
+                ) : (
+                  <Image source={{ uri: media[0].uri }} style={styles.heroImage} resizeMode="cover" />
+                )}
+                {/* Remove button overlay top-right */}
+                <TouchableOpacity style={styles.heroRemoveButton} onPress={() => removeMedia(0)}>
+                  <Ionicons name="close-circle" size={28} color="rgba(255,255,255,0.9)" />
+                </TouchableOpacity>
+                {/* Media count badge top-left */}
+                <View style={styles.heroMediaCount}>
+                  <Text style={styles.heroMediaCountText}>{media.length}/10</Text>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.heroPlaceholder} onPress={pickImage}>
+                <View style={styles.placeholderIconCircle}>
+                  <Ionicons name="camera-outline" size={40} color={colors.primary[500]} />
+                </View>
+                <Text style={styles.placeholderText}>Tap to add photos or videos</Text>
+                <Text style={styles.placeholderSubtext}>Up to 10 items</Text>
+              </TouchableOpacity>
+            )}
+            {/* Overlay action buttons at bottom of hero */}
+            {media.length > 0 && (
+              <View style={styles.heroActions}>
+                <TouchableOpacity style={styles.heroActionButton} onPress={pickImage}>
+                  <Ionicons name="images-outline" size={20} color={colors.textPrimary} />
+                  <Text style={styles.heroActionText}>Gallery</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.heroActionButton} onPress={takePhoto}>
+                  <Ionicons name="camera-outline" size={20} color={colors.textPrimary} />
+                  <Text style={styles.heroActionText}>Camera</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            {/* Gallery/Camera below placeholder when no media */}
+            {media.length === 0 && (
+              <View style={styles.placeholderActions}>
+                <TouchableOpacity style={styles.placeholderActionButton} onPress={pickImage}>
+                  <Ionicons name="images-outline" size={22} color={colors.primary[500]} />
+                  <Text style={styles.placeholderActionText}>Gallery</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.placeholderActionButton} onPress={takePhoto}>
+                  <Ionicons name="camera-outline" size={22} color={colors.primary[500]} />
+                  <Text style={styles.placeholderActionText}>Camera</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          {/* 3. Thumbnail strip - only if multiple media */}
+          {media.length > 1 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbnailStrip}>
+              {media.map((item, index) => (
+                <View key={index} style={styles.thumbnail}>
+                  {item.type === 'video' ? (
+                    <View style={styles.thumbnailVideo}>
+                      <Ionicons name="videocam" size={16} color={colors.primary[500]} />
+                    </View>
+                  ) : (
+                    <Image source={{ uri: item.uri }} style={styles.thumbnailImage} />
+                  )}
+                  <TouchableOpacity style={styles.thumbnailRemove} onPress={() => removeMedia(index)}>
+                    <Ionicons name="close-circle" size={18} color={colors.error} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
+          {/* 4. Compact Caption Input */}
           <GlassInput
             placeholder={
               postType === 'reel'
-                ? "Add a caption for your reel..."
+                ? "Add a caption..."
                 : postType === 'training_update'
-                ? "Share your training update..."
-                : "What's on your mind?"
+                ? "Share your training..."
+                : "Write a caption..."
             }
             value={content}
             onChangeText={setContent}
             multiline
-            containerStyle={styles.contentInputContainer}
+            containerStyle={styles.captionContainer}
+            style={styles.captionInput}
           />
 
-          {/* Media Preview */}
-          {media.length > 0 && (
-            <View style={styles.mediaPreview}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {media.map((item, index) => (
-                  <View key={index} style={styles.mediaItem}>
-                    {item.type === 'video' ? (
-                      <View style={styles.videoPreview}>
-                        <Ionicons name="videocam" size={32} color={colors.primary[500]} />
-                      </View>
-                    ) : (
-                      <Image source={{ uri: item.uri }} style={styles.mediaImage} />
-                    )}
-                    <TouchableOpacity
-                      style={styles.removeMedia}
-                      onPress={() => removeMedia(index)}
-                    >
-                      <Ionicons name="close-circle" size={24} color={colors.error} />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
-          )}
+          {/* 5. Bottom Section - Author + Visibility */}
+          <View style={styles.bottomSection}>
+            {author && (
+              <View style={styles.authorRowCompact}>
+                <View style={styles.avatarContainer}>
+                  {author.avatar ? (
+                    <Image source={{ uri: author.avatar }} style={styles.avatarSmall} />
+                  ) : (
+                    <View style={styles.avatarPlaceholderSmall}>
+                      <Text style={styles.avatarInitials}>
+                        {author.name.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.authorName}>{author.name}</Text>
+              </View>
+            )}
 
-          {/* Media Actions */}
-          <View style={styles.mediaActions}>
-            <TouchableOpacity style={styles.mediaButton} onPress={pickImage}>
-              <Ionicons name="images-outline" size={24} color={colors.primary[500]} />
-              <Text style={styles.mediaButtonText}>Gallery</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.mediaButton} onPress={takePhoto}>
-              <Ionicons name="camera-outline" size={24} color={colors.primary[500]} />
-              <Text style={styles.mediaButtonText}>Camera</Text>
-            </TouchableOpacity>
+            <SectionHeader title="Who can see this?" />
+            <BadgeRow
+              items={visibilityItems}
+              selected={visibility}
+              onSelect={(key) => setVisibility(key as PostVisibility)}
+            />
+
             {role === 'gym' && (
               <TouchableOpacity
-                style={styles.mediaButton}
+                style={styles.eventButton}
                 onPress={() => navigation.navigate('CreateEvent')}
               >
-                <Ionicons name="calendar-outline" size={24} color={colors.primary[500]} />
-                <Text style={styles.mediaButtonText}>Event</Text>
+                <Ionicons name="calendar-outline" size={20} color={colors.primary[500]} />
+                <Text style={styles.eventButtonText}>Create Event Instead</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
               </TouchableOpacity>
             )}
           </View>
-
-          {/* Visibility Options */}
-          <SectionHeader title="Who can see this?" />
-          <BadgeRow
-            items={visibilityItems}
-            selected={visibility}
-            onSelect={(key) => setVisibility(key as PostVisibility)}
-          />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -409,97 +441,211 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
   },
-  authorRow: {
+
+  // Hero media area
+  heroMediaContainer: {
+    marginBottom: spacing[4],
+    borderRadius: borderRadius.xl,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  heroImageWrapper: {
+    width: '100%',
+    aspectRatio: 4 / 5,
+    maxHeight: 400,
+    position: 'relative',
+    backgroundColor: colors.surface,
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroVideoPlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceLight,
+  },
+  heroVideoText: {
+    color: colors.textMuted,
+    marginTop: spacing[2],
+    fontSize: typography.fontSize.sm,
+  },
+  heroRemoveButton: {
+    position: 'absolute',
+    top: spacing[2],
+    right: spacing[2],
+    zIndex: 2,
+  },
+  heroMediaCount: {
+    position: 'absolute',
+    top: spacing[2],
+    left: spacing[2],
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[1],
+    borderRadius: borderRadius.md,
+  },
+  heroMediaCountText: {
+    color: colors.textPrimary,
+    fontSize: typography.fontSize.xs,
+    fontWeight: '700',
+  },
+  heroPlaceholder: {
+    width: '100%',
+    aspectRatio: 4 / 5,
+    maxHeight: 400,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    borderRadius: borderRadius.xl,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  placeholderIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: `${colors.primary[500]}15`,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing[3],
+  },
+  placeholderText: {
+    fontSize: typography.fontSize.base,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  placeholderSubtext: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textMuted,
+    marginTop: spacing[1],
+  },
+  heroActions: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    padding: spacing[3],
+    gap: spacing[3],
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  heroActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing[1],
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: spacing[3],
+    paddingVertical: 6,
+    borderRadius: borderRadius.full,
+  },
+  heroActionText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textPrimary,
+    fontWeight: '500',
+  },
+  placeholderActions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing[6],
+    paddingVertical: spacing[4],
+  },
+  placeholderActionButton: {
+    alignItems: 'center',
+    gap: spacing[1],
+  },
+  placeholderActionText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.primary[500],
+    fontWeight: '500',
+  },
+
+  // Thumbnail strip
+  thumbnailStrip: {
     marginBottom: spacing[4],
   },
-  avatarContainer: {
-    marginRight: spacing[3],
+  thumbnail: {
+    position: 'relative',
+    marginRight: spacing[2],
   },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  thumbnailImage: {
+    width: 64,
+    height: 64,
+    borderRadius: borderRadius.md,
   },
-  avatarPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  thumbnailVideo: {
+    width: 64,
+    height: 64,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surfaceLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  thumbnailRemove: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+  },
+
+  // Compact caption
+  captionContainer: {
+    marginBottom: spacing[4],
+  },
+  captionInput: {
+    minHeight: 60,
+  },
+
+  // Bottom section
+  bottomSection: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: spacing[4],
+  },
+  authorRowCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    marginBottom: spacing[4],
+  },
+  avatarContainer: {},
+  avatarSmall: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  avatarPlaceholderSmall: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: colors.surfaceLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarInitials: {
-    fontSize: typography.fontSize.xl,
+    fontSize: typography.fontSize.base,
     fontWeight: 'bold',
     color: colors.textSecondary,
-  },
-  authorInfo: {
-    flex: 1,
   },
   authorName: {
     fontSize: typography.fontSize.base,
     fontWeight: '600',
     color: colors.textPrimary,
-    marginBottom: spacing[1],
   },
-  visibilitySelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[1],
-  },
-  visibilityText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textMuted,
-  },
-  contentInputContainer: {
-    marginBottom: spacing[4],
-  },
-  mediaPreview: {
-    marginBottom: spacing[4],
-  },
-  mediaItem: {
-    position: 'relative',
-    marginRight: spacing[3],
-  },
-  mediaImage: {
-    width: 120,
-    height: 120,
-    borderRadius: borderRadius.lg,
-  },
-  videoPreview: {
-    width: 120,
-    height: 120,
-    borderRadius: borderRadius.lg,
-    backgroundColor: colors.surfaceLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  removeMedia: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    backgroundColor: colors.background,
-    borderRadius: 12,
-  },
-  mediaActions: {
-    flexDirection: 'row',
-    gap: spacing[4],
-    paddingVertical: spacing[4],
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    marginBottom: spacing[4],
-  },
-  mediaButton: {
+  eventButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[2],
+    marginTop: spacing[4],
+    paddingVertical: spacing[3],
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
-  mediaButtonText: {
-    fontSize: typography.fontSize.sm,
+  eventButtonText: {
+    flex: 1,
+    fontSize: typography.fontSize.base,
     color: colors.primary[500],
     fontWeight: '500',
   },
