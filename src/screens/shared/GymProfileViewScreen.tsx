@@ -17,7 +17,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
-import { getOrCreateConversation } from '../../services/messaging';
 import {
   GlassCard,
   GradientButton,
@@ -92,7 +91,6 @@ export function GymProfileViewScreen({ navigation, route }: any) {
   const { gymId } = route.params;
   const [gym, setGym] = useState<GymProfile>(MOCK_GYM);
   const [loading, setLoading] = useState(false);
-  const [startingChat, setStartingChat] = useState(false);
   const [fighters, setFighters] = useState<AffiliatedFighter[]>([]);
   const [coaches, setCoaches] = useState<AffiliatedCoach[]>([]);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
@@ -175,27 +173,6 @@ export function GymProfileViewScreen({ navigation, route }: any) {
     navigation.navigate('GymProfile');
   };
 
-  const handleMessage = async () => {
-    if (!user?.id || !gym.user_id) {
-      Alert.alert('Error', 'Unable to start conversation');
-      return;
-    }
-
-    setStartingChat(true);
-    try {
-      const conversationId = await getOrCreateConversation(user.id, gym.user_id);
-      navigation.navigate('Chat', {
-        conversationId,
-        otherUserId: gym.user_id,
-        name: gym.name,
-      });
-    } catch (error) {
-      console.error('Error starting conversation:', error);
-      Alert.alert('Error', 'Failed to start conversation');
-    } finally {
-      setStartingChat(false);
-    }
-  };
 
   // Contact Card Component
   const ContactCard = () => (
@@ -205,14 +182,6 @@ export function GymProfileViewScreen({ navigation, route }: any) {
       {/* Quick Actions */}
       {!isOwnGym && (
         <View style={styles.actionButtonsVertical}>
-          <GradientButton
-            title="Send Message"
-            onPress={handleMessage}
-            icon="chatbubble"
-            loading={startingChat}
-            disabled={startingChat}
-            fullWidth
-          />
           <GlassCard
             intensity="light"
             onPress={handleViewEvents}
@@ -541,14 +510,6 @@ export function GymProfileViewScreen({ navigation, route }: any) {
 
           {!isOwnGym && (
             <View style={styles.actionButtons}>
-              <GradientButton
-                title="Message"
-                onPress={handleMessage}
-                icon="chatbubble"
-                loading={startingChat}
-                disabled={startingChat}
-                style={{ flex: 1 }}
-              />
               <GlassCard
                 intensity="light"
                 onPress={handleViewEvents}

@@ -33,23 +33,16 @@ const roles: RoleOption[] = [
   {
     id: 'fighter',
     title: 'Fighter',
-    description: 'Find sparring partners, join events, and track your progress',
+    description: 'Find sparring sessions and training opportunities across Europe',
     icon: 'body',
-    features: ['Find sparring partners', 'Join gym events', 'Track your record', 'Connect with gyms'],
+    features: ['Discover sparring events', 'Train at gyms across Europe', 'Find competitions', 'Build your fighter profile'],
   },
   {
     id: 'gym',
     title: 'Gym',
     description: 'Host events, manage fighters, and grow your community',
     icon: 'business',
-    features: ['Host sparring events', 'Manage your fighters', 'Earn from referrals', 'Build your reputation'],
-  },
-  {
-    id: 'coach',
-    title: 'Coach',
-    description: 'Manage your fighters and coordinate training sessions',
-    icon: 'school',
-    features: ['Support your athletes', 'Coordinate sessions', 'Track fighter progress', 'Connect with gyms'],
+    features: ['Host sparring events', 'Manage event requests', 'Attract visiting fighters', 'Build your reputation'],
   },
 ];
 
@@ -70,8 +63,6 @@ export function RoleSelectionScreen({ navigation }: RoleSelectionScreenProps) {
       navigation.navigate('FighterSetup');
     } else if (selectedRole === 'gym') {
       navigation.navigate('GymSetup');
-    } else {
-      navigation.navigate('CoachSetup');
     }
   };
 

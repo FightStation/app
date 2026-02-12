@@ -23,7 +23,7 @@ import {
   gradients,
   shadows,
 } from '../../lib/theme';
-import { getOrCreateConversation } from '../../services/messaging';
+
 import {
   GlassCard,
   GradientButton,
@@ -197,7 +197,6 @@ export function FighterProfileViewScreen({ navigation, route }: any) {
   const { fighterId } = route.params;
   const [fighter, setFighter] = useState<FighterProfile>(MOCK_FIGHTER);
   const [loading, setLoading] = useState(false);
-  const [startingChat, setStartingChat] = useState(false);
   const [affiliatedGym, setAffiliatedGym] = useState<AffiliatedGym | null>(null);
   const [coaches, setCoaches] = useState<AffiliatedCoach[]>([]);
   const [posts, setPosts] = useState<FighterPost[]>([]);
@@ -309,27 +308,6 @@ export function FighterProfileViewScreen({ navigation, route }: any) {
 
   // ---------- Actions ----------
 
-  const handleMessage = async () => {
-    if (!user?.id || !fighter.user_id) {
-      Alert.alert('Error', 'Unable to start conversation');
-      return;
-    }
-
-    setStartingChat(true);
-    try {
-      const conversationId = await getOrCreateConversation(user.id, fighter.user_id);
-      navigation.navigate('Chat', {
-        conversationId,
-        otherUserId: fighter.user_id,
-        name: `${fighter.first_name} ${fighter.last_name}`,
-      });
-    } catch (error) {
-      console.error('Error starting conversation:', error);
-      Alert.alert('Error', 'Failed to start conversation');
-    } finally {
-      setStartingChat(false);
-    }
-  };
 
   const handleEdit = () => {
     navigation.navigate('FighterProfile');
@@ -614,26 +592,6 @@ export function FighterProfileViewScreen({ navigation, route }: any) {
               style={styles.ctaGradient}
               fullWidth
             />
-            <TouchableOpacity
-              style={styles.ctaSecondary}
-              onPress={handleMessage}
-              disabled={startingChat}
-              activeOpacity={0.7}
-            >
-              {startingChat ? (
-                <ActivityIndicator size="small" color={colors.textPrimary} />
-              ) : (
-                <>
-                  <Ionicons
-                    name="chatbubble-outline"
-                    size={16}
-                    color={colors.textPrimary}
-                    style={{ marginRight: spacing[1] }}
-                  />
-                  <Text style={styles.ctaSecondaryText}>Message</Text>
-                </>
-              )}
-            </TouchableOpacity>
           </View>
         )}
 

@@ -35,7 +35,7 @@ import { supabase } from '../../lib/supabase';
 import { SparringEvent, Fighter, WEIGHT_CLASS_LABELS, MatchScore } from '../../types';
 import { colors, spacing, typography, borderRadius, gradients, textStyles, animations } from '../../lib/theme';
 import { calculateFighterCompleteness } from '../../utils/profileCompleteness';
-import { useMatching } from '../../hooks/useMatching';
+import { useMatching } from '../../_deprecated/hooks/useMatching';
 
 type FighterDashboardScreenProps = {
   navigation: NativeStackNavigationProp<any>;

@@ -63,7 +63,6 @@ function LoadingScreen() {
 
 function AppContent() {
   const [AuthProvider, setAuthProvider] = useState<React.ComponentType<{children: React.ReactNode}> | null>(null);
-  const [ReferralProvider, setReferralProvider] = useState<React.ComponentType<{children: React.ReactNode}> | null>(null);
   const [RootNavigator, setRootNavigator] = useState<React.ComponentType | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,10 +72,6 @@ function AppContent() {
         console.log('[Fight Station] Loading AuthContext...');
         const authModule = await import('./src/context/AuthContext');
         setAuthProvider(() => authModule.AuthProvider);
-
-        console.log('[Fight Station] Loading ReferralContext...');
-        const referralModule = await import('./src/context/ReferralContext');
-        setReferralProvider(() => referralModule.ReferralProvider);
 
         console.log('[Fight Station] Loading Navigation...');
         const navModule = await import('./src/navigation');
@@ -100,18 +95,16 @@ function AppContent() {
     );
   }
 
-  if (!AuthProvider || !ReferralProvider || !RootNavigator) {
+  if (!AuthProvider || !RootNavigator) {
     return <LoadingScreen />;
   }
 
   return (
     <AuthProvider>
-      <ReferralProvider>
-        <ToastProvider>
-          <RootNavigator />
-          <StatusBar style="light" />
-        </ToastProvider>
-      </ReferralProvider>
+      <ToastProvider>
+        <RootNavigator />
+        <StatusBar style="light" />
+      </ToastProvider>
     </AuthProvider>
   );
 }

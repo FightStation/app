@@ -3,9 +3,22 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { View, Text, StyleSheet } from 'react-native';
-import { GymDashboardScreen, CreateEventScreen, EditEventScreen, SparringInvitesScreen, GymReferralDashboardScreen, GymPhotoUploadScreen, AdminManagementScreen, TrainingScheduleScreen, GymReelsScreen, ManageFightersScreen, GymSettingsScreen, ClaimGymScreen, ClaimManagementScreen, EventCheckInScreen } from '../screens/gym';
-import { EventDetailScreen, FighterProfileViewScreen, GymProfileViewScreen, CoachProfileViewScreen, FeedScreen, CreatePostScreen, ReelsScreen, MapViewScreen, ShareEventScreen, VideoShareScreen, GymDirectoryScreen, DirectoryGymDetailScreen } from '../screens/shared';
-import { AdminDashboardScreen, CommissionRatesScreen, GymDirectoryAdminScreen } from '../screens/admin';
+import {
+  GymDashboardScreen,
+  CreateEventScreen,
+  EditEventScreen,
+  SparringInvitesScreen,
+  GymSettingsScreen,
+  EventCheckInScreen,
+} from '../screens/gym';
+import {
+  EventDetailScreen,
+  FighterProfileViewScreen,
+  GymProfileViewScreen,
+  GymDirectoryScreen,
+  DirectoryGymDetailScreen,
+  EventsListScreen,
+} from '../screens/shared';
 import { ModernTabBar, type TabConfig } from '../components/TabBar';
 import { colors, typography, spacing } from '../lib/theme';
 
@@ -16,35 +29,18 @@ export type GymStackParamList = {
   EventDetail: { eventId: string };
   ManageRequests: { eventId?: string };
   GymProfile: undefined;
-  GymReferralDashboard: undefined;
-  GymPhotoUpload: undefined;
-  AdminManagement: undefined;
-  TrainingSchedule: undefined;
-  GymReels: undefined;
+  EventCheckIn: { eventId: string; eventTitle?: string };
   FighterProfileView: { fighterId: string };
   GymProfileView: { gymId: string };
-  CoachProfileView: { coachId: string };
-  CreatePost: { eventId?: string; postType?: string };
-  Reels: undefined;
-  MapView: undefined;
-  ShareEvent: { eventId: string };
-  VideoShare: undefined;
   GymDirectory: undefined;
   DirectoryGymDetail: { gymId: string };
-  ClaimGym: { gymId: string; gymName: string };
-  ClaimManagement: undefined;
-  EventCheckIn: { eventId: string; eventTitle?: string };
-  // Admin screens
-  AdminDashboard: undefined;
-  CommissionRates: undefined;
-  GymDirectoryAdmin: undefined;
+  EventsList: undefined;
 };
 
 export type GymTabParamList = {
   HomeTab: undefined;
-  FeedTab: undefined;
-  FightersTab: undefined;
-  ProfileTab: undefined;
+  EventsTab: undefined;
+  SettingsTab: undefined;
 };
 
 const Stack = createNativeStackNavigator<GymStackParamList>();
@@ -59,19 +55,13 @@ const gymTabs: TabConfig[] = [
     iconFocused: 'home',
   },
   {
-    name: 'FeedTab',
-    label: 'Feed',
-    iconDefault: 'newspaper-outline',
-    iconFocused: 'newspaper',
+    name: 'EventsTab',
+    label: 'Events',
+    iconDefault: 'calendar-outline',
+    iconFocused: 'calendar',
   },
   {
-    name: 'FightersTab',
-    label: 'Fighters',
-    iconDefault: 'people-outline',
-    iconFocused: 'people',
-  },
-  {
-    name: 'ProfileTab',
+    name: 'SettingsTab',
     label: 'Settings',
     iconDefault: 'settings-outline',
     iconFocused: 'settings',
@@ -127,35 +117,21 @@ function GymTabs() {
         }}
       />
       <Tab.Screen
-        name="FeedTab"
-        component={FeedScreen}
+        name="EventsTab"
+        component={SparringInvitesScreen}
         options={{
           tabBarIcon: ({ focused }) => (
             <TabIcon
               focused={focused}
-              iconFocused="newspaper"
-              iconDefault="newspaper-outline"
-              label="Feed"
+              iconFocused="calendar"
+              iconDefault="calendar-outline"
+              label="Events"
             />
           ),
         }}
       />
       <Tab.Screen
-        name="FightersTab"
-        component={ManageFightersScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon
-              focused={focused}
-              iconFocused="people"
-              iconDefault="people-outline"
-              label="Fighters"
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="ProfileTab"
+        name="SettingsTab"
         component={GymSettingsScreen}
         options={{
           tabBarIcon: ({ focused }) => (
@@ -216,13 +192,6 @@ export function GymNavigator() {
         }}
       />
       <Stack.Screen
-        name="GymReferralDashboard"
-        component={GymReferralDashboardScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
         name="GymProfile"
         component={GymSettingsScreen}
         options={{
@@ -230,29 +199,8 @@ export function GymNavigator() {
         }}
       />
       <Stack.Screen
-        name="GymPhotoUpload"
-        component={GymPhotoUploadScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="AdminManagement"
-        component={AdminManagementScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="TrainingSchedule"
-        component={TrainingScheduleScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="GymReels"
-        component={GymReelsScreen}
+        name="EventCheckIn"
+        component={EventCheckInScreen}
         options={{
           headerShown: false,
         }}
@@ -272,55 +220,6 @@ export function GymNavigator() {
         }}
       />
       <Stack.Screen
-        name="CoachProfileView"
-        component={CoachProfileViewScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="CreatePost"
-        component={CreatePostScreen}
-        options={{
-          headerShown: false,
-          presentation: 'modal',
-        }}
-      />
-      <Stack.Screen
-        name="Reels"
-        component={ReelsScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="MapView"
-        component={MapViewScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="ShareEvent"
-        component={ShareEventScreen}
-        options={{
-          headerShown: true,
-          title: 'Share Event',
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.neutral[50],
-        }}
-      />
-      <Stack.Screen
-        name="VideoShare"
-        component={VideoShareScreen}
-        options={{
-          headerShown: true,
-          title: 'Share Video',
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.neutral[50],
-        }}
-      />
-      <Stack.Screen
         name="GymDirectory"
         component={GymDirectoryScreen}
         options={{
@@ -335,44 +234,8 @@ export function GymNavigator() {
         }}
       />
       <Stack.Screen
-        name="ClaimGym"
-        component={ClaimGymScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="ClaimManagement"
-        component={ClaimManagementScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="EventCheckIn"
-        component={EventCheckInScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      {/* Admin Screens */}
-      <Stack.Screen
-        name="AdminDashboard"
-        component={AdminDashboardScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="CommissionRates"
-        component={CommissionRatesScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="GymDirectoryAdmin"
-        component={GymDirectoryAdminScreen}
+        name="EventsList"
+        component={EventsListScreen}
         options={{
           headerShown: false,
         }}

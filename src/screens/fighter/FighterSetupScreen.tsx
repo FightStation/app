@@ -11,7 +11,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { GradientButton, GlassInput } from '../../components';
 import { useAuth } from '../../context/AuthContext';
-import { useReferral } from '../../context/ReferralContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { SUPPORTED_COUNTRIES, CombatSport } from '../../types';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
@@ -33,7 +32,6 @@ const COMBAT_SPORTS: { key: CombatSport; label: string; color: string; icon: str
 
 export function FighterSetupScreen({ navigation }: FighterSetupScreenProps) {
   const { user, refreshProfile } = useAuth();
-  const { generateReferralCode } = useReferral();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -148,13 +146,6 @@ export function FighterSetupScreen({ navigation }: FighterSetupScreenProps) {
         setError(insertError.message);
         setLoading(false);
         return;
-      }
-
-      // Generate referral code for new user (don't await - do in background)
-      if (isSupabaseConfigured) {
-        generateReferralCode().catch(referralError => {
-          console.error('[FighterSetup] Failed to generate referral code:', referralError);
-        });
       }
 
       // Refresh profile and navigate

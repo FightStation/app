@@ -4,7 +4,6 @@ import { useNavigation, CommonActions } from '@react-navigation/native';
 import { LoginScreen, RegisterScreen, RoleSelectionScreen } from '../screens/auth';
 import { FighterSetupScreen } from '../screens/fighter';
 import { GymSetupScreen } from '../screens/gym';
-import { CoachSetupScreen } from '../screens/coach';
 import { WelcomeScreen } from '../screens/shared';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../lib/theme';
@@ -15,7 +14,6 @@ export type AuthStackParamList = {
   RoleSelection: undefined;
   FighterSetup: undefined;
   GymSetup: undefined;
-  CoachSetup: undefined;
   Welcome: undefined;
 };
 
@@ -41,7 +39,6 @@ function AuthRouteManager() {
         // Has role but no profile - go to setup screen
         if (role === 'fighter') targetRoute = 'FighterSetup';
         else if (role === 'gym') targetRoute = 'GymSetup';
-        else if (role === 'coach') targetRoute = 'CoachSetup';
       }
       // If user has profile, RootNavigator will handle switching to main app
     }
@@ -74,7 +71,6 @@ export function AuthNavigator() {
       // If they have a role but are in AuthNavigator, they need to complete setup
       if (role === 'fighter') return 'FighterSetup';
       if (role === 'gym') return 'GymSetup';
-      if (role === 'coach') return 'CoachSetup';
     }
     return 'Login';
   };
@@ -94,7 +90,6 @@ export function AuthNavigator() {
         <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
         <Stack.Screen name="FighterSetup" component={FighterSetupScreen} />
         <Stack.Screen name="GymSetup" component={GymSetupScreen} />
-        <Stack.Screen name="CoachSetup" component={CoachSetupScreen} />
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
       </Stack.Navigator>
     </>

@@ -10,52 +10,36 @@ import {
   GymEventsScreen,
   MyEventsScreen,
   ExploreScreen,
-  MessagesScreen,
-  ChatScreen,
-  ReferralDashboardScreen,
-  EnhancedEventBrowseScreen,
-  GymSearchScreen,
-  FighterSearchScreen,
   SparringInvitesScreen,
   EventReviewScreen,
-  SparringScheduleScreen,
 } from '../screens/fighter';
-import { EventDetailScreen, FighterProfileViewScreen, GymProfileViewScreen, CoachProfileViewScreen, FeedScreen, CreatePostScreen, ReelsScreen, MapViewScreen, ShareEventScreen, VideoShareScreen, GymDirectoryScreen, DirectoryGymDetailScreen } from '../screens/shared';
+import {
+  EventDetailScreen,
+  FighterProfileViewScreen,
+  GymProfileViewScreen,
+  GymDirectoryScreen,
+  DirectoryGymDetailScreen,
+  EventsListScreen,
+} from '../screens/shared';
 import { colors, spacing, typography } from '../lib/theme';
 
 export type FighterStackParamList = {
   FighterTabs: undefined;
   EventDetail: { eventId: string };
-  FighterProfile: undefined;
   FighterProfileView: { fighterId: string };
   GymProfileView: { gymId: string };
-  CoachProfileView: { coachId: string };
-  ProposeSession: { gymId: string };
-  SparringInvites: undefined;
-  Chat: { conversationId: string; name: string };
-  ReferralDashboard: undefined;
-  EventBrowse: undefined;
-  GymSearch: undefined;
-  FighterSearch: undefined;
-  FindSparring: undefined;
   GymEvents: { gymId: string };
-  Feed: undefined;
-  CreatePost: { eventId?: string; postType?: string };
-  Reels: undefined;
-  MapView: undefined;
-  ShareEvent: { eventId: string };
-  VideoShare: undefined;
+  SparringInvites: undefined;
+  EventReview: { eventId: string; eventTitle?: string };
   GymDirectory: undefined;
   DirectoryGymDetail: { gymId: string };
-  EventReview: { eventId: string; eventTitle?: string };
-  SparringSchedule: undefined;
+  EventsList: undefined;
+  FindSparring: undefined;
 };
 
 export type FighterTabParamList = {
-  HomeTab: undefined;
-  MatchesTab: undefined;
-  ExploreTab: undefined;
-  MessagesTab: undefined;
+  DiscoverTab: undefined;
+  MySessionsTab: undefined;
   ProfileTab: undefined;
 };
 
@@ -65,28 +49,16 @@ const Tab = createBottomTabNavigator<FighterTabParamList>();
 // Tab configuration for fighter navigator
 const fighterTabs: TabConfig[] = [
   {
-    name: 'HomeTab',
-    label: 'Home',
-    iconDefault: 'home-outline',
-    iconFocused: 'home',
-  },
-  {
-    name: 'MatchesTab',
-    label: 'My Events',
-    iconDefault: 'calendar-outline',
-    iconFocused: 'calendar',
-  },
-  {
-    name: 'ExploreTab',
-    label: 'Explore',
+    name: 'DiscoverTab',
+    label: 'Discover',
     iconDefault: 'compass-outline',
     iconFocused: 'compass',
   },
   {
-    name: 'MessagesTab',
-    label: 'Messages',
-    iconDefault: 'chatbubble-outline',
-    iconFocused: 'chatbubble',
+    name: 'MySessionsTab',
+    label: 'My Sessions',
+    iconDefault: 'calendar-outline',
+    iconFocused: 'calendar',
   },
   {
     name: 'ProfileTab',
@@ -96,9 +68,7 @@ const fighterTabs: TabConfig[] = [
   },
 ];
 
-type TabIconName = 'home' | 'home-outline' | 'people' | 'people-outline' |
-  'compass' | 'compass-outline' | 'chatbubble' | 'chatbubble-outline' |
-  'person' | 'person-outline' | 'calendar' | 'calendar-outline';
+type TabIconName = 'compass' | 'compass-outline' | 'calendar' | 'calendar-outline' | 'person' | 'person-outline';
 
 interface TabIconProps {
   focused: boolean;
@@ -122,7 +92,6 @@ function TabIcon({ focused, iconFocused, iconDefault, label }: TabIconProps) {
   );
 }
 
-
 function FighterTabs() {
   return (
     <Tab.Navigator
@@ -132,21 +101,21 @@ function FighterTabs() {
       }}
     >
       <Tab.Screen
-        name="HomeTab"
+        name="DiscoverTab"
         component={FindSparringScreen}
         options={{
           tabBarIcon: ({ focused }) => (
             <TabIcon
               focused={focused}
-              iconFocused="home"
-              iconDefault="home-outline"
-              label="Home"
+              iconFocused="compass"
+              iconDefault="compass-outline"
+              label="Discover"
             />
           ),
         }}
       />
       <Tab.Screen
-        name="MatchesTab"
+        name="MySessionsTab"
         component={MyEventsScreen}
         options={{
           tabBarIcon: ({ focused }) => (
@@ -154,35 +123,7 @@ function FighterTabs() {
               focused={focused}
               iconFocused="calendar"
               iconDefault="calendar-outline"
-              label="My Events"
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="ExploreTab"
-        component={ExploreScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon
-              focused={focused}
-              iconFocused="compass"
-              iconDefault="compass-outline"
-              label="Explore"
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="MessagesTab"
-        component={MessagesScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon
-              focused={focused}
-              iconFocused="chatbubble"
-              iconDefault="chatbubble-outline"
-              label="Messages"
+              label="My Sessions"
             />
           ),
         }}
@@ -225,17 +166,21 @@ export function FighterNavigator() {
         }}
       />
       <Stack.Screen
-        name="FighterProfile"
-        component={FighterProfileScreen}
+        name="FighterProfileView"
+        component={FighterProfileViewScreen}
         options={{
-          headerShown: true,
-          title: 'Profile',
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.textPrimary,
+          headerShown: false,
         }}
       />
       <Stack.Screen
-        name="ProposeSession"
+        name="GymProfileView"
+        component={GymProfileViewScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="GymEvents"
         component={GymEventsScreen}
         options={{
           headerShown: false,
@@ -252,122 +197,10 @@ export function FighterNavigator() {
         }}
       />
       <Stack.Screen
-        name="Chat"
-        component={ChatScreen}
+        name="EventReview"
+        component={EventReviewScreen}
         options={{
           headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="ReferralDashboard"
-        component={ReferralDashboardScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="EventBrowse"
-        component={EnhancedEventBrowseScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="GymSearch"
-        component={GymSearchScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="FindSparring"
-        component={FindSparringScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="GymEvents"
-        component={GymEventsScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="FighterProfileView"
-        component={FighterProfileViewScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="GymProfileView"
-        component={GymProfileViewScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="CoachProfileView"
-        component={CoachProfileViewScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="FighterSearch"
-        component={FighterSearchScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="Feed"
-        component={FeedScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="CreatePost"
-        component={CreatePostScreen}
-        options={{
-          headerShown: false,
-          presentation: 'modal',
-        }}
-      />
-      <Stack.Screen
-        name="Reels"
-        component={ReelsScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="MapView"
-        component={MapViewScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="ShareEvent"
-        component={ShareEventScreen}
-        options={{
-          headerShown: true,
-          title: 'Share Event',
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.textPrimary,
-        }}
-      />
-      <Stack.Screen
-        name="VideoShare"
-        component={VideoShareScreen}
-        options={{
-          headerShown: true,
-          title: 'Share Video',
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.textPrimary,
         }}
       />
       <Stack.Screen
@@ -385,15 +218,15 @@ export function FighterNavigator() {
         }}
       />
       <Stack.Screen
-        name="EventReview"
-        component={EventReviewScreen}
+        name="EventsList"
+        component={EventsListScreen}
         options={{
           headerShown: false,
         }}
       />
       <Stack.Screen
-        name="SparringSchedule"
-        component={SparringScheduleScreen}
+        name="FindSparring"
+        component={FindSparringScreen}
         options={{
           headerShown: false,
         }}
@@ -403,14 +236,6 @@ export function FighterNavigator() {
 }
 
 const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    height: 75,
-    paddingTop: spacing[2],
-    paddingBottom: spacing[2],
-  },
   tabIcon: {
     alignItems: 'center',
     justifyContent: 'center',

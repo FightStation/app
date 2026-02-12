@@ -10,7 +10,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useReferral } from '../../context/ReferralContext';
 import { useAuth } from '../../context/AuthContext';
 import { GlassCard, GradientButton, SectionHeader, AnimatedListItem } from '../../components';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
@@ -21,7 +20,6 @@ type WelcomeScreenProps = {
 };
 
 export function WelcomeScreen({ navigation }: WelcomeScreenProps) {
-  const { referralCode, shareReferralCode, copyReferralCode } = useReferral();
   const { profile, refreshProfile } = useAuth();
 
   const isGym = profile && 'name' in profile;
@@ -68,49 +66,6 @@ export function WelcomeScreen({ navigation }: WelcomeScreenProps) {
           Your profile is all set up. Now let's grow the community together!
         </Text>
 
-        {/* Referral Code Card */}
-        <GlassCard style={styles.codeCard}>
-          <View style={styles.codeHeader}>
-            <View style={styles.codeIconContainer}>
-              <Ionicons name="gift" size={24} color={colors.primary[500]} />
-            </View>
-            <Text style={styles.codeTitle}>Your Invite Code</Text>
-          </View>
-
-          <View style={styles.codeBox}>
-            <Text style={styles.code}>{referralCode?.code || 'Loading...'}</Text>
-            <TouchableOpacity
-              style={styles.copyIconButton}
-              onPress={copyReferralCode}
-            >
-              <Ionicons name="copy-outline" size={20} color={colors.primary[500]} />
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.codeDescription}>
-            {isGym
-              ? 'Share this code with your fighters and coaches to earn rewards when they join!'
-              : 'Share this code with friends to earn rewards when they join the platform!'}
-          </Text>
-
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <GradientButton
-              title="Share Now"
-              onPress={shareReferralCode}
-              fullWidth
-              icon="share-social"
-            />
-
-            <TouchableOpacity
-              style={styles.copyButton}
-              onPress={copyReferralCode}
-            >
-              <Ionicons name="copy-outline" size={20} color={colors.textSecondary} />
-              <Text style={styles.copyButtonText}>Copy Code</Text>
-            </TouchableOpacity>
-          </View>
-        </GlassCard>
 
         {/* Benefits */}
         <GlassCard style={styles.benefitsCard}>
