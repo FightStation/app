@@ -9,22 +9,24 @@ export const linking: LinkingOptions<any> = {
     screens: {
       Auth: {
         screens: {
-          Register: {
-            path: 'join/:referralCode?',
-            parse: {
-              referralCode: (code: string) => code?.toUpperCase(),
-            },
-          },
+          Register: 'register',
           Login: 'login',
         },
       },
-      // Fighter screens (default routes)
+      // Fighter screens
       FighterTabs: {
         screens: {
-          HomeTab: 'home',
-          ExploreTab: 'explore',
-          MessagesTab: 'messages',
+          DiscoverTab: 'discover',
+          MySessionsTab: 'my-sessions',
           ProfileTab: 'profile',
+        },
+      },
+      // Gym screens
+      GymTabs: {
+        screens: {
+          HomeTab: 'home',
+          EventsTab: 'events',
+          SettingsTab: 'settings',
         },
       },
       EventDetail: {
@@ -45,20 +47,11 @@ export const linking: LinkingOptions<any> = {
           gymId: (id: string) => id,
         },
       },
-      EventBrowse: 'browse',
-      GymSearch: 'gym-search',
-      FighterSearch: 'fighter-search',
-      Chat: 'chat/:conversationId',
-      ReferralDashboard: 'referrals',
     },
   },
 };
 
 // Helper to generate shareable links
-export const generateReferralLink = (referralCode: string): string => {
-  return `https://fightstation.app/join/${referralCode}`;
-};
-
 export const generateEventLink = (eventId: string): string => {
   return `https://fightstation.app/events/${eventId}`;
 };

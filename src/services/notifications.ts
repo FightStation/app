@@ -3,16 +3,22 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
-// Configure notification behavior
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// Configure notification behavior (native only - not supported on web)
+if (Platform.OS !== 'web') {
+  try {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+  } catch (e) {
+    console.warn('[Fight Station] Notification handler setup failed:', e);
+  }
+}
 
 export type NotificationType =
   | 'event_request_approved'

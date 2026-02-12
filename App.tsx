@@ -84,6 +84,12 @@ function AppContent() {
       }
     }
     loadComponents();
+
+    // Safety timeout - if imports hang for 15s, show error
+    const timeout = setTimeout(() => {
+      setError(prev => prev || 'App took too long to load. Please refresh.');
+    }, 15000);
+    return () => clearTimeout(timeout);
   }, []);
 
   if (error) {
