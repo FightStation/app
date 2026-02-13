@@ -27,7 +27,7 @@ import { ModernTabBar, type TabConfig } from '../components/TabBar';
 import { colors, typography, spacing } from '../lib/theme';
 
 export type GymStackParamList = {
-  GymTabs: undefined;
+  MainTabs: undefined;
   CreateEvent: undefined;
   EditEvent: { eventId: string };
   EventDetail: { eventId: string };
@@ -81,7 +81,7 @@ const gymTabs: TabConfig[] = [
   },
 ];
 
-function GymTabs() {
+function MainTabs() {
   return (
     <Tab.Navigator
       tabBar={(props) => <ModernTabBar {...props} tabs={gymTabs} />}
@@ -105,7 +105,7 @@ export function GymNavigator() {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen name="GymTabs" component={GymTabs} />
+      <Stack.Screen name="MainTabs" component={MainTabs} />
       <Stack.Screen
         name="CreateEvent"
         component={CreateEventScreen}

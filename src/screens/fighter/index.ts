@@ -3,6 +3,5 @@ export { FighterProfileScreen } from './FighterProfileScreen';
 export { FindSparringScreen } from './FindSparringScreen';
 export { GymEventsScreen } from './GymEventsScreen';
 export { MyEventsScreen } from './MyEventsScreen';
-export { ExploreScreen } from './ExploreScreen';
 export { SparringInvitesScreen } from './SparringInvitesScreen';
 export { EventReviewScreen } from './EventReviewScreen';

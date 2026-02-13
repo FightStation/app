@@ -27,7 +27,7 @@ import {
 import { colors, spacing, typography } from '../lib/theme';
 
 export type FighterStackParamList = {
-  FighterTabs: undefined;
+  MainTabs: undefined;
   EventDetail: { eventId: string };
   FighterProfileView: { fighterId: string };
   GymProfileView: { gymId: string };
@@ -80,7 +80,7 @@ const fighterTabs: TabConfig[] = [
   },
 ];
 
-function FighterTabs() {
+function MainTabs() {
   return (
     <Tab.Navigator
       tabBar={(props) => <ModernTabBar {...props} tabs={fighterTabs} />}
@@ -104,7 +104,7 @@ export function FighterNavigator() {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen name="FighterTabs" component={FighterTabs} />
+      <Stack.Screen name="MainTabs" component={MainTabs} />
       <Stack.Screen
         name="EventDetail"
         component={EventDetailScreen}

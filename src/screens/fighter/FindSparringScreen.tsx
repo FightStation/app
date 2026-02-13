@@ -24,7 +24,8 @@ import {
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { isDesktop } from '../../lib/responsive';
-import type { SparringEvent, Gym } from '../../types';
+import type { SparringEvent, Gym, EventType, WeightClass } from '../../types';
+import { WEIGHT_CLASS_LABELS } from '../../types';
 
 type FindSparringScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -34,13 +35,13 @@ const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
 const containerMaxWidth = isWeb ? (isDesktop ? 800 : 480) : width;
 
-type EventTypeFilter = 'all' | 'sparring' | 'training' | 'competition';
+type EventTypeFilter = 'all' | 'sparring' | 'training' | 'fight';
 
 const EVENT_TYPE_FILTERS: { key: EventTypeFilter; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'sparring', label: 'Sparring' },
   { key: 'training', label: 'Training' },
-  { key: 'competition', label: 'Competition' },
+  { key: 'fight', label: 'Fight' },
 ];
 
 // Mock data for demo/offline mode
@@ -50,7 +51,7 @@ const createMockEvent = (
   gymId: string,
   gymName: string,
   daysOffset: number,
-  type: 'sparring' | 'training' | 'competition',
+  type: EventType,
   intensity: 'technical' | 'moderate' | 'hard'
 ): SparringEvent => ({
   id,
@@ -61,14 +62,11 @@ const createMockEvent = (
   event_date: new Date(Date.now() + daysOffset * 86400000).toISOString().split('T')[0],
   start_time: '18:00',
   end_time: '20:00',
-  weight_classes: [
-    { weight: 65, name: 'Lightweight' },
-    { weight: 72, name: 'Welterweight' },
-  ],
+  weight_classes: ['lightweight', 'welterweight'],
   max_participants: 12,
   current_participants: 8,
   experience_levels: ['beginner', 'intermediate'],
-  status: 'scheduled',
+  status: 'published',
   gym: {
     id: gymId,
     name: gymName,
@@ -91,7 +89,7 @@ const MOCK_EVENTS = [
   createMockEvent('e1', 'Monday Evening Sparring', 'g1', 'Elite Boxing Academy', 1, 'sparring', 'moderate'),
   createMockEvent('e2', 'Hard Sparring Session', 'g2', 'Iron Fist MMA Club', 2, 'sparring', 'hard'),
   createMockEvent('e3', 'Technical Training Workshop', 'g3', 'Bangkok Warriors Gym', 3, 'training', 'technical'),
-  createMockEvent('e4', 'Amateur Competition Qualifier', 'g1', 'Elite Boxing Academy', 7, 'competition', 'hard'),
+  createMockEvent('e4', 'Amateur Fight Night', 'g1', 'Elite Boxing Academy', 7, 'fight', 'hard'),
 ];
 
 const MOCK_GYMS: Gym[] = [
@@ -252,7 +250,7 @@ export function FindSparringScreen({ navigation }: FindSparringScreenProps) {
   };
 
   const getIntensityColor = (intensity?: string) => {
-    const map: Record<string, string> = { hard: colors.status.error, moderate: colors.primary[500], technical: colors.primary[400] };
+    const map: Record<string, string> = { hard: colors.error, moderate: colors.primary[500], technical: colors.primary[400] };
     return map[intensity || ''] || colors.textSecondary;
   };
 
@@ -285,7 +283,7 @@ export function FindSparringScreen({ navigation }: FindSparringScreenProps) {
             <View style={styles.detailRow}>
               <Ionicons name="barbell-outline" size={14} color={colors.textMuted} />
               <Text style={styles.detailText} numberOfLines={1}>
-                {item.weight_classes.map((wc) => wc.name).join(', ')}
+                {item.weight_classes.map((wc) => WEIGHT_CLASS_LABELS[wc] || wc).join(', ')}
               </Text>
             </View>
           )}

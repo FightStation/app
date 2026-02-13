@@ -341,7 +341,7 @@ export function FighterProfileViewScreen({ navigation, route }: any) {
           <EmptyState
             icon="camera-outline"
             title="No Posts Yet"
-            subtitle="Posts will appear here once they share content"
+            description="Posts will appear here once they share content"
           />
         </View>
       );
@@ -452,7 +452,7 @@ export function FighterProfileViewScreen({ navigation, route }: any) {
       <EmptyState
         icon="star-outline"
         title="No Highlights"
-        subtitle="Featured content and achievements will appear here"
+        description="Featured content and achievements will appear here"
       />
     </View>
   );

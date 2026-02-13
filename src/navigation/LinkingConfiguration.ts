@@ -13,17 +13,8 @@ export const linking: LinkingOptions<any> = {
           Login: 'login',
         },
       },
-      // Fighter screens (same tab names as Gym)
-      FighterTabs: {
-        screens: {
-          FeedTab: 'feed',
-          SearchTab: 'search',
-          ProfileTab: 'profile',
-          MessagesTab: 'messages',
-        },
-      },
-      // Gym screens (same tab names as Fighter)
-      GymTabs: {
+      // Shared tab layout (same for both Fighter and Gym roles)
+      MainTabs: {
         screens: {
           FeedTab: 'feed',
           SearchTab: 'search',
