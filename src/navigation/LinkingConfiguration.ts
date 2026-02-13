@@ -13,20 +13,22 @@ export const linking: LinkingOptions<any> = {
           Login: 'login',
         },
       },
-      // Fighter screens
+      // Fighter screens (same tab names as Gym)
       FighterTabs: {
         screens: {
-          DiscoverTab: 'discover',
-          MySessionsTab: 'my-sessions',
+          FeedTab: 'feed',
+          SearchTab: 'search',
           ProfileTab: 'profile',
+          MessagesTab: 'messages',
         },
       },
-      // Gym screens
+      // Gym screens (same tab names as Fighter)
       GymTabs: {
         screens: {
-          HomeTab: 'home',
-          EventsTab: 'events',
-          SettingsTab: 'settings',
+          FeedTab: 'feed',
+          SearchTab: 'search',
+          ProfileTab: 'profile',
+          MessagesTab: 'messages',
         },
       },
       EventDetail: {
@@ -45,6 +47,12 @@ export const linking: LinkingOptions<any> = {
         path: 'gyms/:gymId',
         parse: {
           gymId: (id: string) => id,
+        },
+      },
+      Chat: {
+        path: 'chat/:conversationId',
+        parse: {
+          conversationId: (id: string) => id,
         },
       },
     },

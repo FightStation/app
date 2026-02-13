@@ -5,3 +5,7 @@ export { FighterProfileViewScreen } from './FighterProfileViewScreen';
 export { GymProfileViewScreen } from './GymProfileViewScreen';
 export { GymDirectoryScreen } from './GymDirectoryScreen';
 export { DirectoryGymDetailScreen } from './DirectoryGymDetailScreen';
+export { FeedScreen } from './FeedScreen';
+export { SearchScreen } from './SearchScreen';
+export { MessagesScreen } from './MessagesScreen';
+export { ChatScreen } from './ChatScreen';

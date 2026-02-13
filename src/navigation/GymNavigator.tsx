@@ -18,6 +18,10 @@ import {
   GymDirectoryScreen,
   DirectoryGymDetailScreen,
   EventsListScreen,
+  FeedScreen,
+  SearchScreen,
+  MessagesScreen,
+  ChatScreen,
 } from '../screens/shared';
 import { ModernTabBar, type TabConfig } from '../components/TabBar';
 import { colors, typography, spacing } from '../lib/theme';
@@ -35,64 +39,47 @@ export type GymStackParamList = {
   GymDirectory: undefined;
   DirectoryGymDetail: { gymId: string };
   EventsList: undefined;
+  Chat: { conversationId: string; otherUserId?: string; name: string };
+  GymDashboard: undefined;
 };
 
 export type GymTabParamList = {
-  HomeTab: undefined;
-  EventsTab: undefined;
-  SettingsTab: undefined;
+  FeedTab: undefined;
+  SearchTab: undefined;
+  ProfileTab: undefined;
+  MessagesTab: undefined;
 };
 
 const Stack = createNativeStackNavigator<GymStackParamList>();
 const Tab = createBottomTabNavigator<GymTabParamList>();
 
-// Tab configuration for gym navigator
+// Tab configuration for gym navigator - same 4 tabs as fighter
 const gymTabs: TabConfig[] = [
   {
-    name: 'HomeTab',
-    label: 'Home',
+    name: 'FeedTab',
+    label: 'Feed',
     iconDefault: 'home-outline',
     iconFocused: 'home',
   },
   {
-    name: 'EventsTab',
-    label: 'Events',
-    iconDefault: 'calendar-outline',
-    iconFocused: 'calendar',
+    name: 'SearchTab',
+    label: 'Search',
+    iconDefault: 'search-outline',
+    iconFocused: 'search',
   },
   {
-    name: 'SettingsTab',
-    label: 'Settings',
-    iconDefault: 'settings-outline',
-    iconFocused: 'settings',
+    name: 'ProfileTab',
+    label: 'Profile',
+    iconDefault: 'person-outline',
+    iconFocused: 'person',
+  },
+  {
+    name: 'MessagesTab',
+    label: 'Messages',
+    iconDefault: 'chatbubble-outline',
+    iconFocused: 'chatbubble',
   },
 ];
-
-// Tab icon component for individual tabs
-function TabIcon({
-  focused,
-  iconFocused,
-  iconDefault,
-  label,
-}: {
-  focused: boolean;
-  iconFocused: keyof typeof Ionicons.glyphMap;
-  iconDefault: keyof typeof Ionicons.glyphMap;
-  label: string;
-}) {
-  return (
-    <View style={styles.tabIcon}>
-      <Ionicons
-        name={focused ? iconFocused : iconDefault}
-        size={24}
-        color={focused ? colors.primary[500] : colors.neutral[500]}
-      />
-      <Text style={[styles.tabLabel, focused && styles.tabLabelFocused]}>
-        {label}
-      </Text>
-    </View>
-  );
-}
 
 function GymTabs() {
   return (
@@ -102,48 +89,10 @@ function GymTabs() {
         headerShown: false,
       }}
     >
-      <Tab.Screen
-        name="HomeTab"
-        component={GymDashboardScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon
-              focused={focused}
-              iconFocused="home"
-              iconDefault="home-outline"
-              label="Home"
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="EventsTab"
-        component={SparringInvitesScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon
-              focused={focused}
-              iconFocused="calendar"
-              iconDefault="calendar-outline"
-              label="Events"
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="SettingsTab"
-        component={GymSettingsScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon
-              focused={focused}
-              iconFocused="settings"
-              iconDefault="settings-outline"
-              label="Settings"
-            />
-          ),
-        }}
-      />
+      <Tab.Screen name="FeedTab" component={FeedScreen} />
+      <Tab.Screen name="SearchTab" component={SearchScreen} />
+      <Tab.Screen name="ProfileTab" component={GymSettingsScreen} />
+      <Tab.Screen name="MessagesTab" component={MessagesScreen} />
     </Tab.Navigator>
   );
 }
@@ -236,6 +185,20 @@ export function GymNavigator() {
       <Stack.Screen
         name="EventsList"
         component={EventsListScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="Chat"
+        component={ChatScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="GymDashboard"
+        component={GymDashboardScreen}
         options={{
           headerShown: false,
         }}

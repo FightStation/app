@@ -1,0 +1,1476 @@
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  RefreshControl,
+  TouchableOpacity,
+  Image,
+  Dimensions,
+  ScrollView,
+  Pressable,
+  Animated,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
+import { Post, Fighter, Gym, Coach, SparringEvent, CombatSport, COMBAT_SPORT_SHORT } from '../../types';
+import { colors, spacing, typography, borderRadius, gradients, glass } from '../../lib/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { isDesktop } from '../../lib/responsive';
+import { GlassCard, PulseIndicator, AnimatedListItem, GradientButton, EmptyState, SectionHeader, SkeletonFeed } from '../../components';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CONTENT_WIDTH = isDesktop ? 600 : SCREEN_WIDTH;
+
+interface FeedPost extends Post {
+  author_fighter?: Fighter;
+  author_gym?: Gym;
+  author_coach?: Coach;
+  event?: SparringEvent & { gym?: Gym };
+}
+
+// Sport color helper
+const getSportColor = (sport: CombatSport): string => {
+  const sportColors: Record<CombatSport, string> = {
+    boxing: colors.sport.boxing,
+    mma: colors.sport.mma,
+    muay_thai: colors.sport.muay_thai,
+    kickboxing: colors.sport.kickboxing,
+  };
+  return sportColors[sport] || colors.primary[500];
+};
+
+const getSportBgColor = (sport: CombatSport): string => {
+  const sportColors: Record<CombatSport, string> = {
+    boxing: colors.sport.boxingLight,
+    mma: colors.sport.mmaLight,
+    muay_thai: colors.sport.muay_thaiLight,
+    kickboxing: colors.sport.kickboxingLight,
+  };
+  return sportColors[sport] || `${colors.primary[500]}15`;
+};
+
+// Gradient colors for each sport (used for story ring)
+const getSportGradient = (sport: CombatSport): readonly [string, string] => {
+  switch (sport) {
+    case 'boxing': return ['#135BEC', '#0A2D7A'] as const;
+    case 'mma': return ['#F97316', '#3B82F6'] as const;
+    case 'muay_thai': return ['#EAB308', '#F59E0B'] as const;
+    case 'kickboxing': return ['#3B82F6', '#6366F1'] as const;
+    default: return gradients.primaryToCrimson;
+  }
+};
+
+// Story item type
+interface StoryItem {
+  id: string;
+  type: 'event' | 'training' | 'live';
+  title: string;
+  subtitle?: string;
+  image?: string;
+  avatar?: string;
+  isLive?: boolean;
+  eventDate?: string;
+  gymId?: string;
+  eventId?: string;
+  sport?: CombatSport;
+}
+
+// Mock stories data
+const getMockStories = (): StoryItem[] => [
+  {
+    id: 's1',
+    type: 'event',
+    title: 'Sparring Day',
+    subtitle: 'Tomorrow 6PM',
+    avatar: undefined,
+    isLive: false,
+    eventDate: new Date(Date.now() + 86400000).toISOString(),
+    sport: 'boxing',
+  },
+  {
+    id: 's2',
+    type: 'live',
+    title: 'Elite MMA',
+    subtitle: 'LIVE NOW',
+    avatar: undefined,
+    isLive: true,
+    sport: 'mma',
+  },
+  {
+    id: 's3',
+    type: 'training',
+    title: 'Pad Work',
+    subtitle: '2h ago',
+    avatar: undefined,
+    sport: 'muay_thai',
+  },
+  {
+    id: 's4',
+    type: 'event',
+    title: 'Hard Rounds',
+    subtitle: 'Fri 7PM',
+    avatar: undefined,
+    eventDate: new Date(Date.now() + 172800000).toISOString(),
+    sport: 'kickboxing',
+  },
+  {
+    id: 's5',
+    type: 'training',
+    title: 'Sparring Clips',
+    subtitle: '5h ago',
+    avatar: undefined,
+    sport: 'boxing',
+  },
+];
+
+// Discovery content for empty state
+interface DiscoverItem {
+  id: string;
+  type: 'gym' | 'fighter' | 'event';
+  name: string;
+  subtitle: string;
+  image?: string;
+  stats?: string;
+  sport?: CombatSport;
+}
+
+const getMockDiscovery = (): DiscoverItem[] => [
+  { id: 'd1', type: 'gym', name: 'Elite Boxing Academy', subtitle: 'Berlin, Germany', stats: '234 members', sport: 'boxing' },
+  { id: 'd2', type: 'fighter', name: 'Marcus Petrov', subtitle: 'Middleweight • Pro', stats: '12-2-0', sport: 'mma' },
+  { id: 'd3', type: 'event', name: 'Technical Sparring', subtitle: 'Tomorrow 6PM', stats: '8 spots left', sport: 'muay_thai' },
+  { id: 'd4', type: 'gym', name: 'Fight Factory', subtitle: 'Warsaw, Poland', stats: '156 members', sport: 'kickboxing' },
+  { id: 'd5', type: 'fighter', name: 'Sarah Chen', subtitle: 'Lightweight • Advanced', stats: '8-1-0', sport: 'boxing' },
+];
+
+export function FeedScreen({ navigation }: any) {
+  const { user } = useAuth();
+  const [posts, setPosts] = useState<FeedPost[]>([]);
+  const [stories] = useState<StoryItem[]>(getMockStories());
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [lastTap, setLastTap] = useState<{ postId: string; time: number } | null>(null);
+  const heartAnimations = useRef<{ [key: string]: Animated.Value }>({}).current;
+
+  useEffect(() => {
+    loadFeed();
+  }, []);
+
+  const loadFeed = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { data: postsData, error } = await supabase
+        .from('posts')
+        .select(`
+          *,
+          author_fighter:fighters!posts_author_id_fkey(*),
+          author_gym:gyms!posts_author_id_fkey(*),
+          author_coach:coaches!posts_author_id_fkey(*),
+          event:sparring_events(*, gym:gyms(*))
+        `)
+        .eq('status', 'active')
+        .eq('visibility', 'public')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.error('[Feed] Error loading posts:', error);
+        setPosts([]);
+      } else {
+        setPosts(postsData || []);
+      }
+
+      const { data: likesData } = await supabase
+        .from('post_likes')
+        .select('post_id')
+        .eq('user_id', user.id);
+
+      if (likesData) {
+        setLikedPosts(new Set(likesData.map(l => l.post_id)));
+      }
+    } catch (err) {
+      console.error('[Feed] Failed to load feed:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadFeed();
+    setRefreshing(false);
+  };
+
+  // Double-tap to like handler
+  const handleDoubleTap = useCallback((postId: string) => {
+    const now = Date.now();
+    if (lastTap && lastTap.postId === postId && now - lastTap.time < 300) {
+      // Double tap detected
+      if (!likedPosts.has(postId)) {
+        handleLike(postId);
+        // Trigger heart animation
+        if (!heartAnimations[postId]) {
+          heartAnimations[postId] = new Animated.Value(0);
+        }
+        Animated.sequence([
+          Animated.timing(heartAnimations[postId], {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(heartAnimations[postId], {
+            toValue: 0,
+            duration: 300,
+            delay: 500,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+      setLastTap(null);
+    } else {
+      setLastTap({ postId, time: now });
+    }
+  }, [lastTap, likedPosts]);
+
+  const handleLike = async (postId: string) => {
+    if (!user) return;
+
+    const isLiked = likedPosts.has(postId);
+
+    setLikedPosts(prev => {
+      const next = new Set(prev);
+      if (isLiked) {
+        next.delete(postId);
+      } else {
+        next.add(postId);
+      }
+      return next;
+    });
+
+    setPosts(prev => prev.map(p => {
+      if (p.id === postId) {
+        return {
+          ...p,
+          likes_count: isLiked ? p.likes_count - 1 : p.likes_count + 1,
+        };
+      }
+      return p;
+    }));
+
+    try {
+      if (isLiked) {
+        await supabase
+          .from('post_likes')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', user.id);
+      } else {
+        await supabase
+          .from('post_likes')
+          .insert({ post_id: postId, user_id: user.id });
+      }
+    } catch (err) {
+      console.error('[Feed] Failed to toggle like:', err);
+      setLikedPosts(prev => {
+        const next = new Set(prev);
+        if (isLiked) {
+          next.add(postId);
+        } else {
+          next.delete(postId);
+        }
+        return next;
+      });
+    }
+  };
+
+  const getAuthorInfo = (post: FeedPost) => {
+    if (post.author_type === 'fighter' && post.author_fighter) {
+      const fighter = post.author_fighter;
+      return {
+        name: `${fighter.first_name} ${fighter.last_name}`,
+        avatar: fighter.avatar_url,
+        location: `${fighter.city}, ${fighter.country}`,
+        id: fighter.id,
+        type: 'fighter' as const,
+        weightClass: fighter.weight_class,
+        experience: fighter.experience_level,
+        record: fighter.record,
+      };
+    } else if (post.author_type === 'gym' && post.author_gym) {
+      return {
+        name: post.author_gym.name,
+        avatar: post.author_gym.logo_url,
+        location: `${post.author_gym.city}, ${post.author_gym.country}`,
+        id: post.author_gym.id,
+        type: 'gym' as const,
+      };
+    } else if (post.author_type === 'coach' && post.author_coach) {
+      return {
+        name: `${post.author_coach.first_name} ${post.author_coach.last_name}`,
+        avatar: post.author_coach.avatar_url,
+        location: 'Coach',
+        id: post.author_coach.id,
+        type: 'coach' as const,
+      };
+    }
+    return {
+      name: 'Unknown',
+      avatar: null,
+      location: '',
+      id: '',
+      type: 'fighter' as const,
+    };
+  };
+
+  const formatTimeAgo = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m`;
+    if (diffHours < 24) return `${diffHours}h`;
+    if (diffDays < 7) return `${diffDays}d`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const getWeightClassShort = (wc: string) => {
+    const labels: Record<string, string> = {
+      flyweight: 'FLY',
+      bantamweight: 'BAN',
+      featherweight: 'FEA',
+      lightweight: 'LW',
+      light_welterweight: 'LWW',
+      welterweight: 'WW',
+      light_middleweight: 'LMW',
+      middleweight: 'MW',
+      light_heavyweight: 'LHW',
+      heavyweight: 'HW',
+      super_heavyweight: 'SHW',
+    };
+    return labels[wc] || wc?.substring(0, 3).toUpperCase();
+  };
+
+  const getExperienceShort = (exp: string) => {
+    const labels: Record<string, string> = {
+      beginner: 'BEG',
+      intermediate: 'INT',
+      advanced: 'ADV',
+      pro: 'PRO',
+    };
+    return labels[exp] || exp?.substring(0, 3).toUpperCase();
+  };
+
+  const navigateToProfile = (authorType: string, authorId: string) => {
+    if (authorType === 'fighter') {
+      navigation.navigate('FighterProfileView', { fighterId: authorId });
+    } else if (authorType === 'gym') {
+      navigation.navigate('GymProfileView', { gymId: authorId });
+    } else if (authorType === 'coach') {
+      navigation.navigate('CoachProfileView', { coachId: authorId });
+    }
+  };
+
+  // Render Stories Row with gradient ring borders
+  const renderStoriesRow = () => (
+    <View style={styles.storiesContainer}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.storiesScroll}
+      >
+        {/* Add Story Button */}
+        <TouchableOpacity
+          style={styles.addStoryCard}
+          onPress={() => navigation.navigate('CreatePost')}
+        >
+          <View style={styles.addStoryIcon}>
+            <Ionicons name="add" size={28} color={colors.primary[500]} />
+          </View>
+          <Text style={styles.storyLabel}>My Camp</Text>
+        </TouchableOpacity>
+
+        {/* Story Items with gradient ring borders */}
+        {stories.map((story) => {
+          const sportColor = story.sport ? getSportColor(story.sport) : colors.border;
+          const sportGrad = story.sport ? getSportGradient(story.sport) : gradients.primaryToCrimson;
+          const ringGradient = story.isLive ? (['#EF4444', '#B91C1C'] as const) : sportGrad;
+
+          return (
+            <TouchableOpacity
+              key={story.id}
+              style={styles.storyCard}
+              onPress={() => {
+                if (story.eventId) {
+                  navigation.navigate('EventDetail', { eventId: story.eventId });
+                }
+              }}
+            >
+              {/* Gradient ring border */}
+              <View style={styles.storyRingOuter}>
+                <LinearGradient
+                  colors={ringGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.storyGradientRing}
+                >
+                  {/* 2px gap (dark background) */}
+                  <View style={styles.storyRingGap}>
+                    <View style={styles.storyAvatar}>
+                      {story.type === 'live' && (
+                        <View style={styles.liveBadge}>
+                          <Text style={styles.liveBadgeText}>LIVE</Text>
+                        </View>
+                      )}
+                      {story.type === 'event' && (
+                        <Ionicons name="calendar" size={24} color={sportColor} />
+                      )}
+                      {story.type === 'training' && (
+                        <Ionicons name="videocam" size={24} color={sportColor} />
+                      )}
+                    </View>
+                  </View>
+                </LinearGradient>
+                {/* Live stories get PulseIndicator */}
+                {story.isLive && (
+                  <View style={styles.livePulseWrap}>
+                    <PulseIndicator color={colors.error} size="sm" />
+                  </View>
+                )}
+                {/* Sport badge */}
+                {story.sport && (
+                  <View style={[styles.sportMicroBadge, { backgroundColor: sportColor }]}>
+                    <Text style={styles.sportMicroBadgeText}>
+                      {COMBAT_SPORT_SHORT[story.sport]}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.storyLabel} numberOfLines={1}>{story.title}</Text>
+              <Text style={[
+                styles.storySubtitle,
+                story.isLive && styles.storySubtitleLive,
+              ]} numberOfLines={1}>
+                {story.subtitle}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+
+  // Render Fighter Badges
+  const renderFighterBadges = (author: ReturnType<typeof getAuthorInfo>) => {
+    if (author.type !== 'fighter') return null;
+
+    return (
+      <View style={styles.badgeRow}>
+        {author.weightClass && (
+          <View style={styles.badge}>
+            <Ionicons name="barbell" size={10} color={colors.primary[400]} />
+            <Text style={styles.badgeText}>{getWeightClassShort(author.weightClass)}</Text>
+          </View>
+        )}
+        {author.experience && (
+          <View style={[styles.badge, styles.badgeExperience]}>
+            <Ionicons name="star" size={10} color={colors.warning} />
+            <Text style={[styles.badgeText, styles.badgeTextExperience]}>
+              {getExperienceShort(author.experience)}
+            </Text>
+          </View>
+        )}
+        {author.record && (
+          <View style={[styles.badge, styles.badgeRecord]}>
+            <Text style={[styles.badgeText, styles.badgeTextRecord]}>{author.record}</Text>
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  const renderPostCard = ({ item: post, index }: { item: FeedPost; index: number }) => {
+    const author = getAuthorInfo(post);
+    const isLiked = likedPosts.has(post.id);
+    const heartAnim = heartAnimations[post.id] || new Animated.Value(0);
+
+    return (
+      <AnimatedListItem index={index}>
+        <GlassCard style={styles.postCard} noPadding>
+          {/* Post Header */}
+          <TouchableOpacity
+            style={styles.postHeader}
+            onPress={() => navigateToProfile(author.type, author.id)}
+          >
+            <View style={styles.avatarContainer}>
+              {author.avatar ? (
+                <Image source={{ uri: author.avatar }} style={styles.avatar} />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Ionicons
+                    name={author.type === 'gym' ? 'business' : 'person'}
+                    size={22}
+                    color={colors.primary[500]}
+                  />
+                </View>
+              )}
+              {/* Type indicator */}
+              <View style={[
+                styles.typeIndicator,
+                author.type === 'gym' && styles.typeIndicatorGym,
+              ]}>
+                <Ionicons
+                  name={author.type === 'gym' ? 'business' : 'fitness'}
+                  size={10}
+                  color={colors.textPrimary}
+                />
+              </View>
+            </View>
+            <View style={styles.authorInfo}>
+              <View style={styles.authorNameRow}>
+                <Text style={styles.authorName}>{author.name}</Text>
+                {author.type === 'gym' && (
+                  <View style={styles.verifiedBadge}>
+                    <Ionicons name="checkmark-circle" size={14} color={colors.info} />
+                  </View>
+                )}
+              </View>
+              {author.type === 'fighter' ? (
+                renderFighterBadges(author)
+              ) : (
+                <Text style={styles.postMeta}>
+                  {author.location} • {formatTimeAgo(post.created_at)}
+                </Text>
+              )}
+              {author.type === 'fighter' && (
+                <Text style={styles.postMetaSmall}>
+                  {author.location} • {formatTimeAgo(post.created_at)}
+                </Text>
+              )}
+            </View>
+            <TouchableOpacity style={styles.moreButton}>
+              <Ionicons name="ellipsis-vertical" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
+          </TouchableOpacity>
+
+          {/* Media with double-tap */}
+          {post.media_urls && post.media_urls.length > 0 && (
+            <Pressable
+              style={styles.mediaContainer}
+              onPress={() => handleDoubleTap(post.id)}
+            >
+              {post.media_type === 'video' ? (
+                <View style={styles.videoPlaceholder}>
+                  <View style={styles.playButton}>
+                    <Ionicons name="play" size={32} color={colors.textPrimary} />
+                  </View>
+                  <Text style={styles.videoText}>Tap to play</Text>
+                </View>
+              ) : (
+                <Image
+                  source={{ uri: post.media_urls[0] }}
+                  style={styles.postImage}
+                  resizeMode="cover"
+                />
+              )}
+              {post.media_urls.length > 1 && (
+                <View style={styles.mediaCount}>
+                  <Text style={styles.mediaCountText}>+{post.media_urls.length - 1}</Text>
+                </View>
+              )}
+              {/* Post type badge overlay */}
+              {post.post_type && (
+                <View style={styles.postTypeBadge}>
+                  <Text style={styles.postTypeBadgeText}>
+                    {post.post_type === 'event_share' ? 'EVENT' : post.post_type === 'training_update' ? 'TRAINING' : post.post_type === 'reel' ? 'REEL' : 'POST'}
+                  </Text>
+                </View>
+              )}
+              {/* Double-tap heart animation */}
+              <Animated.View
+                style={[
+                  styles.doubleTapHeart,
+                  {
+                    opacity: heartAnim,
+                    transform: [
+                      {
+                        scale: heartAnim.interpolate({
+                          inputRange: [0, 0.5, 1],
+                          outputRange: [0, 1.3, 1],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+                pointerEvents="none"
+              >
+                <Ionicons name="heart" size={80} color={colors.primary[500]} />
+              </Animated.View>
+            </Pressable>
+          )}
+
+          {/* Event Share */}
+          {post.post_type === 'event_share' && post.event && (
+            <TouchableOpacity
+              style={styles.eventCard}
+              onPress={() => navigation.navigate('EventDetail', { eventId: post.event?.id })}
+            >
+              <View style={styles.eventBanner}>
+                <Ionicons name="flash" size={16} color={colors.primary[500]} />
+                <Text style={styles.eventLabel}>SPARRING EVENT</Text>
+              </View>
+              <Text style={styles.eventTitle}>{post.event.title}</Text>
+              <View style={styles.eventDetailsRow}>
+                <View style={styles.eventDetailItem}>
+                  <Ionicons name="calendar" size={14} color={colors.textMuted} />
+                  <Text style={styles.eventDetailText}>
+                    {new Date(post.event.event_date).toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </Text>
+                </View>
+                <View style={styles.eventDetailItem}>
+                  <Ionicons name="time" size={14} color={colors.textMuted} />
+                  <Text style={styles.eventDetailText}>
+                    {post.event.start_time}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.eventFooter}>
+                <Text style={styles.eventGym}>
+                  @ {post.event.gym?.name}
+                </Text>
+                <View style={styles.joinButton}>
+                  <Text style={styles.joinButtonText}>View</Text>
+                  <Ionicons name="chevron-forward" size={14} color={colors.primary[500]} />
+                </View>
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {/* Action Row: like/comment/share + Spar CTA */}
+          <View style={styles.actionsRow}>
+            <TouchableOpacity
+              style={styles.actionWithCount}
+              onPress={() => handleLike(post.id)}
+            >
+              <Ionicons
+                name={isLiked ? 'heart' : 'heart-outline'}
+                size={22}
+                color={isLiked ? colors.error : colors.textSecondary}
+              />
+              {post.likes_count > 0 && (
+                <Text style={styles.actionCountText}>{post.likes_count > 999 ? `${(post.likes_count / 1000).toFixed(1)}k` : post.likes_count}</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.actionWithCount}>
+              <Ionicons name="chatbubble-outline" size={20} color={colors.textSecondary} />
+              {post.comments_count > 0 && (
+                <Text style={styles.actionCountText}>{post.comments_count}</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.actionButton}>
+              <Ionicons name="paper-plane-outline" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+
+            <View style={{ flex: 1 }} />
+
+            <TouchableOpacity style={styles.sparCta}>
+              <Text style={styles.sparCtaText}>Spar</Text>
+              <Ionicons name="flash" size={14} color={colors.textPrimary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Caption (Instagram-style: bold author + text) */}
+          {post.content && (
+            <View style={styles.captionRow}>
+              <Text style={styles.captionText}>
+                <Text style={styles.captionAuthor}>{author.name.split(' ')[0]}</Text>
+                {'  '}{post.content}
+              </Text>
+            </View>
+          )}
+
+          {/* Timestamp */}
+          <Text style={styles.timestamp}>{formatTimeAgo(post.created_at).toUpperCase()}</Text>
+        </GlassCard>
+      </AnimatedListItem>
+    );
+  };
+
+  const renderHeader = () => (
+    <View style={styles.headerContainer}>
+      {/* Top Bar with gradient accent */}
+      <LinearGradient
+        colors={[colors.primary[500], 'transparent']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      />
+      <View style={styles.feedHeader}>
+        <View>
+          <Text style={styles.feedTitle}>FIGHT<Text style={styles.feedTitleAccent}>FEED</Text></Text>
+          <Text style={styles.feedSubtitle}>Boxing • MMA • Muay Thai • Kickboxing</Text>
+        </View>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => navigation.navigate('CreatePost')}
+          >
+            <Ionicons name="add" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerButton}>
+            <View style={styles.notificationDot} />
+            <Ionicons name="notifications-outline" size={22} color={colors.textPrimary} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Stories Row */}
+      {renderStoriesRow()}
+    </View>
+  );
+
+  // Discovery Empty State
+  const renderEmptyState = () => {
+    const discovery = getMockDiscovery();
+
+    return (
+      <View style={styles.emptyContainer}>
+        <EmptyState
+          icon="flame"
+          title="No posts yet"
+          description="Discover fighters and gyms to follow"
+        />
+
+        {/* Discovery Section */}
+        <View style={styles.discoverySection}>
+          <SectionHeader title="Trending" />
+
+          {discovery.map((item) => {
+            const sportColor = item.sport ? getSportColor(item.sport) : colors.primary[500];
+            return (
+              <GlassCard
+                key={item.id}
+                style={styles.discoveryCard}
+                onPress={() => {
+                  if (item.type === 'fighter') {
+                    navigation.navigate('FighterProfileView', { fighterId: item.id });
+                  } else if (item.type === 'gym') {
+                    navigation.navigate('GymProfileView', { gymId: item.id });
+                  }
+                }}
+              >
+                <View style={styles.discoveryCardContent}>
+                  <View style={[
+                    styles.discoveryAvatar,
+                    item.type === 'event' && styles.discoveryAvatarEvent,
+                    item.sport && { borderWidth: 2, borderColor: sportColor },
+                  ]}>
+                    <Ionicons
+                      name={item.type === 'gym' ? 'business' : item.type === 'fighter' ? 'person' : 'calendar'}
+                      size={20}
+                      color={item.sport ? sportColor : colors.textSecondary}
+                    />
+                  </View>
+                  <View style={styles.discoveryInfo}>
+                    <View style={styles.discoveryNameRow}>
+                      <Text style={styles.discoveryName}>{item.name}</Text>
+                      {item.sport && (
+                        <View style={[styles.discoverySportBadge, { backgroundColor: getSportBgColor(item.sport) }]}>
+                          <Text style={[styles.discoverySportText, { color: sportColor }]}>
+                            {COMBAT_SPORT_SHORT[item.sport]}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.discoverySubtitle}>{item.subtitle}</Text>
+                  </View>
+                  <View style={styles.discoveryStats}>
+                    <Text style={styles.discoveryStatsText}>{item.stats}</Text>
+                  </View>
+                  <GradientButton
+                    title={item.type === 'event' ? 'View' : 'Follow'}
+                    size="sm"
+                    style={styles.followButton}
+                    onPress={() => {}}
+                  />
+                </View>
+              </GlassCard>
+            );
+          })}
+        </View>
+      </View>
+    );
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        {renderHeader()}
+        <SkeletonFeed />
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <FlatList
+        data={posts}
+        renderItem={renderPostCard}
+        keyExtractor={(item) => item.id}
+        ListHeaderComponent={renderHeader}
+        contentContainerStyle={[
+          styles.feedContent,
+          isDesktop && styles.feedContentDesktop,
+        ]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary[500]}
+          />
+        }
+        ListEmptyComponent={renderEmptyState}
+        showsVerticalScrollIndicator={false}
+      />
+      {/* FAB */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('CreatePost')}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add" size={28} color={colors.textPrimary} />
+      </TouchableOpacity>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  headerContainer: {
+    backgroundColor: colors.background,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  headerGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 100,
+    opacity: 0.1,
+  },
+  feedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+  },
+  feedTitle: {
+    fontSize: typography.fontSize['2xl'],
+    fontFamily: typography.fontFamily.displayBlack,
+    color: colors.textPrimary,
+    letterSpacing: 1,
+  },
+  feedTitleAccent: {
+    color: colors.primary[500],
+  },
+  feedSubtitle: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+    letterSpacing: 0.5,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: spacing[2],
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.lg,
+    backgroundColor: glass.light.backgroundColor,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: glass.light.borderWidth,
+    borderColor: glass.light.borderColor,
+    position: 'relative',
+  },
+  notificationDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.error,
+    zIndex: 1,
+  },
+  // Stories with gradient rings
+  storiesContainer: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingBottom: spacing[3],
+  },
+  storiesScroll: {
+    paddingHorizontal: spacing[4],
+    gap: spacing[3],
+  },
+  addStoryCard: {
+    alignItems: 'center',
+    width: 72,
+  },
+  addStoryIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: borderRadius.xl,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 2,
+    borderColor: colors.primary[500],
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing[2],
+  },
+  storyCard: {
+    alignItems: 'center',
+    width: 72,
+  },
+  storyRingOuter: {
+    width: 68,
+    height: 68,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing[2],
+    position: 'relative',
+  },
+  storyGradientRing: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 3,
+  },
+  storyRingGap: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    backgroundColor: colors.background,
+    padding: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  storyAvatar: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: colors.surfaceLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  livePulseWrap: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+  },
+  liveBadge: {
+    position: 'absolute',
+    bottom: -4,
+    backgroundColor: colors.error,
+    paddingHorizontal: spacing[2],
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+  },
+  liveBadgeText: {
+    color: colors.textPrimary,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  storyLabel: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textPrimary,
+    fontWeight: typography.fontWeight.medium,
+    textAlign: 'center',
+  },
+  storySubtitle: {
+    fontSize: 10,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  storySubtitleLive: {
+    color: colors.error,
+    fontWeight: '700',
+  },
+  sportMicroBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+    borderWidth: 2,
+    borderColor: colors.background,
+  },
+  sportMicroBadgeText: {
+    fontSize: 7,
+    fontWeight: '900',
+    color: colors.textPrimary,
+    letterSpacing: 0.5,
+  },
+  // Feed Content
+  feedContent: {
+    paddingBottom: spacing[10],
+  },
+  feedContentDesktop: {
+    maxWidth: CONTENT_WIDTH,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing[10],
+  },
+  loadingText: {
+    marginTop: spacing[4],
+    color: colors.textMuted,
+    fontSize: typography.fontSize.base,
+  },
+  // Post Card - using GlassCard noPadding
+  postCard: {
+    marginBottom: spacing[2],
+  },
+  postHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing[4],
+  },
+  avatarContainer: {
+    marginRight: spacing[3],
+    position: 'relative',
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: colors.primary[500],
+  },
+  avatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: `${colors.primary[500]}15`,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.primary[500],
+  },
+  typeIndicator: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.primary[500],
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.cardBg,
+  },
+  typeIndicatorGym: {
+    backgroundColor: colors.info,
+  },
+  authorInfo: {
+    flex: 1,
+  },
+  authorNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+  },
+  authorName: {
+    fontSize: typography.fontSize.base,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  verifiedBadge: {
+    marginLeft: spacing[1],
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    gap: spacing[1],
+    marginTop: spacing[1],
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${colors.primary[500]}20`,
+    paddingHorizontal: spacing[2],
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+    gap: 3,
+  },
+  badgeExperience: {
+    backgroundColor: `${colors.warning}20`,
+  },
+  badgeRecord: {
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.primary[400],
+  },
+  badgeTextExperience: {
+    color: colors.warning,
+  },
+  badgeTextRecord: {
+    color: colors.textSecondary,
+  },
+  postMeta: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textMuted,
+    marginTop: spacing[1],
+  },
+  postMetaSmall: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  moreButton: {
+    width: 32,
+    height: 32,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  postContent: {
+    fontSize: typography.fontSize.base,
+    color: colors.textPrimary,
+    lineHeight: 22,
+    paddingHorizontal: spacing[4],
+    paddingBottom: spacing[3],
+  },
+  // Media
+  mediaContainer: {
+    width: '100%',
+    aspectRatio: 4 / 5,
+    backgroundColor: colors.surface,
+    position: 'relative',
+  },
+  postImage: {
+    width: '100%',
+    height: '100%',
+  },
+  videoPlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
+  playButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: `${colors.primary[500]}90`,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videoText: {
+    marginTop: spacing[2],
+    color: colors.textMuted,
+    fontSize: typography.fontSize.sm,
+  },
+  mediaCount: {
+    position: 'absolute',
+    top: spacing[3],
+    right: spacing[3],
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[1],
+    borderRadius: borderRadius.md,
+  },
+  mediaCountText: {
+    color: colors.textPrimary,
+    fontSize: typography.fontSize.sm,
+    fontWeight: '700',
+  },
+  doubleTapHeart: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginLeft: -40,
+    marginTop: -40,
+  },
+  // Event Card
+  eventCard: {
+    margin: spacing[4],
+    marginTop: 0,
+    padding: spacing[4],
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.primary[500],
+    borderLeftWidth: 4,
+  },
+  eventBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginBottom: spacing[2],
+  },
+  eventLabel: {
+    fontSize: typography.fontSize.xs,
+    color: colors.primary[500],
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  eventTitle: {
+    fontSize: typography.fontSize.lg,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: spacing[2],
+  },
+  eventDetailsRow: {
+    flexDirection: 'row',
+    gap: spacing[4],
+    marginBottom: spacing[3],
+  },
+  eventDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+  },
+  eventDetailText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+  },
+  eventFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: spacing[3],
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.06)',
+  },
+  eventGym: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textMuted,
+    fontWeight: '500',
+  },
+  joinButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+  },
+  joinButtonText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.primary[500],
+    fontWeight: '700',
+  },
+  // Stats Row
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    gap: spacing[3],
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+  },
+  statsText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  // Actions Row
+  actionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.06)',
+    gap: spacing[4],
+  },
+  actionButton: {
+    padding: spacing[2],
+    borderRadius: borderRadius.md,
+  },
+  actionButtonActive: {
+    backgroundColor: `${colors.error}15`,
+  },
+  actionWithCount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+    padding: spacing[2],
+    borderRadius: borderRadius.md,
+  },
+  actionCountText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  sparCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary[500],
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    gap: spacing[1],
+  },
+  sparCtaText: {
+    color: colors.textPrimary,
+    fontSize: typography.fontSize.sm,
+    fontWeight: '700',
+  },
+  // Caption (Instagram-style)
+  captionRow: {
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[1],
+  },
+  captionAuthor: {
+    fontWeight: '700',
+    color: colors.textPrimary,
+    fontSize: typography.fontSize.base,
+  },
+  captionText: {
+    color: colors.textPrimary,
+    fontSize: typography.fontSize.base,
+    lineHeight: 20,
+  },
+  timestamp: {
+    fontSize: 10,
+    color: colors.textMuted,
+    letterSpacing: 1,
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[1],
+    paddingBottom: spacing[3],
+  },
+  // Post type badge
+  postTypeBadge: {
+    position: 'absolute',
+    top: spacing[3],
+    right: spacing[3],
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: borderRadius.sm,
+    paddingHorizontal: spacing[2.5],
+    paddingVertical: spacing[1],
+    zIndex: 2,
+  },
+  postTypeBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    letterSpacing: 1,
+  },
+  // Empty State / Discovery
+  emptyContainer: {
+    paddingHorizontal: spacing[4],
+  },
+  discoverySection: {
+    marginBottom: spacing[6],
+  },
+  discoveryCard: {
+    marginBottom: spacing[2],
+  },
+  discoveryCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  discoveryAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.surfaceLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing[3],
+  },
+  discoveryAvatarEvent: {
+    backgroundColor: `${colors.primary[500]}20`,
+  },
+  discoveryInfo: {
+    flex: 1,
+  },
+  discoveryNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+  discoveryName: {
+    fontSize: typography.fontSize.base,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  discoverySportBadge: {
+    paddingHorizontal: spacing[1.5],
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+  },
+  discoverySportText: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  discoverySubtitle: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  discoveryStats: {
+    marginRight: spacing[3],
+  },
+  discoveryStatsText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  followButton: {
+    minWidth: 70,
+  },
+  // FAB
+  fab: {
+    position: 'absolute',
+    bottom: spacing[6],
+    right: spacing[4],
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary[500],
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+    elevation: 8,
+  },
+});

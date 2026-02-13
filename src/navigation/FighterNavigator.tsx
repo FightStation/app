@@ -9,7 +9,6 @@ import {
   FindSparringScreen,
   GymEventsScreen,
   MyEventsScreen,
-  ExploreScreen,
   SparringInvitesScreen,
   EventReviewScreen,
 } from '../screens/fighter';
@@ -20,6 +19,10 @@ import {
   GymDirectoryScreen,
   DirectoryGymDetailScreen,
   EventsListScreen,
+  FeedScreen,
+  SearchScreen,
+  MessagesScreen,
+  ChatScreen,
 } from '../screens/shared';
 import { colors, spacing, typography } from '../lib/theme';
 
@@ -35,12 +38,15 @@ export type FighterStackParamList = {
   DirectoryGymDetail: { gymId: string };
   EventsList: undefined;
   FindSparring: undefined;
+  Chat: { conversationId: string; otherUserId?: string; name: string };
+  MyEvents: undefined;
 };
 
 export type FighterTabParamList = {
-  DiscoverTab: undefined;
-  MySessionsTab: undefined;
+  FeedTab: undefined;
+  SearchTab: undefined;
   ProfileTab: undefined;
+  MessagesTab: undefined;
 };
 
 const Stack = createNativeStackNavigator<FighterStackParamList>();
@@ -49,16 +55,16 @@ const Tab = createBottomTabNavigator<FighterTabParamList>();
 // Tab configuration for fighter navigator
 const fighterTabs: TabConfig[] = [
   {
-    name: 'DiscoverTab',
-    label: 'Discover',
-    iconDefault: 'compass-outline',
-    iconFocused: 'compass',
+    name: 'FeedTab',
+    label: 'Feed',
+    iconDefault: 'home-outline',
+    iconFocused: 'home',
   },
   {
-    name: 'MySessionsTab',
-    label: 'My Sessions',
-    iconDefault: 'calendar-outline',
-    iconFocused: 'calendar',
+    name: 'SearchTab',
+    label: 'Search',
+    iconDefault: 'search-outline',
+    iconFocused: 'search',
   },
   {
     name: 'ProfileTab',
@@ -66,31 +72,13 @@ const fighterTabs: TabConfig[] = [
     iconDefault: 'person-outline',
     iconFocused: 'person',
   },
+  {
+    name: 'MessagesTab',
+    label: 'Messages',
+    iconDefault: 'chatbubble-outline',
+    iconFocused: 'chatbubble',
+  },
 ];
-
-type TabIconName = 'compass' | 'compass-outline' | 'calendar' | 'calendar-outline' | 'person' | 'person-outline';
-
-interface TabIconProps {
-  focused: boolean;
-  iconFocused: TabIconName;
-  iconDefault: TabIconName;
-  label: string;
-}
-
-function TabIcon({ focused, iconFocused, iconDefault, label }: TabIconProps) {
-  return (
-    <View style={styles.tabIcon}>
-      <Ionicons
-        name={focused ? iconFocused : iconDefault}
-        size={24}
-        color={focused ? colors.primary[500] : colors.neutral[500]}
-      />
-      <Text style={[styles.tabLabel, focused && styles.tabLabelFocused]}>
-        {label}
-      </Text>
-    </View>
-  );
-}
 
 function FighterTabs() {
   return (
@@ -100,48 +88,10 @@ function FighterTabs() {
         headerShown: false,
       }}
     >
-      <Tab.Screen
-        name="DiscoverTab"
-        component={FindSparringScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon
-              focused={focused}
-              iconFocused="compass"
-              iconDefault="compass-outline"
-              label="Discover"
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="MySessionsTab"
-        component={MyEventsScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon
-              focused={focused}
-              iconFocused="calendar"
-              iconDefault="calendar-outline"
-              label="My Sessions"
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="ProfileTab"
-        component={FighterProfileScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon
-              focused={focused}
-              iconFocused="person"
-              iconDefault="person-outline"
-              label="Profile"
-            />
-          ),
-        }}
-      />
+      <Tab.Screen name="FeedTab" component={FeedScreen} />
+      <Tab.Screen name="SearchTab" component={SearchScreen} />
+      <Tab.Screen name="ProfileTab" component={FighterProfileScreen} />
+      <Tab.Screen name="MessagesTab" component={MessagesScreen} />
     </Tab.Navigator>
   );
 }
@@ -227,6 +177,20 @@ export function FighterNavigator() {
       <Stack.Screen
         name="FindSparring"
         component={FindSparringScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="Chat"
+        component={ChatScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="MyEvents"
+        component={MyEventsScreen}
         options={{
           headerShown: false,
         }}

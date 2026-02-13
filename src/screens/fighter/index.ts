@@ -1,5 +1,4 @@
 export { FighterSetupScreen } from './FighterSetupScreen';
-export { FighterDashboardScreen } from './FighterDashboardScreen';
 export { FighterProfileScreen } from './FighterProfileScreen';
 export { FindSparringScreen } from './FindSparringScreen';
 export { GymEventsScreen } from './GymEventsScreen';
